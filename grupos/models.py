@@ -18,7 +18,7 @@ class Grupo(models.Model):
     )
 
     docente = models.ForeignKey(
-        'personal.Docente',
+        'docentes.Docente',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
