@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'asignaturas',
     'periodos',
     'grupos',
-    'recursos',
+    'docentes',
+    'aulas',
     'horarios',
 ]
 
