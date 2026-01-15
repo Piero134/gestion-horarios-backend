@@ -1,42 +1,61 @@
-Aquí tienes el código completo para tu admin.py. He incluido el truco para que, al editar una Asignatura, solo puedas elegir como Prerrequisitos materias que pertenezcan al mismo Plan de Estudios, evitando así errores de mezcla entre planes.
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
+from planes.models import PlanEstudios
 
-Python
+class Asignatura(models.Model):
+    codigo = models.CharField(
+        max_length=20,
+        unique=True, # Unico por asignatura
+        verbose_name="Código de asignatura"
+    )
+    nombre = models.CharField(max_length=100)
+    creditos = models.PositiveIntegerField()
+    ciclo = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+    )
+    plan = models.ForeignKey(
+        PlanEstudios, on_delete=models.CASCADE, related_name='asignaturas'
+    )
 
-from django.contrib import admin
-from django import forms
-from .models import PlanEstudios, Asignatura, Prerequisito
+    prerequisitos = models.ManyToManyField(
+        'self',
+        through='Prerequisito',
+        symmetrical=False,
+        related_name='sucesoras'
+    )
 
-# ==========================================
-# 1. CONFIGURACIÓN PARA ASIGNATURAS
-# ==========================================
+    class Meta:
+        unique_together = ('codigo', 'plan')
+        ordering = ['ciclo', 'codigo']
 
-class PrerequisitoInlineForm(forms.ModelForm):
-    """
-    Formulario personalizado para filtrar los prerrequisitos
-    por el mismo plan de estudios.
-    """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and hasattr(self.instance, 'asignatura'):
-            # Filtra para que solo aparezcan materias del mismo plan
-            self.fields['prerequisito'].queryset = Asignatura.objects.filter(
-                plan=self.instance.asignatura.plan
-            ).exclude(id=self.instance.asignatura.id)
+    def __str__(self):
+        return f"[{self.codigo}] {self.nombre}"
 
-class PrerequisitoInline(admin.TabularInline):
-    model = Prerequisito
-    fk_name = 'asignatura'
-    form = PrerequisitoInlineForm
-    extra = 1
-    verbose_name = "Prerrequisito"
-    verbose_name_plural = "Prerrequisitos de esta asignatura"
-    autocomplete_fields = ['prerequisito'] # Útil si tienes muchas materias
+# Tabla intermedia para prerequisitos
+class Prerequisito(models.Model):
+    asignatura = models.ForeignKey(
+        Asignatura,
+        on_delete=models.CASCADE,
+        related_name='prerequisitos_set'
+    )
+    prerequisito = models.ForeignKey(
+        Asignatura,
+        on_delete=models.CASCADE,
+        related_name='sucesoras_set'
+    )
 
-@admin.register(Asignatura)
-class AsignaturaAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'nombre', 'ciclo', 'plan', 'creditos')
-    list_filter = ('plan', 'ciclo')
-    search_fields = ('codigo', 'nombre')
-    inlines = [PrerequisitoInline]
-    # Habilita búsqueda rápida para ser usado en autocompletados
-    search_fields = ('codigo', 'nombre')
+    class Meta:
+        unique_together = ('asignatura', 'prerequisito')
+
+    def clean(self):
+        # El prerrequisito no puede ser de un ciclo mayor a la asignatura
+        if self.prerequisito.ciclo > self.asignatura.ciclo:
+            raise ValidationError("El prerrequisito no puede ser de un ciclo mayor a la asignatura.")
+
+        # Una asignatura no puede ser requisito de sí misma
+        if self.asignatura == self.prerequisito:
+            raise ValidationError("Una asignatura no puede ser requisito de sí misma.")
+
+    def __str__(self):
+        return f"{self.prerequisito.codigo} es requisito de {self.asignatura.codigo}"
