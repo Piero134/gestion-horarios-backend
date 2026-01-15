@@ -4,10 +4,23 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from planes.models import PlanEstudios
 
 class Asignatura(models.Model):
+    TIPO_ASIGNATURA_CHOICES = [
+        ('O', 'Obligatorio'),
+        ('E', 'Electivo'),
+        ('OP', 'Optativo'),
+        ('AL', 'Alternativo'),
+    ]
+
     codigo = models.CharField(
         max_length=20,
         unique=True, # Unico por asignatura
         verbose_name="Código de asignatura"
+    )
+    tipo = models.CharField(
+        max_length=2,
+        choices=TIPO_ASIGNATURA_CHOICES,
+        default='O',
+        verbose_name="Tipo de asignatura"
     )
     nombre = models.CharField(max_length=100)
     creditos = models.PositiveIntegerField()
@@ -26,6 +39,8 @@ class Asignatura(models.Model):
     )
 
     class Meta:
+        verbose_name = "Asignatura"
+        verbose_name_plural = "Asignaturas"
         unique_together = ('codigo', 'plan')
         ordering = ['ciclo', 'codigo']
 
