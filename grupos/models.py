@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from asignaturas.models import Asignatura
 from periodos.models import PeriodoAcademico
 
@@ -14,6 +15,14 @@ class Grupo(models.Model):
     )
     periodo = models.ForeignKey(
         PeriodoAcademico, on_delete=models.CASCADE, related_name='grupos'
+    )
+
+    docente = models.ForeignKey(
+        'personal.Docente',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='grupos_asignados'
     )
 
     objects = GrupoManager()
