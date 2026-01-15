@@ -13,16 +13,30 @@ class Horario(models.Model):
         (7, 'Domingo'),
     ]
 
+    TIPO_CHOICES = [
+        ('T', 'Teoría'),
+        ('P', 'Práctica'),
+        ('L', 'Laboratorio'),
+    ]
+
     grupo = models.ForeignKey(
-        'Grupo',
+        'grupos.Grupo',
         on_delete=models.CASCADE,
         related_name='horarios'
     )
+
+    tipo = models.CharField(
+        max_length=1,
+        choices=TIPO_CHOICES,
+        default='T',
+        verbose_name="Tipo de sesión"
+    )
+
     dia = models.PositiveSmallIntegerField(choices=DIAS_CHOICES)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     aula = models.ForeignKey(
-        'Aula',
+        'aulas.Aula',
         on_delete=models.PROTECT,
         related_name='horarios'
     )
