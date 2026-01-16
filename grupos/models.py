@@ -11,10 +11,18 @@ class Grupo(models.Model):
     nombre = models.CharField(max_length=20)
 
     asignatura = models.ForeignKey(
-        Asignatura, on_delete=models.CASCADE, related_name='grupos'
+        Asignatura, 
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True, 
+        related_name='grupos'
     )
     periodo = models.ForeignKey(
-        PeriodoAcademico, on_delete=models.CASCADE, related_name='grupos'
+        PeriodoAcademico, 
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True, 
+        related_name='grupos'
     )
 
     docente = models.ForeignKey(
@@ -33,4 +41,9 @@ class Grupo(models.Model):
         ordering = ['periodo', 'asignatura', 'nombre']
 
     def __str__(self):
-        return f"{self.asignatura.codigo} - {self.nombre} ({self.periodo})"
+    # Usamos "getattr" o una validación simple para evitar el AttributeError
+        cod = self.asignatura.codigo if self.asignatura else "Sin Código"
+        nom = self.nombre if self.nombre else "Sin Nombre"
+        per = self.periodo if self.periodo else "Sin Periodo"
+        
+        return f"{cod} - {nom} ({per})"
