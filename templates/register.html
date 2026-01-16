@@ -64,23 +64,29 @@
                 setMessage(null);
 
                 try {
-                    // Asumimos que tu endpoint de API sigue siendo /api/register/
-                    const response = await fetch('/api/register/', {
+                    const response = await fetch('/api/auth/register/', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'X-CSRFToken': getCookie('csrftoken') 
+                        },
                         body: JSON.stringify(formData)
                     });
+
                     const data = await response.json();
                     
                     if (response.ok) {
-                        setMessage({ type: 'success', text: '¡Cuenta creada! Redirigiendo...' });
-                        // Usamos la variable LOGIN_URL definida por Django arriba
+                        setMessage({ type: 'success', text: '¡Cuenta creada exitosamente! Redirigiendo...' });
                         setTimeout(() => window.location.href = LOGIN_URL, 2000); 
                     } else {
-                        setMessage({ type: 'error', text: data.message || 'Error al registrarse.' });
+                        // --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
+                        // Tu API devuelve: {"error": "Texto del error"}
+                        // Así que leemos data.error
+                        const errorText = data.error || 'Ocurrió un error desconocido';
+                        setMessage({ type: 'error', text: errorText });
                     }
                 } catch (error) {
-                    setMessage({ type: 'error', text: 'Error de conexión.' });
+                    setMessage({ type: 'error', text: 'Error de conexión con el servidor.' });
                 } finally {
                     setLoading(false);
                 }
@@ -102,15 +108,34 @@
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
                             <label className="label">Correo Electrónico</label>
-                            <input type="email" name="email" className="input" placeholder="ejemplo@correo.com" required onChange={handleChange} />
+                            <input 
+                                type="email" 
+                                name="email" 
+                                className="input" 
+                                placeholder="ejemplo@correo.com" 
+                                required 
+                                onChange={handleChange} 
+                            />
                         </div>
                         <div className="form-group">
                             <label className="label">Usuario</label>
-                            <input type="text" name="username" className="input" required onChange={handleChange} />
+                            <input 
+                                type="text" 
+                                name="username" 
+                                className="input" 
+                                required 
+                                onChange={handleChange} 
+                            />
                         </div>
                         <div className="form-group">
                             <label className="label">Contraseña</label>
-                            <input type="password" name="password" className="input" required onChange={handleChange} />
+                            <input 
+                                type="password" 
+                                name="password" 
+                                className="input" 
+                                required 
+                                onChange={handleChange} 
+                            />
                         </div>
                         <button type="submit" className="btn" disabled={loading}>
                             {loading ? 'Procesando...' : 'Registrarse'}
@@ -118,7 +143,6 @@
                     </form>
 
                     <div className="link-text">
-                        {/* Aquí usamos la variable segura */}
                         ¿Ya tienes cuenta? <a href={LOGIN_URL} className="link">Inicia sesión</a>
                     </div>
                 </div>

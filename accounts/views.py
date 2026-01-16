@@ -6,3 +6,6 @@ def login_page(request):
 
 def register_page(request):
     return render(request,'register.html')
+
+def dashboard_page(request):
+    return render(request,'dashboard.html')

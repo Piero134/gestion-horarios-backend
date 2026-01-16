@@ -66,7 +66,7 @@
                 // NOTA: Si tu API de login tiene otra URL, cámbiala aquí manualmente o crea otra variable arriba
                 // Por defecto estoy asumiendo que haces POST a '/api/login/'
                 try {
-                    const response = await fetch('/api/login/', { 
+                    const response = await fetch('/api/auth/login/', { 
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
                         body: JSON.stringify(formData)
