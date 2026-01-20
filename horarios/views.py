@@ -14,7 +14,10 @@ def cargarExcel(nameExcel):
         hora_inicio=fila[5]
         hora_fin=fila[6]
         
-        return
-        
+        if grupo==0 or len(grupo)>2:
+            continue
+            #No quiero este dato
+        else:
+            print(grupo)
 
 cargarExcel('excel.xlsx')
