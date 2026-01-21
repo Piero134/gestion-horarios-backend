@@ -3,6 +3,7 @@ from .models import Aula
 
 @admin.register(Aula)
 class AulaAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'tipo', 'capacidad')
-    search_fields = ('codigo',)
-    ordering = ('codigo',)
+    list_display = ('nombre', 'capacidad', 'es_laboratorio')
+    list_filter = ('es_laboratorio',)
+    search_fields = ('nombre',)
+    ordering = ('nombre',)
