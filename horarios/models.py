@@ -47,7 +47,7 @@ class Horario(models.Model):
         ordering = ['dia', 'hora_inicio']
 
     def __str__(self):
-        return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({self.aula.codigo})"
+        return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({self.aula.nombre})"
 
     def clean(self):
         if self.hora_inicio and self.hora_fin:
