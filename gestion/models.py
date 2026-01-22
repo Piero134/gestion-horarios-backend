@@ -44,11 +44,11 @@ class TipoCurso(models.Model):
 
 class Curso(models.Model):
     nombre = models.CharField(max_length=100)
-    creditos = models.IntegerField()
+    creditos = models.IntegerField(blank=True,null=True)
     
     # on_delete=models.PROTECT evita borrar un tipo de curso si hay cursos usándolo
-    tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.PROTECT)
-    ciclo = models.ForeignKey(Ciclo, on_delete=models.CASCADE)
+    tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.PROTECT,null=True)
+    ciclo = models.ForeignKey(Ciclo, on_delete=models.CASCADE,null=True)
 
     def __str__(self):
         return f"{self.nombre} ({self.ciclo})"
@@ -68,9 +68,9 @@ class Horario(models.Model):
     hora_fin = models.TimeField()
     
     curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
-    docente = models.ForeignKey(Docente, on_delete=models.CASCADE)
+    docente = models.ForeignKey(Docente, on_delete=models.CASCADE,null=True)
     grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
-    aula = models.ForeignKey(Aula, on_delete=models.CASCADE)
+    aula = models.ForeignKey(Aula, on_delete=models.CASCADE,null=True)
     
     tipo_clase = models.ForeignKey(TipoClase, on_delete=models.PROTECT)
 
