@@ -14,7 +14,6 @@ class ConsultarHorarioEstudianteView(APIView):
         if not grupo_id:
             return Response({"error": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Obtenemos la estructura personalizada del servicio
         resultado = HorarioService.obtener_horario_estructurado(grupo_id)
 
         if resultado is None:

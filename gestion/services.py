@@ -3,7 +3,6 @@ from .models import Horario
 class HorarioService:
     @staticmethod
     def obtener_horario_estructurado(grupo_id):
-        # 1. Traemos los datos de la BD (Optimizado con select_related)
         horarios = Horario.objects.filter(
             grupo_id=grupo_id
         ).select_related('curso', 'docente', 'aula', 'grupo').order_by('dia_semana', 'hora_inicio')
@@ -11,10 +10,8 @@ class HorarioService:
         if not horarios:
             return None
 
-        # 2. Mapa para convertir 'LU' a 'Lunes', etc.
         nombres_dias = dict(Horario.DIAS_OPCIONES)
 
-        # 3. Agrupamos las clases por día en un diccionario temporal
         dias_agrupados = {}
         for h in horarios:
             nombre_dia = nombres_dias.get(h.dia_semana, h.dia_semana)
@@ -27,11 +24,10 @@ class HorarioService:
                 "curso": h.curso.nombre,
                 "docente": f"Es none",
                 "aula": f"Es none",
-                "hora_inicio": h.hora_inicio.strftime('%H:%M'), # Formato 08:00
+                "hora_inicio": h.hora_inicio.strftime('%H:%M'), 
                 "hora_fin": h.hora_fin.strftime('%H:%M')
             })
 
-        # 4. Construimos la estructura final EXACTA que pediste
         lista_dias = []
         for nombre_dia, clases in dias_agrupados.items():
             lista_dias.append({
