@@ -26,4 +26,4 @@ class Facultad(models.Model):
         ordering = ['codigo']
 
     def __str__(self):
-        return f"{self.siglas} - {self.nombre}"
+        return f"Facultad de {self.nombre}"

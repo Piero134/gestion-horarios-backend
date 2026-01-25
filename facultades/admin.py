@@ -17,8 +17,6 @@ class FacultadAdmin(admin.ModelAdmin):
         'nombre',
     )
 
-    list_filter = ('siglas',)
-
     ordering = ('codigo',)
 
     fieldsets = (
