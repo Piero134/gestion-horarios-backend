@@ -1,11 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import Asignatura, Prerequisito, Ciclo
-
-@admin.register(Ciclo)
-class CicloAdmin(admin.ModelAdmin):
-    search_fields = ('numero',)
-    ordering = ('numero',)
+from .models import Asignatura, Equivalencia, Prerequisito
 
 class PrerequisitoInlineForm(forms.ModelForm):
     class Meta:
@@ -18,13 +13,18 @@ class PrerequisitoInlineForm(forms.ModelForm):
         asignatura = getattr(self.instance, 'asignatura', None)
 
         if asignatura and asignatura.pk:
-            self.fields['prerequisito'].queryset = Asignatura.objects.filter(
-                plan=asignatura.plan,
-                ciclo__numero__lt=asignatura.ciclo.numero
-            ).exclude(pk=asignatura.pk)
+            self.fields['prerequisito'].queryset = (
+                Asignatura.objects
+                .filter(
+                    plan=asignatura.plan,
+                    ciclo__lt=asignatura.ciclo
+                )
+                .exclude(pk=asignatura.pk)
+            )
 
 class PrerequisitoInline(admin.TabularInline):
     model = Prerequisito
+    form = PrerequisitoInlineForm
     fk_name = 'asignatura'
     extra = 0
     verbose_name = "Prerrequisito"
@@ -37,8 +37,19 @@ class PrerequisitoInline(admin.TabularInline):
 @admin.register(Asignatura)
 class AsignaturaAdmin(admin.ModelAdmin):
     list_display = ('plan', 'ciclo', 'codigo', 'nombre', 'creditos', 'tipo')
-    list_filter = ('plan', 'ciclo', 'tipo')
+    list_filter = ('plan__escuela', 'ciclo', 'tipo')
     search_fields = ('codigo', 'nombre')
-    ordering = ('plan', 'ciclo__numero', 'codigo')
+    ordering = ('plan', 'ciclo', 'codigo')
     inlines = [PrerequisitoInline]
-    autocomplete_fields = ('ciclo', 'plan')
+
+    autocomplete_fields = ('plan',)
+
+@admin.register(Equivalencia)
+class EquivalenciaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'asignaturas_count')
+    search_fields = ('nombre', 'asignaturas__codigo', 'asignaturas__nombre')
+
+    filter_horizontal = ('asignaturas',)
+    def asignaturas_count(self, obj):
+        return obj.asignaturas.count()
+    asignaturas_count.short_description = "Asignaturas equivalentes"

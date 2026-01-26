@@ -3,20 +3,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from planes.models import PlanEstudios
 
-class Ciclo(models.Model):
-    numero = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1)],
-        unique=True
-    )
-
-    class Meta:
-        verbose_name = "Ciclo"
-        verbose_name_plural = "Ciclos"
-        ordering = ['numero']
-
-    def __str__(self):
-        return f"Ciclo {self.numero}"
-
 class Asignatura(models.Model):
 
     class TipoAsignatura(models.TextChoices):
@@ -31,23 +17,22 @@ class Asignatura(models.Model):
         related_name='asignaturas'
     )
 
-    ciclo = models.ForeignKey(
-        Ciclo,
-        on_delete=models.PROTECT,
-        related_name='asignaturas'
+    ciclo = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        verbose_name="Ciclo"
     )
-    
+
     codigo = models.CharField(
         max_length=20,
-        unique=True, # Unico por asignatura
-        verbose_name="Código de asignatura"
+        #unique=True,
+        verbose_name="Código"
     )
 
     tipo = models.CharField(
         max_length=2,
         choices=TipoAsignatura.choices,
         default=TipoAsignatura.OBLIGATORIO,
-        verbose_name="Tipo de asignatura"
+        verbose_name="Tipo"
     )
 
     nombre = models.CharField(max_length=50)
@@ -70,7 +55,7 @@ class Asignatura(models.Model):
         verbose_name = "Asignatura"
         verbose_name_plural = "Asignaturas"
         unique_together = ('codigo', 'plan')
-        ordering = ['ciclo__numero', 'codigo']
+        ordering = ['ciclo', 'codigo']
 
     def __str__(self):
         return f"[{self.codigo}] {self.nombre}"
@@ -105,7 +90,7 @@ class Prerequisito(models.Model):
             )
 
         # El prerrequisito debe ser de un ciclo menor
-        if self.prerequisito.ciclo.numero >= self.asignatura.ciclo.numero:
+        if self.prerequisito.ciclo >= self.asignatura.ciclo:
             raise ValidationError(
                 "El prerrequisito debe pertenecer a un ciclo anterior."
             )
@@ -116,3 +101,21 @@ class Prerequisito(models.Model):
 
     def __str__(self):
         return f"{self.prerequisito.nombre} → {self.asignatura.nombre}"
+
+class Equivalencia(models.Model):
+    nombre = models.CharField(
+        max_length=150,
+        help_text="Nombre común de la equivalencia"
+    )
+
+    asignaturas = models.ManyToManyField(
+        Asignatura,
+        related_name='equivalencias'
+    )
+
+    class Meta:
+        verbose_name = "Equivalencia"
+        verbose_name_plural = "Equivalencias"
+
+    def __str__(self):
+        return self.nombre
