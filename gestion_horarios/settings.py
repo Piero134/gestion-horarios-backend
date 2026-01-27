@@ -42,6 +42,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'facultades',
+    'escuelas',
+    'planes',
+    'asignaturas',
+    'periodos',
+    'grupos',
+    'docentes',
+    'aulas',
+    'horarios',
 ]
 
 REST_FRAMEWORK = {
