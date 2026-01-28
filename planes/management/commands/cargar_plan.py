@@ -4,121 +4,149 @@ import os
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 from escuelas.models import Escuela
 from planes.models import PlanEstudios
 from asignaturas.models import Asignatura, Prerequisito
 
 class Command(BaseCommand):
-    help = "Carga un plan de estudios desde un CSV"
+    help = 'Carga masiva de planes respetando validaciones de Prerrequisitos y Escuela'
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            'archivo_csv',
-            type=str,
-            help='Nombre del archivo CSV dentro de la carpeta planes_estudio'
-        )
-
-    def handle(self, *args, **options):
-        archivo = options['archivo_csv']
-
-        ruta_csv = os.path.join(
-            settings.BASE_DIR,
-            'planes',
-            'data',
-            archivo
-        )
-
-        if not os.path.exists(ruta_csv):
-            raise CommandError(f"No se encontró el archivo: {ruta_csv}")
-
-        self.stdout.write(self.style.NOTICE(f"Leyendo archivo: {archivo}"))
-
-        with open(ruta_csv, encoding='utf-8') as f:
-            reader = csv.reader(f, delimiter=';')
-            filas = list(reader)
-
+    def safe_int(self, valor):
+        if not valor: return 0
         try:
-            escuela_nombre = filas[0][1].strip()
-            plan_nombre = filas[1][1].strip()
-        except IndexError:
-            raise CommandError("El formato del archivo no es válido (Faltan cabeceras)")
+            return int(float(valor))
+        except (ValueError, TypeError):
+            return 0
 
+    def handle(self, *args, **kwargs):
+        DATA_DIR = os.path.join(settings.BASE_DIR, 'planes', 'data')
 
-        try:
-            with transaction.atomic():
-                try:
-                    escuela = Escuela.objects.get(nombre__iexact=escuela_nombre)
-                except Escuela.DoesNotExist:
-                    raise CommandError(f"La escuela '{escuela_nombre}' no existe en la BD.")
+        self.stdout.write(f"--- Iniciando carga desde: {DATA_DIR} ---")
 
-                plan, created = PlanEstudios.objects.get_or_create(
-                    nombre=plan_nombre,
-                    escuela=escuela
+        if not os.path.exists(DATA_DIR):
+            raise CommandError(f"La carpeta {DATA_DIR} no existe.")
+
+        archivos = [f for f in os.listdir(DATA_DIR) if f.endswith('.csv')]
+
+        if not archivos:
+            self.stdout.write(self.style.WARNING("No se encontraron archivos CSV."))
+            return
+
+        for archivo in archivos:
+            ruta = os.path.join(DATA_DIR, archivo)
+            try:
+                # Transacción: Si falla algo en un archivo, se revierte todo ese archivo
+                with transaction.atomic():
+                    self.procesar_archivo(ruta)
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"Error fatal en '{archivo}': {str(e)}"))
+
+        self.stdout.write(self.style.SUCCESS('\n=== PROCESO COMPLETADO ==='))
+
+    def procesar_archivo(self, ruta):
+        with open(ruta, encoding='utf-8') as f:
+            try:
+                linea_1 = f.readline()
+                linea_2 = f.readline()
+
+                nombre_escuela = linea_1.split(';')[1].strip()
+                nombre_plan = linea_2.split(';')[1].strip()
+            except IndexError:
+                raise CommandError("Formato de cabecera inválido (Filas 1 y 2).")
+
+            self.stdout.write(f"\n--> Procesando: {nombre_escuela} | {nombre_plan}")
+
+            try:
+                escuela_obj = Escuela.objects.get(nombre__iexact=nombre_escuela)
+            except Escuela.DoesNotExist:
+                raise CommandError(f"La escuela '{nombre_escuela}' no existe en la Base de Datos.")
+
+            plan_obj, _ = PlanEstudios.objects.get_or_create(
+                nombre=nombre_plan,
+                escuela=escuela_obj
+            )
+
+            reader = csv.DictReader(f, delimiter=';')
+
+            # Memoria para prerrequisitos: lista de tuplas (codigo_asignatura, codigo_requisito)
+            lista_relaciones = []
+            count_cursos = 0
+
+            for row in reader:
+                codigo = row.get('Codigo')
+                if not codigo: continue
+
+                ciclo = self.safe_int(row.get('Ciclo'))
+                creditos = self.safe_int(row.get('Creditos'))
+                tipo_raw = row.get('Tipo', 'O').strip()
+
+                Asignatura.objects.update_or_create(
+                    codigo=codigo,
+                    plan=plan_obj,
+                    defaults={
+                        'nombre': row.get('Nombre', 'SIN NOMBRE'),
+                        'ciclo': ciclo,
+                        'creditos': creditos,
+                        'tipo': tipo_raw,
+                        'horas_teoria': self.safe_int(row.get('HT')),
+                        'horas_practica': self.safe_int(row.get('HP')),
+                        'horas_laboratorio': self.safe_int(row.get('HL')),
+                    }
                 )
+                count_cursos += 1
 
-                verb = "creado" if created else "seleccionado"
-                self.stdout.write(f"Plan {verb}: {plan}")
+                # Manejo de prerrequisitos
+                req_raw = row.get('Prerequisito')
+                if req_raw and req_raw.strip():
+                    req_code = req_raw.strip().split('-')[0].strip()
+                    lista_relaciones.append((codigo, req_code))
 
-                asignaturas_por_codigo = {}
-                lista_relaciones_prereq = []
+            self.stdout.write(f"    ✔ Asignaturas procesadas: {count_cursos}")
 
-                start_index = 3
+            qs_asignaturas = Asignatura.objects.filter(plan=plan_obj)
 
-                for i, fila in enumerate(filas[start_index:], start=start_index+1):
+            mapa_asignaturas = {asig.codigo: asig for asig in qs_asignaturas}
 
-                    if not fila or len(fila) < 2 or not fila[1].strip():
-                        continue
+            ids_asignaturas_plan = [asig.id for asig in mapa_asignaturas.values()]
 
+            # borramos los prerrequisitos previos de estas asignaturas
+            deleted_count, _ = Prerequisito.objects.filter(asignatura_id__in=ids_asignaturas_plan).delete()
+
+            if deleted_count > 0:
+                self.stdout.write(f"    Combinando relaciones previas... (Se eliminaron {deleted_count} antiguas)")
+
+            # crear las nuevas relaciones de prerrequisitos
+            count_rels = 0
+            errores_validacion = 0
+
+            for cod_asig, cod_req in lista_relaciones:
+                asig_obj = mapa_asignaturas.get(cod_asig)
+                req_obj = mapa_asignaturas.get(cod_req)
+
+                if asig_obj and req_obj:
                     try:
-                        ciclo = int(fila[0])
-                        codigo = fila[1].strip()
-                        nombre = fila[2].strip()
-                        creditos = int(float(fila[3]))
-                        tipo = fila[4].strip()
-                        prereq_raw = fila[5].strip() if len(fila) > 5 else ''
-                    except ValueError as e:
-                        self.stdout.write(self.style.WARNING(f"Fila {i} ignorada por error de datos: {e}"))
-                        continue
-
-                    asignatura, _ = Asignatura.objects.update_or_create(
-                        plan=plan,
-                        codigo=codigo,
-                        defaults={
-                            'nombre': nombre,
-                            'ciclo': ciclo,
-                            'creditos': creditos,
-                            'tipo': tipo
-                        }
-                    )
-
-                    asignaturas_por_codigo[codigo] = asignatura
-
-                    if prereq_raw:
-                        cod_prereq = prereq_raw.split('-')[0].strip()
-                        if cod_prereq:
-                            lista_relaciones_prereq.append((codigo, cod_prereq))
-
-                ids_asignaturas = [a.id for a in asignaturas_por_codigo.values()]
-                Prerequisito.objects.filter(asignatura_id__in=ids_asignaturas).delete()
-
-                count_prereqs = 0
-                for cod_asig, cod_req in lista_relaciones_prereq:
-                    asig_obj = asignaturas_por_codigo.get(cod_asig)
-                    req_obj = asignaturas_por_codigo.get(cod_req)
-
-                    if asig_obj and req_obj:
                         Prerequisito.objects.create(
                             asignatura=asig_obj,
                             prerequisito=req_obj
                         )
-                        count_prereqs += 1
-                    else:
-                        self.stdout.write(self.style.WARNING(
-                            f"No se pudo crear relacion: {cod_req} -> {cod_asig} (Alguno no existe)"
-                        ))
+                        count_rels += 1
 
-        except Exception as e:
-            raise CommandError(f"Error fatal en la transacción: {e}")
+                    except ValidationError as e:
+                        self.stdout.write(self.style.WARNING(f"    [!] Error validación ({cod_asig} <- {cod_req}): {e.messages[0]}"))
+                        errores_validacion += 1
+                    except Exception as e:
+                        self.stdout.write(self.style.ERROR(f"    [!] Error desconocido creando relación: {e}"))
+                else:
+                    falta = []
+                    if not asig_obj: falta.append(f"Curso {cod_asig}")
+                    if not req_obj: falta.append(f"Requisito {cod_req}")
+                    texto_falta = " y ".join(falta)
+                    self.stdout.write(self.style.WARNING(f"    [!] No encontrado en BD: {texto_falta}"))
 
-        self.stdout.write(self.style.SUCCESS(f"✔ Proceso finalizado. {len(asignaturas_por_codigo)} asignaturas, {count_prereqs} prerrequisitos."))
+            msg = f"    ✔ Relaciones creadas: {count_rels}"
+            if errores_validacion > 0:
+                msg += f" (Omitidas por lógica de ciclo: {errores_validacion})"
+
+            self.stdout.write(self.style.SUCCESS(msg))
