@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard | SGH-FISI{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h2 class="welcome-title">
+            Hola, <span class="text-primary">{{ user.first_name|default:user.username }}</span> 👋
+        </h2>
+        <p class="text-secondary mb-0">
+            Aquí tienes el resumen de la programación académica para
+            <strong>{{ periodo.nombre|default:"Sin Periodo Activo" }}</strong>
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <div class="period-badge">
+            <i class="bi bi-calendar-check me-2"></i>
+            Periodo Actual: <strong>{{ periodo.nombre }}</strong>
+        </div>
+    </div>
+</div>
+
+{% if not periodo %}
+    <div class="alert alert-warning shadow-sm" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        No hay un periodo académico activo en este momento. <a href="#" class="alert-link">Configurar nuevo periodo</a>.
+    </div>
+{% else %}
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-xl-3">
+            <div class="card dashboard-card h-100 border-start-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Avance Programación</span>
+                            <h3 class="mb-0 mt-1">{{ kpi.porcentaje_avance }}%</h3>
+                        </div>
+                        <div class="icon-box bg-light-primary text-primary">
+                            <i class="bi bi-bar-chart-fill"></i>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ kpi.porcentaje_avance }}%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        {{ kpi.grupos_sin_horario }} grupos pendientes
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card dashboard-card h-100 border-start-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Total Grupos</span>
+                            <h3 class="mb-0 mt-1">{{ kpi.total_grupos }}</h3>
+                        </div>
+                        <div class="icon-box bg-light-success text-success">
+                            <i class="bi bi-layers-fill"></i>
+                        </div>
+                    </div>
+                    <small class="text-success fw-semibold">
+                        <i class="bi bi-check-circle me-1"></i> Activos
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card dashboard-card h-100 border-start-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Vacantes</span>
+                            <h3 class="mb-0 mt-1">{{ kpi.total_vacantes }}</h3>
+                        </div>
+                        <div class="icon-box bg-light-warning text-warning">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center text-muted small">
+                        <span class="fw-bold text-dark me-1">{{ kpi.matriculados }}</span> matriculados
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card dashboard-card h-100 border-start-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Aulas en Uso</span>
+                            <h3 class="mb-0 mt-1">{{ kpi.aulas_activas }} <span class="text-muted fs-6">/ {{ kpi.total_aulas }}</span></h3>
+                        </div>
+                        <div class="icon-box bg-light-danger text-danger">
+                            <i class="bi bi-building-fill"></i>
+                        </div>
+                    </div>
+                    <small class="text-muted">Laboratorios y Teoría</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-0">
+                    <h5 class="mb-0 fw-bold">Accesos Rápidos</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-grid gap-3">
+                        <a href="#" class="btn btn-action-card d-flex align-items-center p-3">
+                            <div class="action-icon bg-success-subtle text-success me-3">
+                                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                            </div>
+                            <div class="text-start">
+                                <h6 class="mb-0 fw-bold text-dark">Importar desde Excel</h6>
+                                <small class="text-muted">Cargar horarios masivos</small>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+
+                        <a href="#" class="btn btn-action-card d-flex align-items-center p-3">
+                            <div class="action-icon bg-danger-subtle text-danger me-3">
+                                <i class="bi bi-file-pdf-fill"></i>
+                            </div>
+                            <div class="text-start">
+                                <h6 class="mb-0 fw-bold text-dark">Generar Reporte Oficial</h6>
+                                <small class="text-muted">Para Consejo de Facultad</small>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+
+                        <a href="#" class="btn btn-action-card d-flex align-items-center p-3">
+                            <div class="action-icon bg-warning-subtle text-warning me-3">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </div>
+                            <div class="text-start">
+                                <h6 class="mb-0 fw-bold text-dark">Revisar Conflictos</h6>
+                                <small class="text-muted">Detectar cruces de horario</small>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-transparent border-bottom pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Distribución de Vacantes por Escuela</h5>
+                    <button class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-download me-1"></i> Exportar
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="chart-container" style="position: relative; height:300px; width:100%">
+                        <canvas id="vacantesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endif %}
+
+{{ chart_data|json_script:"chart-data" }}
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{% static 'js/home.js' %}"></script>
+{% endblock %}

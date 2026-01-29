@@ -1,0 +1,91 @@
+/* home.css */
+
+/* Welcome Section */
+.welcome-title {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.period-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 50px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-sm);
+}
+
+.period-badge strong {
+    color: var(--unmsm-red);
+    margin-left: 0.5rem;
+}
+
+/* KPI Cards */
+.dashboard-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Bordes laterales de colores para diferenciar KPIs */
+.border-start-primary { border-left: 4px solid #0d6efd !important; }
+.border-start-success { border-left: 4px solid var(--success-text) !important; }
+.border-start-warning { border-left: 4px solid var(--unmsm-gold) !important; }
+.border-start-danger  { border-left: 4px solid var(--unmsm-red) !important; }
+
+/* Iconos dentro de las tarjetas */
+.icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* Backgrounds sutiles para los iconos */
+.bg-light-primary { background-color: rgba(13, 110, 253, 0.1); }
+.bg-light-success { background-color: var(--success-bg); }
+.bg-light-warning { background-color: rgba(212, 175, 55, 0.15); } /* Gold diluido */
+.bg-light-danger  { background-color: rgba(193, 39, 45, 0.1); }  /* Red diluido */
+
+/* Action Buttons (Botones grandes) */
+.btn-action-card {
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-action-card:hover {
+    background: var(--bg-hover);
+    border-color: var(--unmsm-red);
+    transform: translateX(5px);
+}
+
+.action-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+/* Colores de fondo sutiles para botones de acción */
+.bg-success-subtle { background-color: #d1e7dd; }
+.bg-danger-subtle { background-color: #f8d7da; }
+.bg-warning-subtle { background-color: #fff3cd; }

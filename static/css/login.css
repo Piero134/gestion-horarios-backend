@@ -1,0 +1,214 @@
+/* static/css/login.css */
+
+/* === 1. FONDO Y ESTRUCTURA === */
+body {
+    background-color: var(--bg-body);
+    /* Degradado sutil para dar profundidad */
+    background-image: radial-gradient(at 0% 0%, rgba(193, 39, 45, 0.03) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.08) 0px, transparent 50%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    position: relative;
+    animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Barra decorativa superior (Marca UNMSM) */
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--unmsm-red) 0%, var(--unmsm-gold) 100%);
+}
+
+/* === 2. SECCIÓN DEL LOGO === */
+.brand-section {
+    text-align: center;
+    padding: 3rem 2rem 1.5rem;
+}
+
+.brand-logo-lg {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Fondo Rojo Institucional */
+    background: linear-gradient(135deg, var(--unmsm-red) 0%, var(--unmsm-red-dark) 100%);
+
+    /* Forma cuadrada redondeada (diseño original) */
+    border-radius: 20px;
+
+    /* Sombra roja suave */
+    box-shadow: 0 4px 15px rgba(193, 39, 45, 0.3);
+}
+
+.brand-logo-lg img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    /* Sin filtros para mantener colores originales */
+    filter: none;
+    /* Sombra para separar el escudo del fondo rojo */
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.login-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* === 3. FORMULARIO E INPUTS (SOLUCIÓN TEXTO INVISIBLE) === */
+.form-section {
+    padding: 0 2.5rem 2.5rem;
+}
+
+.form-label {
+    color: var(--text-primary);
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+/* Contenedor del Input */
+.input-group {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+    background-color: var(--bg-body); /* Fondo base */
+    display: flex;
+    align-items: center;
+}
+
+/* Efecto Focus */
+.input-group:focus-within {
+    border-color: var(--unmsm-red);
+    box-shadow: 0 0 0 3px rgba(193, 39, 45, 0.1);
+    background-color: var(--bg-surface);
+}
+
+.input-group-text {
+    background-color: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding-left: 1rem;
+    padding-right: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+/* EL INPUT REAL (Aquí estaba el problema) */
+.form-control {
+    border: none;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
+    background-color: transparent !important;
+
+    /* Color de texto FORZADO (Negro suave en modo claro) */
+    color: #1e293b !important;
+    font-weight: 500;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    background-color: transparent !important;
+    color: #1e293b !important;
+}
+
+/* Modo Oscuro: Texto Blanco */
+[data-theme="dark"] .form-control {
+    color: #f1f5f9 !important;
+}
+[data-theme="dark"] .form-control:focus {
+    color: #f1f5f9 !important;
+}
+
+/* Placeholders visibles */
+.form-control::placeholder {
+    color: #64748b !important;
+    opacity: 1;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Fix para Autocompletado de Chrome (Fondo amarillo/blanco) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--bg-body) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* === 4. BOTONES Y FOOTER === */
+.btn-primary {
+    background: var(--unmsm-red);
+    border: none;
+    padding: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: var(--unmsm-red-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(193, 39, 45, 0.25);
+}
+
+.login-footer {
+    padding: 1.25rem;
+    text-align: center;
+    background-color: var(--bg-body) !important;
+    border-top: 1px solid var(--border-color) !important;
+}
+
+/* Texto del footer visible */
+.login-footer small {
+    color: #334155 !important; /* Gris oscuro legible */
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+[data-theme="dark"] .login-footer small {
+    color: #94a3b8 !important;
+}

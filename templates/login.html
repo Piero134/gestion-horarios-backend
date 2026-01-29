@@ -1,129 +1,89 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>Iniciar Sesión | SGH-FISI</title>
 
-    <style>
-        :root { --primary: #4f46e5; --bg: #f3f4f6; --text: #1f2937; }
-        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: var(--text); }
-        .auth-container { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .title { text-align: center; font-size: 1.8rem; font-weight: 700; color: var(--primary); margin-bottom: 2rem; }
-        .form-group { margin-bottom: 1.5rem; }
-        .label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
-        .input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
-        .btn:hover { background: #4338ca; }
-        .link-text { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
-        .link { color: var(--primary); text-decoration: none; font-weight: 600; }
-        .link:hover { text-decoration: underline; }
-        .msg { padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; text-align: center; font-size: 0.9rem; }
-    </style>
+    <link rel="icon" type="image/png" href="{% static 'img/unmsm-logo.png' %}">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
-    <div id="root"></div>
 
-    <script>
-        const REGISTER_URL = "{% url 'accounts:register_page' %}";
-        const LOGIN_API_URL = "{% url 'accounts:login_page' %}"; // Asegúrate de tener esta URL o cámbiala por la de tu API si es distinta
-    </script>
+    <div class="login-card">
+        <div class="brand-section">
+            <div class="brand-logo-lg">
+                <img src="{% static 'img/unmsm-logo.png' %}" alt="UNMSM Logo">
+            </div>
+            <h2 class="login-title">Bienvenido</h2>
+            <p class="login-subtitle">Ingresa tus credenciales para acceder al SGH</p>
+        </div>
 
-    {% verbatim %}
-    <script type="text/babel">
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
+        <div class="form-section">
 
-        const { useState } = React;
-
-        function Login() {
-            const [formData, setFormData] = useState({ username: '', password: '' });
-            const [message, setMessage] = useState(null);
-            const [loading, setLoading] = useState(false);
-
-            const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-            const handleSubmit = async (e) => {
-                e.preventDefault();
-                setLoading(true);
-                setMessage(null);
-
-                // NOTA: Si tu API de login tiene otra URL, cámbiala aquí manualmente o crea otra variable arriba
-                // Por defecto estoy asumiendo que haces POST a '/api/login/'
-                try {
-                    const response = await fetch('/api/auth/login/', { 
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                        body: JSON.stringify(formData)
-                    });
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        setMessage({ type: 'success', text: '¡Bienvenido! Redirigiendo...' });
-                        setTimeout(() => window.location.href = "/dashboard/", 1500); 
-                    } else {
-                        setMessage({ type: 'error', text: data.message || 'Credenciales incorrectas.' });
-                    }
-                } catch (error) {
-                    setMessage({ type: 'error', text: 'Error de conexión.' });
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            return (
-                <div className="auth-container">
-                    <h2 className="title">Iniciar Sesión</h2>
-                    
-                    {/* ESTA PARTE FUE LA QUE DIO EL ERROR AMARILLO - Ahora funciona gracias al 'verbatim' */}
-                    {message && (
-                        <div className="msg" style={{
-                            backgroundColor: message.type === 'error' ? '#fee2e2' : '#dcfce7',
-                            color: message.type === 'error' ? '#b91c1c' : '#15803d'
-                        }}>
-                            {message.text}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label className="label">Usuario</label>
-                            <input type="text" name="username" className="input" required onChange={handleChange} />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Contraseña</label>
-                            <input type="password" name="password" className="input" required onChange={handleChange} />
-                        </div>
-                        <button type="submit" className="btn" disabled={loading}>
-                            {loading ? 'Cargando...' : 'Entrar'}
-                        </button>
-                    </form>
-
-                    <div className="link-text">
-                        {/* ESTA PARTE DIO EL ERROR DE URL - Ahora usa la variable JS definida arriba */}
-                        ¿No tienes cuenta? <a href={REGISTER_URL} className="link">Regístrate aquí</a>
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger custom-alert d-flex align-items-center mb-4" role="alert">
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>
+                    <div style="font-size: 0.85rem;">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
                     </div>
                 </div>
-            );
-        }
+            {% endif %}
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<Login />);
-    </script>
-    {% endverbatim %}
-    </body>
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="{{ form.username.id_for_label }}" class="form-label text-secondary fw-semibold small">CORREO INSTITUCIONAL</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                        {{ form.username }}
+                    </div>
+                    {% if form.username.errors %}
+                        <div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="{{ form.password.id_for_label }}" class="form-label text-secondary fw-semibold small">CONTRASEÑA</label>
+                        <a href="#" class="small text-decoration-none" style="color: var(--unmsm-red);">¿Olvidaste tu contraseña?</a>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        {{ form.password }}
+                        <span class="input-group-text" id="togglePassword">
+                            <i class="bi bi-eye"></i>
+                        </span>
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                        Ingresar
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            <small class="text-muted">© 2024 Facultad de Ingeniería de Sistemas</small>
+        </div>
+    </div>
+
+    <script src="{% static 'js/login.js' %}"></script>
+</body>
 </html>
