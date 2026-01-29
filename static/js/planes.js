@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${asignatura.prerequisitos.map(prereq => `
                         <span class="prerequisito-badge" title="${prereq.nombre}">
                             <i class="bi bi-arrow-left-short"></i>
-                            ${prereq.codigo}
+                            ${prereq.codigo} - ${prereq.nombre}
                         </span>
                     `).join('')}
                 </div>
