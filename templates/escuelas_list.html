@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} | SGH-FISI{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/escuelas.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0" style="font-size: 0.8rem;">
+                <li class="breadcrumb-item"><a href="#">Inicio</a></li>
+                {% if facultad_filtro %}
+                    <li class="breadcrumb-item"><a href="{% url 'facultades_list' %}">Facultades</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ facultad_filtro.siglas }}</li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">Escuelas</li>
+                {% endif %}
+            </ol>
+        </nav>
+        <h2 class="page-title">{{ page_title }}</h2>
+        <p class="text-secondary mb-0">{{ page_subtitle }}</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        {% if facultad_filtro %}
+            <a href="{% url 'facultades_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Volver a Facultades
+            </a>
+        {% endif %}
+
+        {% if user.is_staff %}
+            <a href="#" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Nueva Escuela
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom d-flex flex-column flex-sm-row justify-content-between align-items-center py-3 gap-3">
+        <div class="d-flex align-items-center gap-2">
+            <div class="icon-box bg-light text-primary rounded-3 p-2">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <h5 class="mb-0 fw-bold text-primary-dark">
+                {% if facultad_filtro %}
+                    {{ escuelas.count }} Escuelas Registradas
+                {% else %}
+                    Catálogo General
+                {% endif %}
+            </h5>
+        </div>
+
+        <div class="search-box">
+            <i class="bi bi-search text-muted"></i>
+            <input type="text" id="searchInput" class="form-control form-control-sm ps-4" placeholder="Buscar por nombre o código...">
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="escuelasTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th scope="col" class="ps-4" style="width: 15%;">CÓDIGO</th>
+                        <th scope="col" style="width: 40%;">ESCUELA PROFESIONAL</th>
+                        {% if not facultad_filtro %}
+                        <th scope="col" style="width: 30%;">FACULTAD</th>
+                        {% endif %}
+                        <th scope="col" class="text-end pe-4">ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for escuela in escuelas %}
+                    <tr class="{% if user.escuela == escuela %}table-active-row{% endif %}">
+                        <td class="ps-4">
+                            <span class="code-badge">
+                                {{ escuela.codigo }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="school-bullet me-3"></div>
+                                <div>
+                                    <span class="fw-semibold text-dark d-block">{{ escuela.nombre }}</span>
+                                    {% if user.escuela == escuela %}
+                                        <small class="text-success fst-italic" style="font-size: 0.7rem;">
+                                            <i class="bi bi-person-badge-fill me-1"></i>Tu Escuela
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        {% if not facultad_filtro %}
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-secondary border">
+                                    {{ escuela.facultad.siglas }}
+                                </span>
+                                <small class="text-muted d-none d-lg-inline text-truncate" style="max-width: 200px;">
+                                    {{ escuela.facultad.nombre }}
+                                </small>
+                            </div>
+                        </td>
+                        {% endif %}
+                        <td class="text-end pe-4">
+                            <div class="btn-group">
+                                <a href="{% url 'planes_list' %}?escuela={{ escuela.id }}" class="btn btn-sm btn-icon btn-outline-secondary" title="Ver Planes de Estudio">
+                                    <i class="bi bi-journal-text"></i>
+                                </a>
+                                {% if user.is_staff %}
+                                <button type="button" class="btn btn-sm btn-icon btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if facultad_filtro %}3{% else %}4{% endif %}" class="text-center py-5 text-muted">
+                            <div class="empty-state">
+                                <i class="bi bi-mortarboard display-4 mb-3 d-block opacity-25"></i>
+                                <p class="mb-0">No se encontraron escuelas registradas.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent py-3">
+        <small class="text-muted">Total de registros: {{ escuelas.count }}</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/escuelas.js' %}"></script>
+{% endblock %}

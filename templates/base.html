@@ -107,7 +107,7 @@
         {% endif %}
 
         <div class="menu-section">
-            <a href="#" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <a href="{% url 'home' %}" class="menu-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                 <i class="bi bi-grid-fill"></i>
                 <span>Dashboard</span>
             </a>
@@ -122,20 +122,20 @@
             </a>
 
             {% if user.rol.name == 'Vicedecano Académico' or user.is_staff %}
-            <a href="" class="menu-item {% if 'facultades' in request.path %}active{% endif %}">
+            <a href="{% url 'facultades_list' %}" class="menu-item {% if 'facultades' in request.path %}active{% endif %}">
                 <i class="bi bi-building"></i>
                 <span>Facultades</span>
             </a>
             {% endif %}
 
             {% if user.rol.name == 'Vicedecano Académico' or user.rol.name == 'Director de Escuela' or user.is_staff %}
-            <a href="" class="menu-item {% if 'escuelas' in request.path %}active{% endif %}">
+            <a href="{% url 'escuelas_list' %}" class="menu-item {% if 'escuelas' in request.path %}active{% endif %}">
                 <i class="bi bi-mortarboard"></i>
                 <span>Escuelas</span>
             </a>
             {% endif %}
 
-            <a href="" class="menu-item {% if 'planes' in request.path %}active{% endif %}">
+            <a href="{% url 'planes_list' %}" class="menu-item {% if 'planes' in request.path %}active{% endif %}">
                 <i class="bi bi-journal-text"></i>
                 <span>Planes de Estudio</span>
             </a>

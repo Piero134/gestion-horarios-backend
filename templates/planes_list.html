@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} | SGH-FISI{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/planes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div>
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0" style="font-size: 0.8rem;">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Inicio</a></li>
+                {% if escuela_preseleccionada %}
+                    <li class="breadcrumb-item"><a href="{% url 'escuelas_list' %}">Escuelas</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'escuelas_list' %}?facultad={{ facultad_preseleccionada.id }}">{{ facultad_preseleccionada.siglas }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ escuela_preseleccionada.nombre }}</li>
+                {% else %}
+                    <li class="breadcrumb-item active" aria-current="page">Planes de Estudio</li>
+                {% endif %}
+            </ol>
+        </nav>
+        <h2 class="page-title">{{ page_title }}</h2>
+        <p class="text-secondary mb-0">{{ page_subtitle }}</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        {% if user.is_staff %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#nuevoPlanModal">
+                <i class="bi bi-plus-lg me-2"></i>Nuevo Plan
+            </button>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="filtroFacultad" class="form-label fw-semibold">
+                    <i class="bi bi-building me-2 text-primary"></i>Facultad
+                </label>
+                <select class="form-select" id="filtroFacultad">
+                    <option value="">Todas las facultades</option>
+                    {% for facultad in facultades %}
+                        <option value="{{ facultad.id }}" {% if facultad_preseleccionada and facultad.id == facultad_preseleccionada.id %}selected{% endif %}>
+                            {{ facultad.siglas }} - {{ facultad.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="filtroEscuela" class="form-label fw-semibold">
+                    <i class="bi bi-mortarboard-fill me-2 text-primary"></i>Escuela
+                </label>
+                <select class="form-select" id="filtroEscuela" disabled>
+                    <option value="">Seleccione una facultad primero</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="filtroPlan" class="form-label fw-semibold">
+                    <i class="bi bi-journal-text me-2 text-primary"></i>Plan de Estudios
+                </label>
+                <select class="form-select" id="filtroPlan" disabled>
+                    <option value="">Seleccione una escuela primero</option>
+                </select>
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-secondary w-100" id="btnLimpiarFiltros">
+                    <i class="bi bi-x-circle me-2"></i>Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vista de Plan Seleccionado -->
+<div id="planVisualizacion" class="d-none">
+    <!-- Header del Plan -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="plan-icon">
+                            <i class="bi bi-journal-bookmark-fill"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-1 fw-bold" id="planNombre">-</h3>
+                            <div class="d-flex align-items-center gap-3 text-secondary">
+                                <span id="planEscuela">
+                                    <i class="bi bi-mortarboard me-1"></i>-
+                                </span>
+                                <span id="planFacultad">
+                                    <i class="bi bi-building me-1"></i>-
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="btnDescargarPDF">
+                        <i class="bi bi-file-pdf me-2"></i>Descargar PDF
+                    </button>
+                    {% if user.is_staff %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnEditarPlan">
+                            <i class="bi bi-pencil me-2"></i>Editar
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Estadísticas del Plan -->
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-primary-subtle">
+                            <i class="bi bi-book text-primary"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Asignaturas</div>
+                            <div class="stat-value" id="statTotalAsignaturas">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success-subtle">
+                            <i class="bi bi-star text-success"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Créditos</div>
+                            <div class="stat-value" id="statTotalCreditos">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-info-subtle">
+                            <i class="bi bi-layers text-info"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Ciclos</div>
+                            <div class="stat-value" id="statTotalCiclos">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-warning-subtle">
+                            <i class="bi bi-clock text-warning"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Duración</div>
+                            <div class="stat-value" id="statDuracion">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asignaturas por Ciclo -->
+    <div id="ciclosContainer"></div>
+</div>
+
+<!-- Vista Vacía (cuando no hay plan seleccionado) -->
+<div id="emptyState" {% if plan_seleccionado %}class="d-none"{% endif %}>
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="empty-state-icon mb-4">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <h4 class="mb-3">Selecciona un Plan de Estudios</h4>
+            <p class="text-secondary mb-4">
+                Utiliza los filtros superiores para seleccionar una facultad, escuela y plan de estudios.<br>
+                Podrás visualizar toda la malla curricular organizada por ciclos.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <div class="feature-hint">
+                    <i class="bi bi-funnel text-primary"></i>
+                    <span>Filtrado dinámico</span>
+                </div>
+                <div class="feature-hint">
+                    <i class="bi bi-eye text-primary"></i>
+                    <span>Visualización detallada</span>
+                </div>
+                <div class="feature-hint">
+                    <i class="bi bi-file-pdf text-primary"></i>
+                    <span>Exportación a PDF</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-3">Cargando plan de estudios...</p>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Pasar datos del contexto Django a JavaScript
+        const CONTEXT_DATA = {
+            escuelaPreseleccionada: {% if escuela_preseleccionada %}{{ escuela_preseleccionada.id }}{% else %}null{% endif %},
+            facultadPreseleccionada: {% if facultad_preseleccionada %}{{ facultad_preseleccionada.id }}{% else %}null{% endif %},
+            planSeleccionado: {% if plan_seleccionado %}{{ plan_seleccionado.id }}{% else %}null{% endif %}
+        };
+    </script>
+    <script src="{% static 'js/planes.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Facultades | SGH-FISI{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/facultades.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="page-title">Facultades</h2>
+        <p class="text-secondary mb-0">Gestión y visualización de unidades académicas</p>
+    </div>
+    {% if user.is_staff %}
+    <a href="#" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nueva Facultad
+    </a>
+    {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 fw-bold text-primary-dark">Listado Oficial</h5>
+
+        <div class="search-box">
+            <i class="bi bi-search text-muted"></i>
+            <input type="text" id="searchInput" class="form-control form-control-sm ps-4" placeholder="Buscar facultad...">
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="facultadesTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th scope="col" class="ps-4" style="width: 10%;">CÓDIGO</th>
+                        <th scope="col" style="width: 15%;">SIGLAS</th>
+                        <th scope="col" style="width: 50%;">NOMBRE</th>
+                        <th scope="col" class="text-end pe-4">ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for facultad in facultades %}
+                    <tr class="{% if user.facultad == facultad %}table-active-row{% endif %}">
+                        <td class="ps-4">
+                            <span class="badge bg-light text-dark border fw-bold">
+                                {{ facultad.codigo|stringformat:"02d" }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="fw-bold text-primary">{{ facultad.siglas }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-icon me-3">
+                                    {{ facultad.nombre.0 }}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-semibold text-dark">Facultad de {{ facultad.nombre }}</h6>
+                                    {% if user.facultad == facultad %}
+                                        <small class="text-success fst-italic"><i class="bi bi-check-circle-fill me-1"></i>Tu Facultad</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group">
+                                <a href="{% url 'escuelas_por_facultad' facultad.id %}" class="btn btn-sm btn-icon btn-outline-secondary" title="Ver Escuelas">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if user.is_staff %}
+                                <button type="button" class="btn btn-sm btn-icon btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="bi bi-folder-x display-4 d-block mb-3"></i>
+                            No hay facultades registradas en el sistema.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent py-3">
+        <small class="text-muted">Mostrando {{ facultades.count }} registro(s)</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/facultades.js' %}"></script>
+{% endblock %}
