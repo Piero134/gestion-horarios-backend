@@ -40,8 +40,6 @@ LOGOUT_REDIRECT_URL = 'login'
 
 INSTALLED_APPS = [
     'accounts',
-    'rest_framework',
-    'rest_framework_simplejwt',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
