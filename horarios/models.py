@@ -39,7 +39,9 @@ class Horario(models.Model):
     hora_fin = models.TimeField()
     aula = models.ForeignKey(
         'aulas.Aula',
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='horarios'
     )
 
@@ -49,7 +51,8 @@ class Horario(models.Model):
         ordering = ['dia', 'hora_inicio']
 
     def __str__(self):
-        return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({self.aula.nombre})"
+        nombre_aula = self.aula.nombre if self.aula else "Sin Aula"
+        return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({nombre_aula})"
 
     def clean(self):
         if not self.hora_inicio or not self.hora_fin:
@@ -68,13 +71,22 @@ class Horario(models.Model):
         except ObjectDoesNotExist:
              return
 
-        cruces_aula = Horario.objects.filter(
-            aula=self.aula,
-            dia=self.dia,
-            grupo__periodo=periodo,
-            hora_inicio__lt=self.hora_fin,
-            hora_fin__gt=self.hora_inicio
-        )
+        if self.aula:
+            cruces_aula = Horario.objects.filter(
+                aula=self.aula,
+                dia=self.dia,
+                grupo__periodo=periodo,
+                hora_inicio__lt=self.hora_fin,
+                hora_fin__gt=self.hora_inicio
+            )
+
+            if self.pk:
+                cruces_aula = cruces_aula.exclude(pk=self.pk)
+
+            if cruces_aula.exists():
+                raise ValidationError(
+                    f"Conflicto de aula: El aula {self.aula} ya está ocupada en este rango."
+                )
 
         if self.pk:
             cruces_aula = cruces_aula.exclude(pk=self.pk)
