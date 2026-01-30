@@ -77,7 +77,7 @@ class GrupoAdmin(admin.ModelAdmin):
     )
 
     search_fields = (
-        'nombre',
+        'numero',
         'asignatura__codigo',
         'asignatura__nombre',
         'docente__nombre'

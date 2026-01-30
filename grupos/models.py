@@ -21,8 +21,7 @@ class GrupoManager(models.Manager):
         return self.get_queryset().actuales()
 
 class Grupo(models.Model):
-    nombre = models.CharField(max_length=20)
-
+    numero = models.PositiveSmallIntegerField()
     asignatura = models.ForeignKey(
         Asignatura, on_delete=models.CASCADE, related_name='grupos'
     )
@@ -41,12 +40,12 @@ class Grupo(models.Model):
     objects = GrupoManager()
 
     class Meta:
-        unique_together = ('nombre', 'asignatura', 'periodo')
+        unique_together = ('numero', 'asignatura', 'periodo')
         verbose_name = "Grupo"
-        ordering = ['periodo', 'asignatura', 'nombre']
+        ordering = ['periodo', 'asignatura', 'numero']
 
     def __str__(self):
-        return f"({self.periodo}) {self.nombre} - {self.asignatura}"
+        return f"({self.periodo}) G-{self.numero} {self.asignatura.nombre}"
 
     @property
     def total_vacantes(self):
