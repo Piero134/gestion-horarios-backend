@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from asignaturas.models import Asignatura, Equivalencia # Importamos Equivalencia para validar
 from periodos.models import PeriodoAcademico
 from datetime import datetime
@@ -112,9 +112,13 @@ class DistribucionVacantes(models.Model):
         unique_together = ('grupo', 'asignatura')
 
     def clean(self):
-        base = self.grupo.asignatura
+        try:
+            if not self.grupo_id:
+                return
+            base = self.grupo.asignatura
+        except ObjectDoesNotExist:
+            return
 
-        # Permitir siempre la asignatura base
         if self.asignatura == base:
             return
 
@@ -127,7 +131,6 @@ class DistribucionVacantes(models.Model):
             raise ValidationError(
                 f"{self.asignatura} no es equivalente a {base}"
             )
-
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)

@@ -1,6 +1,7 @@
 from django.db import models
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime
+from grupos.models import Grupo
 
 class Horario(models.Model):
     # Dias de la semana
@@ -51,30 +52,37 @@ class Horario(models.Model):
         return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({self.aula.nombre})"
 
     def clean(self):
-        if self.hora_inicio >= self.hora_fin:
-            raise ValidationError(
-                "La hora de inicio debe ser anterior a la hora de fin."
-            )
+        if not self.hora_inicio or not self.hora_fin:
+            return
 
-        # Verificar conflictos de aula
-        cruces = Horario.objects.filter(
+        if self.hora_inicio >= self.hora_fin:
+            raise ValidationError("La hora de inicio debe ser anterior a la hora de fin.")
+
+        try:
+            if not self.grupo_id:
+                return
+
+            grupo = self.grupo
+            periodo = grupo.periodo
+            asignatura = grupo.asignatura
+        except ObjectDoesNotExist:
+             return
+
+        cruces_aula = Horario.objects.filter(
             aula=self.aula,
             dia=self.dia,
-            grupo__periodo=self.grupo.periodo,
+            grupo__periodo=periodo,
             hora_inicio__lt=self.hora_fin,
             hora_fin__gt=self.hora_inicio
         )
 
         if self.pk:
-            cruces = cruces.exclude(pk=self.pk)
+            cruces_aula = cruces_aula.exclude(pk=self.pk)
 
-        if cruces.exists():
+        if cruces_aula.exists():
             raise ValidationError(
-                f"Conflicto de horario: El aula {self.aula} "
-                "ya está ocupada en este rango."
+                f"Conflicto de aula: El aula {self.aula} ya está ocupada en este rango."
             )
-
-        asignatura = self.grupo.asignatura
 
         horas_requeridas = {
             'T': asignatura.horas_teoria,
@@ -82,29 +90,36 @@ class Horario(models.Model):
             'L': asignatura.horas_laboratorio,
         }
 
-        # Duración del horario actual
-        inicio = datetime.combine(datetime.today(), self.hora_inicio)
-        fin = datetime.combine(datetime.today(), self.hora_fin)
+        fecha_base = datetime.now().date()
+
+        inicio = datetime.combine(fecha_base, self.hora_inicio)
+        fin = datetime.combine(fecha_base, self.hora_fin)
         duracion_actual = (fin - inicio).seconds / 3600
 
-        # Sumamos las horas ya existentes del grupo
         total_por_tipo = {'T': 0, 'P': 0, 'L': 0}
 
-        horarios = self.grupo.horarios.all()
+        # Traemos horarios excluyendo el actual
+        horarios = grupo.horarios.all()
         if self.pk:
             horarios = horarios.exclude(pk=self.pk)
 
         for h in horarios:
-            hi = datetime.combine(datetime.today(), h.hora_inicio)
-            hf = datetime.combine(datetime.today(), h.hora_fin)
-            total_por_tipo[h.tipo] += (hf - hi).seconds / 3600
+            if not h.hora_inicio or not h.hora_fin:
+                continue
 
-        # Sumamos el horario actual
-        total_por_tipo[self.tipo] += duracion_actual
+            hi = datetime.combine(fecha_base, h.hora_inicio)
+            hf = datetime.combine(fecha_base, h.hora_fin)
 
-        # Validamos que no se exceda
-        if total_por_tipo[self.tipo] > horas_requeridas[self.tipo]:
+            if h.tipo in total_por_tipo:
+                total_por_tipo[h.tipo] += (hf - hi).seconds / 3600
+
+        if self.tipo in total_por_tipo:
+            total_por_tipo[self.tipo] += duracion_actual
+
+        limite = horas_requeridas.get(self.tipo, 0)
+
+        if round(total_por_tipo[self.tipo], 2) > limite:
             raise ValidationError(
-                f"Las horas de {self.get_tipo_display()} exceden lo permitido "
-                f"para la asignatura ({horas_requeridas[self.tipo]} horas)."
+                f"Las horas de {self.get_tipo_display()} ({round(total_por_tipo[self.tipo], 2)}) "
+                f"exceden lo permitido para la asignatura ({limite} horas)."
             )
