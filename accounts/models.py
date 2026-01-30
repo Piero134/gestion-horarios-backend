@@ -1,15 +1,41 @@
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import BaseUserManager
+
+class UsuarioManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('El usuario debe tener un correo electrónico')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser debe tener is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser debe tener is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
 
 class Usuario(AbstractUser):
+    objects = UsuarioManager()
+
     email = models.EmailField('correo electrónico', unique=True)
 
     rol = models.ForeignKey(
         Group,
         on_delete=models.PROTECT,
         verbose_name="Rol Institucional",
-        help_text="Seleccione el grupo de permisos"
+        help_text="Seleccione el grupo de permisos",
+        null=True,
+        blank=True
     )
 
     facultad = models.ForeignKey('facultades.Facultad', on_delete=models.PROTECT)
@@ -22,12 +48,21 @@ class Usuario(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
+
     REQUIRED_FIELDS = ['facultad_id']
 
     def clean(self):
         super().clean()
 
-        # concordancia Facultad-Escuela
+        if self.is_superuser:
+            return
+
+        if not self.rol:
+             raise ValidationError({'rol': "El rol es obligatorio."})
+
+        if not self.facultad:
+             raise ValidationError({'facultad': "La facultad es obligatoria."})
+
         if self.escuela and self.escuela.facultad != self.facultad:
             raise ValidationError({
                 'escuela': "La escuela seleccionada no pertenece a la facultad de este usuario."
