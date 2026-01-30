@@ -3,10 +3,22 @@ from django.core.exceptions import ValidationError
 from asignaturas.models import Asignatura, Equivalencia # Importamos Equivalencia para validar
 from periodos.models import PeriodoAcademico
 from datetime import datetime
+from django.utils import timezone
+
+class GrupoQuerySet(models.QuerySet):
+    def actuales(self):
+        hoy = timezone.now().date()
+        return self.filter(
+            periodo__fecha_inicio__lte=hoy,
+            periodo__fecha_fin__gte=hoy
+        )
 
 class GrupoManager(models.Manager):
+    def get_queryset(self):
+        return GrupoQuerySet(self.model, using=self._db)
+
     def actuales(self):
-        return self.filter(periodo__activo=True)
+        return self.get_queryset().actuales()
 
 class Grupo(models.Model):
     nombre = models.CharField(max_length=20)
