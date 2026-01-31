@@ -38,7 +38,7 @@ def home(request):
         grupos = Grupo.objects.filter(periodo = periodo_actual,
             asignatura__plan__escuela__facultad_id=1
         ).select_related('asignatura__plan')\
-        .only('nombre', 'asignatura__nombre', 'asignatura__plan__nombre')
+        .only('numero', 'asignatura__nombre', 'asignatura__plan__nombre')
         total_grupos = grupos.count()
 
         # Grupos sin horario asignado
