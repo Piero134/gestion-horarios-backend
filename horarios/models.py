@@ -88,14 +88,6 @@ class Horario(models.Model):
                     f"Conflicto de aula: El aula {self.aula} ya está ocupada en este rango."
                 )
 
-        if self.pk:
-            cruces_aula = cruces_aula.exclude(pk=self.pk)
-
-        if cruces_aula.exists():
-            raise ValidationError(
-                f"Conflicto de aula: El aula {self.aula} ya está ocupada en este rango."
-            )
-
         horas_requeridas = {
             'T': asignatura.horas_teoria,
             'P': asignatura.horas_practica,
