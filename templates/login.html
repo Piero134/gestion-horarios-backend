@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {% load static %}
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
@@ -87,3 +88,134 @@
     <script src="{% static 'js/login.js' %}"></script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root { --primary: #4f46e5; --bg: #f3f4f6; --text: #1f2937; }
+        body { font-family: sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; color: var(--text); }
+        .auth-container { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .title { text-align: center; font-size: 1.8rem; font-weight: 700; color: var(--primary); margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem; }
+        .input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .btn:hover { background: #4338ca; }
+        .link-text { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
+        .link { color: var(--primary); text-decoration: none; font-weight: 600; }
+        .link:hover { text-decoration: underline; }
+        .msg { padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; text-align: center; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+        const REGISTER_URL = "{% url 'accounts:register_page' %}";
+        const LOGIN_API_URL = "{% url 'accounts:login_page' %}"; // Asegúrate de tener esta URL o cámbiala por la de tu API si es distinta
+    </script>
+
+    {% verbatim %}
+    <script type="text/babel">
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const { useState } = React;
+
+        function Login() {
+            const [formData, setFormData] = useState({ username: '', password: '' });
+            const [message, setMessage] = useState(null);
+            const [loading, setLoading] = useState(false);
+
+            const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setMessage(null);
+
+                // NOTA: Si tu API de login tiene otra URL, cámbiala aquí manualmente o crea otra variable arriba
+                // Por defecto estoy asumiendo que haces POST a '/api/login/'
+                try {
+                    const response = await fetch('/api/auth/login/', { 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                        body: JSON.stringify(formData)
+                    });
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        setMessage({ type: 'success', text: '¡Bienvenido! Redirigiendo...' });
+                        setTimeout(() => window.location.href = "/dashboard/", 1500); 
+                    } else {
+                        setMessage({ type: 'error', text: data.message || 'Credenciales incorrectas.' });
+                    }
+                } catch (error) {
+                    setMessage({ type: 'error', text: 'Error de conexión.' });
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="auth-container">
+                    <h2 className="title">Iniciar Sesión</h2>
+                    
+                    {/* ESTA PARTE FUE LA QUE DIO EL ERROR AMARILLO - Ahora funciona gracias al 'verbatim' */}
+                    {message && (
+                        <div className="msg" style={{
+                            backgroundColor: message.type === 'error' ? '#fee2e2' : '#dcfce7',
+                            color: message.type === 'error' ? '#b91c1c' : '#15803d'
+                        }}>
+                            {message.text}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label className="label">Usuario</label>
+                            <input type="text" name="username" className="input" required onChange={handleChange} />
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Contraseña</label>
+                            <input type="password" name="password" className="input" required onChange={handleChange} />
+                        </div>
+                        <button type="submit" className="btn" disabled={loading}>
+                            {loading ? 'Cargando...' : 'Entrar'}
+                        </button>
+                    </form>
+
+                    <div className="link-text">
+                        {/* ESTA PARTE DIO EL ERROR DE URL - Ahora usa la variable JS definida arriba */}
+                        ¿No tienes cuenta? <a href={REGISTER_URL} className="link">Regístrate aquí</a>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<Login />);
+    </script>
+    {% endverbatim %}
+    </body>
+</html>
+>>>>>>> 71224ecb86f8f8c385092b501f3124b34fd8718b
