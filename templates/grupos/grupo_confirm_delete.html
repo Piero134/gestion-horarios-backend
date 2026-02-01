@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Grupo{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}">Grupos</a></li>
+            <li class="breadcrumb-item active">Eliminar Grupo</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <strong>Confirmar Eliminación</strong>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>¿Está seguro que desea eliminar este grupo?</strong>
+                    <p class="mb-0 mt-2 small">Esta acción no se puede deshacer y eliminará:</p>
+                    <ul class="small mb-0 mt-1">
+                        <li>Todos los horarios asociados</li>
+                        <li>Toda la distribución de vacantes</li>
+                        <li>Información de matrículas (si existen)</li>
+                    </ul>
+                </div>
+
+                <div class="p-3 mb-3" style="background: var(--bg-hover); border-radius: 8px;">
+                    <h5 class="mb-3" style="font-family: 'Sora', sans-serif;">
+                        Grupo {{ grupo.nombre }}
+                    </h5>
+
+                    <div class="mb-2">
+                        <small class="text-muted">Asignatura:</small><br>
+                        <strong class="text-danger">[{{ grupo.asignatura.codigo }}]</strong> {{ grupo.asignatura.nombre }}
+                    </div>
+
+                    <div class="mb-2">
+                        <small class="text-muted">Período:</small><br>
+                        {{ grupo.periodo.nombre }}
+                    </div>
+
+                    <div class="mb-2">
+                        <small class="text-muted">Escuela:</small><br>
+                        {{ grupo.asignatura.plan.escuela.nombre }}
+                    </div>
+
+                    {% if grupo.docente %}
+                    <div class="mb-2">
+                        <small class="text-muted">Docente:</small><br>
+                        {{ grupo.docente }}
+                    </div>
+                    {% endif %}
+
+                    <div>
+                        <small class="text-muted">Vacantes totales:</small><br>
+                        <strong>{{ grupo.total_vacantes }}</strong>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between gap-2">
+                        <a href="{% url 'grupos_list' %}" class="btn btn-outline-secondary flex-fill">
+                            <i class="bi bi-x-circle me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger flex-fill">
+                            <i class="bi bi-trash me-2"></i>Sí, Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

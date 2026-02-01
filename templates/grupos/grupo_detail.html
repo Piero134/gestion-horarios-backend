@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle Grupo {{ grupo.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .info-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        color: var(--text-primary);
+        font-weight: 500;
+    }
+
+    .schedule-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .schedule-table th {
+        background: var(--bg-hover);
+        padding: 0.75rem;
+        font-family: 'Sora', sans-serif;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .schedule-table td {
+        padding: 0.875rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .tipo-badge {
+        display: inline-block;
+        padding: 0.25rem 0.625rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .tipo-teoria { background: #dbeafe; color: #1e40af; }
+    .tipo-practica { background: #dcfce7; color: #166534; }
+    .tipo-laboratorio { background: #fef3c7; color: #92400e; }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-surface) 100%);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--unmsm-red);
+        font-family: 'Sora', sans-serif;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}">Grupos</a></li>
+            <li class="breadcrumb-item active">Grupo {{ grupo.nombre }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h2 style="font-family: 'Sora', sans-serif; font-weight: 700;">
+                <i class="bi bi-people text-danger me-2"></i>
+                Grupo {{ grupo.numero }}
+            </h2>
+            <p class="text-muted mb-0">
+                <strong class="text-danger">[{{ grupo.asignatura.codigo }}]</strong> {{ grupo.asignatura.nombre }}
+            </p>
+        </div>
+
+        <div class="btn-group">
+            <a href="{% url 'grupo_edit' grupo.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            <a href="{% url 'grupo_delete' grupo.pk %}" class="btn btn-outline-danger">
+                <i class="bi bi-trash me-1"></i>Eliminar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información General -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Información General
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="info-label">Período Académico</div>
+                    <div class="info-value">{{ grupo.periodo.nombre }}</div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="info-label">Escuela</div>
+                    <div class="info-value">{{ grupo.asignatura.plan.escuela.nombre }}</div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="info-label">Plan de Estudios</div>
+                    <div class="info-value">{{ grupo.asignatura.plan.nombre }}</div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="info-label">Tipo de Asignatura</div>
+                    <div class="info-value">
+                        <span class="badge bg-secondary">{{ grupo.asignatura.get_tipo_display }}</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="info-label">Docente</div>
+                    <div class="info-value">
+                        {% if grupo.docente %}
+                            <i class="bi bi-person-check text-success me-1"></i>
+                            {{ grupo.docente }}
+                        {% else %}
+                            <span class="text-warning">
+                                <i class="bi bi-exclamation-triangle me-1"></i>No asignado
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="info-label">Carga Horaria</div>
+                    <div class="info-value">
+                        {% if grupo.asignatura.horas_teoria %}
+                            <i class="bi bi-book me-1"></i>{{ grupo.asignatura.horas_teoria }}h Teoría<br>
+                        {% endif %}
+                        {% if grupo.asignatura.horas_practica %}
+                            <i class="bi bi-tools me-1"></i>{{ grupo.asignatura.horas_practica }}h Práctica<br>
+                        {% endif %}
+                        {% if grupo.asignatura.horas_laboratorio %}
+                            <i class="bi bi-cpu me-1"></i>{{ grupo.asignatura.horas_laboratorio }}h Laboratorio
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Horarios -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-calendar-week me-2"></i>Horario de Sesiones
+            </div>
+            <div class="card-body">
+                {% if grupo.horarios.exists %}
+                <div class="table-responsive">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Día</th>
+                                <th>Hora</th>
+                                <th>Aula</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for horario in grupo.horarios.all %}
+                            <tr>
+                                <td>
+                                    <span class="tipo-badge tipo-{{ horario.tipo|lower }}">
+                                        {{ horario.get_tipo_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ horario.get_dia_display }}</strong>
+                                </td>
+                                <td>
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ horario.hora_inicio|time:"H:i" }} - {{ horario.hora_fin|time:"H:i" }}
+                                </td>
+                                <td>
+                                    {% if grupo.aula %}
+                                <th>Aula</th>
+                                {% else %}
+                                <th>Aula (No asignada)</th>
+                                {% endif %}
+                                    <i class="bi bi-door-open me-1"></i>
+                                    {{ horario.aula.nombre }}
+                                    {% if horario.aula.es_laboratorio %}
+                                        <span class="badge bg-warning text-dark ms-1">LAB</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-calendar-x" style="font-size: 2.5rem; color: var(--text-muted);"></i>
+                    <p class="text-muted mt-2">No hay horarios registrados</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Distribución de Vacantes -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-person-plus me-2"></i>Distribución de Vacantes
+    </div>
+    <div class="card-body">
+        {% if grupo.vacantes.exists %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Asignatura / Plan</th>
+                        <th>Escuela</th>
+                        <th class="text-center">Vacantes</th>
+                        <th class="text-center">Matriculados</th>
+                        <th class="text-center">Disponibles</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vacante in grupo.vacantes.all %}
+                    <tr>
+                        <td>
+                            <strong>[{{ vacante.asignatura.codigo }}]</strong> {{ vacante.asignatura.nombre }}
+                            <br>
+                            <small class="text-muted">{{ vacante.asignatura.plan.nombre }}</small>
+                        </td>
+                        <td>{{ vacante.asignatura.plan.escuela.nombre }}</td>
+                        <td class="text-center"><strong>{{ vacante.cantidad }}</strong></td>
+                        <td class="text-center">
+                            <span class="badge bg-info">{{ vacante.matriculados }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-success">{{ vacante.cantidad|add:"-vacante.matriculados" }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="table-secondary">
+                        <td colspan="2"><strong>TOTAL</strong></td>
+                        <td class="text-center"><strong>{{ grupo.total_vacantes }}</strong></td>
+                        <td class="text-center">
+                            <strong>{% widthratio grupo.vacantes.all|length 1 1 %}</strong>
+                        </td>
+                        <td class="text-center">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-inbox" style="font-size: 2.5rem; color: var(--text-muted);"></i>
+            <p class="text-muted mt-2">No hay distribución de vacantes configurada</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

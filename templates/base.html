@@ -149,7 +149,7 @@
         <div class="menu-section">
             <div class="menu-section-title">Programación</div>
 
-            <a href="" class="menu-item {% if 'grupos' in request.path %}active{% endif %}">
+            <a href="{% url 'grupos_list' %}" class="menu-item {% if 'grupos' in request.path %}active{% endif %}">
                 <i class="bi bi-people"></i>
                 <span>Grupos</span>
                 {% if grupos_pendientes %}
