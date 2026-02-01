@@ -13,9 +13,19 @@ class GrupoQuerySet(models.QuerySet):
             periodo__fecha_fin__gte=hoy
         )
 
+    def para_usuario(self, user):
+        if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
+            return self.filter(asignatura__plan__escuela__facultad=user.facultad)
+        if hasattr(user, 'escuela') and user.escuela:
+            return self.filter(asignatura__plan__escuela=user.escuela)
+        return self.none()
+
 class GrupoManager(models.Manager):
     def get_queryset(self):
         return GrupoQuerySet(self.model, using=self._db)
+
+    def para_usuario(self, user):
+        return self.get_queryset().para_usuario(user)
 
     def actuales(self):
         return self.get_queryset().actuales()
