@@ -127,3 +127,9 @@ STATIC_URL = 'static/'
 if not DEBUG:    # Esto asegura que funcione bien en producción
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# AGREGA ESTO: Es la carpeta donde Render guardará los archivos
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Configuración para que WhiteNoise sirva los archivos comprimidos y rápidos
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
