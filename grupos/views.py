@@ -14,6 +14,8 @@ from periodos.models import PeriodoAcademico
 from escuelas.models import Escuela
 from planes.models import PlanEstudios
 from django.db.models.functions import Coalesce
+from django.http import HttpResponse, Http404
+from .exporter import generar_reporte_grupos
 
 @login_required
 def grupos_list(request):
@@ -180,7 +182,7 @@ def grupo_edit(request, pk):
     grupo = get_object_or_404(Grupo.objects.para_usuario(request.user), pk=pk)
 
     user = request.user
-    
+
     if request.method == 'POST':
         form = GrupoForm(request.POST, instance=grupo, user=user)
 
@@ -303,3 +305,20 @@ def grupo_detail(request, pk):
 
     return render(request, 'grupos/grupo_detail.html', context)
 
+@login_required
+def grupo_export_excel(request):
+    periodo_id = request.GET.get('periodo_id')
+
+    archivo_excel, nombre_archivo = generar_reporte_grupos(periodo_id=periodo_id, user=request.user)
+
+    if not archivo_excel:
+        raise Http404("No se encontraron datos para generar el reporte o no tiene permisos.")
+
+    response = HttpResponse(
+        archivo_excel,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+
+    return response

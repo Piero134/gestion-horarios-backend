@@ -9,4 +9,5 @@ urlpatterns = [
     path('<int:pk>/editar/', views.grupo_edit, name='grupo_edit'),
     path('<int:pk>/eliminar/', views.grupo_delete, name='grupo_delete'),
 
+    path('export-excel/', views.grupo_export_excel, name='grupo_export_excel'),
 ]

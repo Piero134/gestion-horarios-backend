@@ -32,6 +32,8 @@ ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'accounts.Usuario'
 
+LOGIN_URL = 'login'
+
 LOGIN_REDIRECT_URL = 'home'
 
 LOGOUT_REDIRECT_URL = 'login'
@@ -40,8 +42,6 @@ LOGOUT_REDIRECT_URL = 'login'
 
 INSTALLED_APPS = [
     'accounts',
-    'rest_framework',
-    'rest_framework_simplejwt',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
