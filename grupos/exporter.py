@@ -155,6 +155,9 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
                         ws.cell(row=current_row, column=4, value=h.hora_inicio.strftime('%H:%M'))
                         # Col 5: Fin
                         ws.cell(row=current_row, column=5, value=h.hora_fin.strftime('%H:%M'))
+                        # Col 6: Docente
+                        docente_nombre = str(h.docente) if h.docente else "POR ASIGNAR"
+                        ws.cell(row=current_row, column=6, value=docente_nombre)
                         # Col 7: Aula
                         aula_nombre = h.aula.nombre if h.aula else "-"
                         ws.cell(row=current_row, column=7, value=aula_nombre)
@@ -162,10 +165,6 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
                         # Rellenar con guiones si no hay horario
                         for c_idx in range(2, 6): ws.cell(row=current_row, column=c_idx, value="-")
                         ws.cell(row=current_row, column=7, value="-")
-
-                    # Col 6: Docente
-                    docente_nombre = str(grp.docente) if grp.docente else "POR ASIGNAR"
-                    ws.cell(row=current_row, column=6, value=docente_nombre)
 
                     # Estilos de fila
                     for c in range(1, ancho_tabla + 1):
@@ -273,7 +272,7 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
 
                 # Agregar Aula al texto del gráfico
                 aula_str = f" - {hor.aula.nombre}" if hor.aula else ""
-                docente = str(grp.docente).split()[0] if grp.docente else "ND"
+                docente = str(hor.docente).split()[0] if hor.docente else "ND"
                 texto = f"{grp.asignatura.nombre}\nG{grp.numero} {docente}{aula_str}\n({hor.tipo})"
 
                 cell = ws.cell(row=row_start, column=col_idx)
@@ -315,28 +314,24 @@ def generar_reporte_grupos(periodo_id, user):
     rol_nombre = user.rol.name if user.rol else ""
 
     if rol_nombre == 'Vicedecano Académico':
-        if user.facultad:
-            qs_grupos = qs_grupos.filter(asignatura__plan__escuela__facultad=user.facultad)
         dependencia_texto = "VICEDECANATO ACADÉMICO"
 
     elif rol_nombre in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
-        qs_grupos = qs_grupos.filter(asignatura__plan__escuela__facultad=user.facultad, asignatura__ciclo__lte=2)
         dependencia_texto = "COORDINACIÓN DE ESTUDIOS GENERALES"
 
     elif user.escuela:
-        qs_grupos = qs_grupos.filter(asignatura__plan__escuela=user.escuela)
         dependencia_texto = f"ESCUELA PROFESIONAL DE {user.escuela.nombre.upper()}"
 
     else:
         return None
-
-    qs_grupos = qs_grupos.select_related(
-        'asignatura', 'asignatura__plan', 'asignatura__plan__escuela',
-        'asignatura__plan__escuela__facultad', 'docente'
-    ).prefetch_related(
-        Prefetch('horarios', queryset=Horario.objects.order_by('dia', 'hora_inicio').select_related('aula')),
-        'vacantes', 'vacantes__asignatura', 'vacantes__asignatura__plan'
-    ).order_by('asignatura__ciclo', 'asignatura__nombre', 'numero')
+    qs_grupos = (
+        Grupo.objects
+        .filter(periodo=periodo)
+        .para_usuario(user)
+        .con_info_completa()
+        .select_related('asignatura__plan__escuela__facultad')
+        .order_by('asignatura__ciclo', 'asignatura__nombre', 'numero')
+    )
 
     grupos = list(qs_grupos)
     if not grupos: return None
