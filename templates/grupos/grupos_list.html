@@ -35,25 +35,27 @@
         margin-bottom: 0.375rem;
     }
 
-    .vacantes-info {
+    /* Estilo para la lista de docentes */
+    .docente-list-item {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
-        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.9rem;
     }
 
-    .vacantes-bar {
-        flex: 1;
-        height: 6px;
-        background: var(--bg-hover);
-        border-radius: 3px;
-        overflow: hidden;
-    }
-
-    .vacantes-bar-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--unmsm-red), var(--unmsm-red-dark));
-        transition: width 0.3s ease;
+    .docente-type-badge {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: #f3f4f6;
+        color: #4b5563;
+        font-weight: bold;
+        font-size: 0.7rem;
+        margin-right: 0.5rem;
+        border: 1px solid #e5e7eb;
     }
 </style>
 {% endblock %}
@@ -82,7 +84,6 @@
     </div>
 </div>
 
-<!-- Barra de Filtros -->
 <div class="filter-bar">
     <form method="get" class="card mb-4 border-0 shadow-sm bg-light">
         <div class="card-body p-3">
@@ -161,7 +162,6 @@
     </form>
 </div>
 
-<!-- Lista de Grupos -->
 {% if grupos %}
 <div class="row">
     {% for grupo in grupos %}
@@ -208,15 +208,38 @@
                     </div>
                 </div>
 
-                <!-- Docente -->
                 <div class="mb-3">
                     <small class="text-muted d-block mb-1">
-                        <i class="bi bi-person-workspace me-1"></i>Docente:
+                        <i class="bi bi-person-badge me-1"></i>Docente(s):
                     </small>
-                    <strong>{{ grupo.docente|default:"No asignado" }}</strong>
+                    {% if grupo.horarios.all %}
+                        <div class="ms-1">
+                            {# Usamos regroup para evitar duplicados si el mismo profe enseña varias veces #}
+                            {# Nota: regroup requiere orden, asumimos que puede venir mezclado, así que listamos por horario para ser precisos #}
+
+                            {% for horario in grupo.horarios.all %}
+                                {% if horario.docente %}
+                                    <div class="docente-list-item">
+                                        <span class="docente-type-badge" title="{{ horario.get_tipo_display }}">
+                                            {{ horario.get_tipo_display|slice:":1" }}
+                                        </span>
+                                        <span class="text-dark fw-medium">{{ horario.docente.nombre }} {{ horario.docente.apellido }}</span>
+                                    </div>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-muted fst-italic small">Sin horarios registrados</span>
+                            {% endfor %}
+
+                            {# Check manual si no hubo docentes en los horarios #}
+                            {% with total_docentes=0 %}
+                                {% for h in grupo.horarios.all %}{% if h.docente %}{% endif %}{% endfor %}
+                            {% endwith %}
+                        </div>
+                    {% else %}
+                        <small class="text-muted fst-italic">Sin asignar</small>
+                    {% endif %}
                 </div>
 
-                <!-- Horarios -->
                 <div class="mb-3">
                     <small class="text-muted d-block mb-2">
                         <i class="bi bi-clock me-1"></i>Horarios:
@@ -232,17 +255,15 @@
                     {% endfor %}
                 </div>
 
-                <!-- Vacantes -->
                 <div>
-                    <small class="text-muted d-block mb-2">
+                    <small class="text-muted d-block mb-1">
                         <i class="bi bi-person-plus me-1"></i>Vacantes:
                     </small>
-                    <div class="vacantes-info">
-                        <strong>{{ grupo.total_vacantes }}</strong>
-                        <div class="vacantes-bar">
-                            <div class="vacantes-bar-fill" style="width: 45%;"></div>
-                        </div>
-                        <small class="text-muted">total</small>
+                    <div class="d-flex align-items-center">
+                        <h4 class="mb-0 text-primary fw-bold" style="font-family: 'Sora', sans-serif;">
+                            {{ grupo.total_vacantes }}
+                        </h4>
+                        <span class="text-muted ms-2 small">cupos totales</span>
                     </div>
                 </div>
             </div>
@@ -251,11 +272,34 @@
     {% endfor %}
 </div>
 
-<!-- Paginación (si es necesario) -->
 <nav aria-label="Paginación de grupos" class="mt-4">
+    {% if grupos.has_other_pages %}
     <ul class="pagination justify-content-center">
-        <!-- Agregar paginación si tienes muchos grupos -->
+        {% if grupos.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ grupos.previous_page_number }}&{{ request.GET.urlencode }}">&laquo;</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+        {% endif %}
+
+        {% for i in grupos.paginator.page_range %}
+            {% if grupos.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+            {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode }}">{{ i }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if grupos.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ grupos.next_page_number }}&{{ request.GET.urlencode }}">&raquo;</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+        {% endif %}
     </ul>
+    {% endif %}
 </nav>
 
 {% else %}

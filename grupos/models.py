@@ -4,6 +4,7 @@ from asignaturas.models import Asignatura, Equivalencia # Importamos Equivalenci
 from periodos.models import PeriodoAcademico
 from datetime import datetime
 from django.utils import timezone
+from django.db.models import Q
 
 class GrupoQuerySet(models.QuerySet):
     def actuales(self):
@@ -11,6 +12,34 @@ class GrupoQuerySet(models.QuerySet):
         return self.filter(
             periodo__fecha_inicio__lte=hoy,
             periodo__fecha_fin__gte=hoy
+        )
+
+    def de_docente(self, docente_id):
+        return self.filter(horarios__docente_id=docente_id).distinct()
+
+    def buscar(self, query):
+        if not query:
+            return self
+
+        return self.filter(
+            Q(asignatura__nombre__icontains=query) |
+            Q(asignatura__codigo__icontains=query) |
+            Q(horarios__docente__nombre__icontains=query) |
+            Q(horarios__docente__apellido__icontains=query)
+        ).distinct()
+
+    def con_info_completa(self):
+        """
+        Trae datos de asignatura, periodo y pre-carga horarios y aulas.
+        """
+        return self.select_related(
+            'asignatura',
+            'periodo'
+        ).prefetch_related(
+            'horarios',
+            'horarios__aula',
+            'horarios__docente',
+            'vacantes'
         )
 
     def para_usuario(self, user):
@@ -30,6 +59,12 @@ class GrupoManager(models.Manager):
     def actuales(self):
         return self.get_queryset().actuales()
 
+    def de_docente(self, docente):
+        return self.get_queryset().de_docente(docente)
+
+    def buscar(self, query):
+        return self.get_queryset().buscar(query)
+
 class Grupo(models.Model):
     numero = models.PositiveSmallIntegerField()
     asignatura = models.ForeignKey(
@@ -37,14 +72,6 @@ class Grupo(models.Model):
     )
     periodo = models.ForeignKey(
         PeriodoAcademico, on_delete=models.CASCADE, related_name='grupos'
-    )
-
-    docente = models.ForeignKey(
-        'docentes.Docente',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='grupos_asignados'
     )
 
     objects = GrupoManager()

@@ -45,6 +45,14 @@ class Horario(models.Model):
         related_name='horarios'
     )
 
+    docente = models.ForeignKey(
+        'docentes.Docente',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='horarios_asignados' # Cambiamos el related_name
+    )
+
     class Meta:
         verbose_name = "Horario"
         verbose_name_plural = "Horarios"
@@ -52,7 +60,8 @@ class Horario(models.Model):
 
     def __str__(self):
         nombre_aula = self.aula.nombre if self.aula else "Sin Aula"
-        return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({nombre_aula})"
+        nombre_docente = self.docente.nombre if self.docente else "Sin Docente"
+        return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({nombre_aula}) - {nombre_docente}"
 
     def clean(self):
         if not self.hora_inicio or not self.hora_fin:
@@ -87,6 +96,24 @@ class Horario(models.Model):
                 raise ValidationError(
                     f"Conflicto de aula: El aula {self.aula} ya está ocupada en este rango."
                 )
+
+        if self.docente:
+            cruces_docente = Horario.objects.filter(
+                docente=self.docente,
+                dia=self.dia,
+                grupo__periodo=periodo,
+                hora_inicio__lt=self.hora_fin,
+                hora_fin__gt=self.hora_inicio
+            )
+
+            if self.pk:
+                cruces_docente = cruces_docente.exclude(pk=self.pk)
+
+            if cruces_docente.exists():
+                cruce = cruces_docente.first()
+                raise ValidationError({
+                    'docente': f"El docente {self.docente} ya tiene clase a esta hora (Grupo {cruce.grupo})."
+                })
 
         horas_requeridas = {
             'T': asignatura.horas_teoria,

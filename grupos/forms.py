@@ -6,7 +6,27 @@ from asignaturas.models import Asignatura
 from docentes.models import Docente
 from escuelas.models import Escuela
 from .formsets import BaseHorarioFormSet, BaseDistribucionVacantesFormSet
-from horarios.forms import HorarioForm
+
+class HorarioForm(forms.ModelForm):
+    class Meta:
+        model = Horario
+        fields = ['dia', 'hora_inicio', 'hora_fin', 'tipo', 'aula', 'docente']
+        widgets = {
+            'dia': forms.Select(attrs={'class': 'form-select'}),
+            'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'aula': forms.Select(attrs={'class': 'form-select select2-aula'}),
+            'docente': forms.Select(attrs={
+                'class': 'form-select select2-docente',
+                'data-placeholder': 'Seleccione docente'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['docente'].queryset = Docente.objects.all().order_by('apellido', 'nombre')
+
 
 class GrupoForm(forms.ModelForm):
 
@@ -36,23 +56,18 @@ class GrupoForm(forms.ModelForm):
 
     class Meta:
         model = Grupo
-        fields = ['numero', 'asignatura', 'docente']
+        fields = ['numero', 'asignatura']
         widgets = {
             'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1'}),
             'asignatura': forms.Select(attrs={
                 'class': 'form-select select2-asignatura',
                 'data-placeholder': 'Buscar asignatura...'
             }),
-            'docente': forms.Select(attrs={
-                'class': 'form-select select2-docente',
-                'data-placeholder': 'Seleccione un docente...'
-            }),
         }
 
         labels = {
             'numero': 'Número de Grupo',
             'asignatura': 'Asignatura',
-            'docente': 'Docente Asignado'
         }
 
     def __init__(self, *args, **kwargs):
@@ -80,6 +95,7 @@ class GrupoForm(forms.ModelForm):
                 self.fields['escuela_filtro'].initial = self.user.escuela
                 self.fields['escuela_filtro'].widget = forms.HiddenInput()
 
+        # Lógica de carga de asignatura (Select2 AJAX friendly)
         self.fields['asignatura'].queryset = Asignatura.objects.none()
 
         if 'asignatura' in self.data:
@@ -91,15 +107,25 @@ class GrupoForm(forms.ModelForm):
         elif self.instance.pk:
             self.fields['asignatura'].queryset = Asignatura.objects.filter(pk=self.instance.asignatura.pk)
 
+            # Pre-llenar filtros si estamos editando
             if 'escuela_filtro' in self.fields and not isinstance(self.fields['escuela_filtro'].widget, forms.HiddenInput):
                 self.fields['escuela_filtro'].initial = self.instance.asignatura.plan.escuela
             self.fields['ciclo_filtro'].initial = self.instance.asignatura.ciclo
 
-        self.fields['docente'].queryset = Docente.objects.all().order_by('apellido', 'nombre')
+        if self.instance.pk:
+            # Si el grupo ya existe (estamos editando):
+
+            # Bloquear Asignatura (No se debe cambiar el curso base)
+            self.fields['periodo_display'].disabled = True
+            self.fields['asignatura'].disabled = True
+
+            # Bloquear Filtros
+            self.fields['escuela_filtro'].disabled = True
+            self.fields['ciclo_filtro'].disabled = True
+
 
     def save(self, commit=True):
         grupo = super().save(commit=False)
-
         if not grupo.pk and self.periodo_activo:
             grupo.periodo = self.periodo_activo
 
@@ -107,23 +133,18 @@ class GrupoForm(forms.ModelForm):
             grupo.save()
         return grupo
 
+
 class DistribucionVacantesForm(forms.ModelForm):
     """Formulario para distribución de vacantes"""
-
     class Meta:
         model = DistribucionVacantes
         fields = ['asignatura', 'cantidad']
         widgets = {
-            'asignatura': forms.Select(attrs={
-                'class': 'vacante-asignatura'
-            }),
-            'cantidad': forms.NumberInput(attrs={
-                'class': 'form-control vacantes-input',
-                'min': '1',
-            }),
+            'asignatura': forms.Select(attrs={'class': 'form-select vacante-asignatura'}),
+            'cantidad': forms.NumberInput(attrs={'class': 'form-control vacantes-input', 'min': '1'}),
         }
         labels = {
-            'asignatura': 'Asignatura',
+            'asignatura': 'Plan / Asignatura Equivalente',
             'cantidad': 'Vacantes'
         }
 
@@ -131,7 +152,7 @@ class DistribucionVacantesForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # Asignaturas permitidas según rol
+        # Definir el Universo permitido según permisos
         qs_permitido = Asignatura.objects.all()
         if user:
             if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
@@ -139,38 +160,34 @@ class DistribucionVacantesForm(forms.ModelForm):
             elif hasattr(user, 'escuela') and user.escuela:
                 qs_permitido = qs_permitido.filter(plan__escuela=user.escuela)
 
-        # Inicialmente vacío
+        # Inicialmente vacío para optimizar carga
         self.fields['asignatura'].queryset = Asignatura.objects.none()
 
-        # Obtenenemos el campo
+        # Recuperar dato si es POST (Bound form) o GET (Edit form)
         campo_asignatura = self.add_prefix('asignatura')
 
         if self.data and campo_asignatura in self.data:
             try:
                 asignatura_id = int(self.data.get(campo_asignatura))
-
-                # Filtramos según el queryset permitido
                 self.fields['asignatura'].queryset = qs_permitido.filter(pk=asignatura_id)
             except (ValueError, TypeError):
                 pass
-
         elif self.instance.pk:
             self.fields['asignatura'].queryset = qs_permitido.filter(pk=self.instance.asignatura.pk)
 
+# Forset para Horarios y Vacantes
 
 HorarioFormSet = inlineformset_factory(
     Grupo,
     Horario,
-    form=HorarioForm,
+    form=HorarioForm,        # Usamos el form horario
     formset=BaseHorarioFormSet,
-    extra=1,
+    extra=0,
     can_delete=True,
-    min_num=0,
-    validate_min=False
+    min_num=1,               # Obliga a tener al menos 1 horario
+    validate_min=True        # Valida que se cumpla el min_num
 )
 
-
-# Formset para distribución de vacantes
 DistribucionVacantesFormSet = inlineformset_factory(
     Grupo,
     DistribucionVacantes,

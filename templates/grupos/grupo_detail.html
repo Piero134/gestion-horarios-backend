@@ -39,6 +39,7 @@
     .schedule-table td {
         padding: 0.875rem;
         border-bottom: 1px solid var(--border-color);
+        vertical-align: middle; /* Alineación vertical para que se vea bien el docente */
     }
 
     .tipo-badge {
@@ -53,25 +54,10 @@
     .tipo-practica { background: #dcfce7; color: #166534; }
     .tipo-laboratorio { background: #fef3c7; color: #92400e; }
 
-    .stat-card {
-        background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-surface) 100%);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 1.25rem;
-        text-align: center;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--unmsm-red);
-        font-family: 'Sora', sans-serif;
-    }
-
-    .stat-label {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        margin-top: 0.25rem;
+    /* Estilo suave para el nombre del docente */
+    .docente-name {
+        font-weight: 600;
+        color: var(--text-primary);
     }
 </style>
 {% endblock %}
@@ -108,7 +94,6 @@
 </div>
 
 <div class="row">
-    <!-- Información General -->
     <div class="col-lg-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
@@ -137,20 +122,6 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <div class="info-label">Docente</div>
-                    <div class="info-value">
-                        {% if grupo.docente %}
-                            <i class="bi bi-person-check text-success me-1"></i>
-                            {{ grupo.docente }}
-                        {% else %}
-                            <span class="text-warning">
-                                <i class="bi bi-exclamation-triangle me-1"></i>No asignado
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-
                 <div>
                     <div class="info-label">Carga Horaria</div>
                     <div class="info-value">
@@ -169,11 +140,10 @@
         </div>
     </div>
 
-    <!-- Horarios -->
     <div class="col-lg-8 mb-4">
         <div class="card h-100">
             <div class="card-header">
-                <i class="bi bi-calendar-week me-2"></i>Horario de Sesiones
+                <i class="bi bi-calendar-week me-2"></i>Cronograma y Docentes
             </div>
             <div class="card-body">
                 {% if grupo.horarios.exists %}
@@ -185,7 +155,7 @@
                                 <th>Día</th>
                                 <th>Hora</th>
                                 <th>Aula</th>
-                            </tr>
+                                <th>Docente</th> </tr>
                         </thead>
                         <tbody>
                             {% for horario in grupo.horarios.all %}
@@ -199,19 +169,32 @@
                                     <strong>{{ horario.get_dia_display }}</strong>
                                 </td>
                                 <td>
-                                    <i class="bi bi-clock me-1"></i>
+                                    <i class="bi bi-clock me-1 text-muted"></i>
                                     {{ horario.hora_inicio|time:"H:i" }} - {{ horario.hora_fin|time:"H:i" }}
                                 </td>
                                 <td>
-                                    {% if grupo.aula %}
-                                <th>Aula</th>
-                                {% else %}
-                                <th>Aula (No asignada)</th>
-                                {% endif %}
-                                    <i class="bi bi-door-open me-1"></i>
-                                    {{ horario.aula.nombre }}
-                                    {% if horario.aula.es_laboratorio %}
-                                        <span class="badge bg-warning text-dark ms-1">LAB</span>
+                                    {% if horario.aula %}
+                                        <i class="bi bi-door-open me-1 text-muted"></i>
+                                        {{ horario.aula.nombre }}
+                                        {% if horario.aula.es_laboratorio %}
+                                            <span class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem;">LAB</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Sin aula</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if horario.docente %}
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-person-badge text-primary me-2 fs-5"></i>
+                                            <span class="docente-name">
+                                                {{ horario.docente.nombre }} {{ horario.docente.apellido }}
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">
+                                            <i class="bi bi-exclamation-circle me-1"></i>Por asignar
+                                        </span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -230,7 +213,6 @@
     </div>
 </div>
 
-<!-- Distribución de Vacantes -->
 <div class="card">
     <div class="card-header">
         <i class="bi bi-person-plus me-2"></i>Distribución de Vacantes
@@ -270,7 +252,7 @@
                         <td colspan="2"><strong>TOTAL</strong></td>
                         <td class="text-center"><strong>{{ grupo.total_vacantes }}</strong></td>
                         <td class="text-center">
-                            <strong>{% widthratio grupo.vacantes.all|length 1 1 %}</strong>
+                            <strong>{{ grupo.vacantes_totales_matriculados|default:"-" }}</strong>
                         </td>
                         <td class="text-center">-</td>
                     </tr>
@@ -285,5 +267,4 @@
         {% endif %}
     </div>
 </div>
-
 {% endblock %}

@@ -68,22 +68,9 @@ def grupos_list(request):
         grupos = grupos.filter(numero=grupo_num)
 
     if buscar:
-        grupos = grupos.filter(
-            Q(asignatura__codigo__icontains=buscar) |
-            Q(asignatura__nombre__icontains=buscar) |
-            Q(docente__apellido__icontains=buscar) |
-            Q(docente__nombre__icontains=buscar)
-        )
+        grupos = grupos.buscar(buscar)
 
-    grupos = grupos.select_related(
-        'asignatura',
-        'asignatura__plan',
-        'asignatura__plan__escuela',
-        'periodo',
-        'docente'
-    ).prefetch_related(
-        'horarios',
-    ).annotate(
+    grupos = grupos.con_info_completa().annotate(
         total_vacantes_db=Coalesce(Sum('vacantes__cantidad'), Value(0))
     ).order_by(
         '-periodo__anio',
@@ -186,7 +173,7 @@ def grupo_edit(request, pk):
     if request.method == 'POST':
         form = GrupoForm(request.POST, instance=grupo, user=user)
 
-        horario_formset = HorarioFormSet(request.POST, instance=grupo)
+        horario_formset = HorarioFormSet(request.POST, instance=grupo, prefix='horarios')
 
         # MAGIA AQUÍ: Pasamos el 'user' a todos los sub-formularios del formset
         vacantes_formset = DistribucionVacantesFormSet(
@@ -240,17 +227,7 @@ def grupo_edit(request, pk):
 def grupo_delete(request, pk):
     """Eliminar grupo"""
 
-    grupo = get_object_or_404(Grupo, pk=pk)
-
-    # Verificar permisos
-    if request.user.rol.name == 'Vicedecano Académico':
-        if grupo.asignatura.plan.escuela.facultad != request.user.facultad:
-            messages.error(request, 'No tiene permisos para eliminar este grupo.')
-            return redirect('grupos_list')
-    else:
-        if request.user.escuela and grupo.asignatura.plan.escuela != request.user.escuela:
-            messages.error(request, 'No tiene permisos para eliminar este grupo.')
-            return redirect('grupos_list')
+    grupo = get_object_or_404(Grupo.objects.para_usuario(request.user), pk=pk)
 
     if request.method == 'POST':
         nombre_grupo = str(grupo)
@@ -270,25 +247,9 @@ def grupo_detail(request, pk):
     """Detalle de grupo"""
 
     grupo = get_object_or_404(
-        Grupo.objects.select_related(
-            'asignatura',
-            'asignatura__plan',
-            'asignatura__plan__escuela',
-            'periodo',
-            'docente'
-        ).prefetch_related('horarios', 'vacantes', 'vacantes__asignatura'),
+        Grupo.objects.para_usuario(request.user).con_info_completa(),
         pk=pk
     )
-
-    # Verificar permisos
-    if request.user.rol.name == 'Vicedecano Académico':
-        if grupo.asignatura.plan.escuela.facultad != request.user.facultad:
-            messages.error(request, 'No tiene permisos para ver este grupo.')
-            return redirect('grupos_list')
-    else:
-        if request.user.escuela and grupo.asignatura.plan.escuela != request.user.escuela:
-            messages.error(request, 'No tiene permisos para ver este grupo.')
-            return redirect('grupos_list')
 
     # Organizar horarios por día
     horarios_por_dia = {}

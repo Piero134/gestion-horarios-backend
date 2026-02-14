@@ -110,14 +110,6 @@
         margin-left: 0.25rem;
     }
 
-    .info-alert {
-        background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 110, 253, 0.1) 100%);
-        border: 1px solid rgba(13, 110, 253, 0.2);
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1.25rem;
-    }
-
     /* Estilos tabla vacantes estilo imagen */
     .table-vacantes {
         width: 100%;
@@ -141,7 +133,7 @@
 
     /* Texto formateado */
     .course-code {
-        color: #4a6fa5; /* Azul grisáceo similar a la imagen */
+        color: #4a6fa5;
         font-weight: 700;
         font-size: 0.95rem;
     }
@@ -182,22 +174,8 @@
         border-color: var(--border-color);
         background: var(--bg-surface);
     }
-
     .select2-container--bootstrap-5 .select2-selection:focus {
         border-color: var(--unmsm-red);
-    }
-
-    [data-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
-        background: var(--bg-surface);
-        border-color: var(--border-color);
-    }
-
-    [data-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
-        color: var(--text-primary);
-    }
-
-    [data-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted {
-        background: var(--bg-hover);
     }
 </style>
 {% endblock %}
@@ -220,7 +198,6 @@
 <form method="post" id="grupoForm">
     {% csrf_token %}
 
-    <!-- Información del Grupo -->
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-body">
             <div class="section-header">
@@ -229,14 +206,14 @@
             </div>
 
             <div class="row g-3">
-                <div class="col-md-3">
+                <div class="col-md-6">
                     <label class="form-label fw-bold">
                         <i class="bi bi-calendar3 me-1"></i>Periodo Académico
                     </label>
                     {{ form.periodo_display }}
                 </div>
 
-                <div class="col-md-2">
+                <div class="col-md-6">
                     <label class="form-label required-field">{{ form.numero.label }}</label>
                     {{ form.numero }}
                     {% if form.numero.errors %}
@@ -244,18 +221,8 @@
                     {% endif %}
                 </div>
 
-                <div class="col-md-7">
-                    <label class="form-label">
-                        <i class="bi bi-person-workspace me-1"></i>{{ form.docente.label }}
-                    </label>
-                    {{ form.docente }}
-                    {% if form.docente.errors %}
-                        <div class="text-danger small mt-1">{{ form.docente.errors.0 }}</div>
-                    {% endif %}
                 </div>
-            </div>
 
-            <!-- Filtros de Asignatura -->
             <div class="filter-row mt-4">
                 <div class="filter-label">
                     <i class="bi bi-funnel-fill text-primary"></i>
@@ -281,7 +248,6 @@
                 </div>
             </div>
 
-            <!-- Asignatura -->
             <div class="row g-3">
                 <div class="col-12">
                     <label class="form-label required-field">
@@ -300,9 +266,9 @@
         </div>
     </div>
 
-    <!-- Distribución de Vacantes -->
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body p-0"> <div class="p-3">
+        <div class="card-body p-0">
+            <div class="p-3">
                 <div class="section-header mb-0">
                     <i class="bi bi-person-plus fs-5"></i>
                     <h5>Distribución de Vacantes</h5>
@@ -318,15 +284,19 @@
                             <th style="width: 50%;">ASIGNATURA / PLAN</th>
                             <th style="width: 35%;">ESCUELA</th>
                             <th style="width: 10%; text-align: center;">VACANTES</th>
-                            <th style="width: 5%;"></th> </tr>
+                            <th style="width: 5%;"></th>
+                        </tr>
                     </thead>
                     <tbody id="vacantes-container">
                         {% for v_form in vacantes_formset %}
                         <tr class="vacante-row {% if v_form.instance.pk and v_form.DELETE.value %}d-none{% endif %}">
-
                             <td>
                                 {{ v_form.id }}
-                                {% if v_form.instance.pk %}{{ v_form.DELETE }}{% endif %}
+                                {% if v_form.instance.pk %}
+                                <div class="d-none">
+                                    {{ v_form.DELETE }}
+                                </div>
+                                {% endif %}
 
                                 <div class="d-none">
                                     {{ v_form.asignatura }}
@@ -341,18 +311,11 @@
                                         <span class="plan-name">{{ v_form.instance.asignatura.plan.nombre }}</span>
                                     {% else %}
                                         <div class="placeholder-info text-muted small fst-italic">
-                                            {% if forloop.first %}
-                                                Seleccione una asignatura principal arriba...
-                                            {% else %}
-                                                Seleccione equivalencia...
-                                            {% endif %}
+                                            {% if forloop.first %}Seleccione asignatura arriba...{% else %}Seleccione equivalencia...{% endif %}
                                         </div>
                                         <div class="real-info d-none">
-                                            <span class="course-code"></span>
-                                            <span class="course-name"></span>
-                                            <span class="plan-name"></span>
+                                            <span class="course-code"></span><span class="course-name"></span><span class="plan-name"></span>
                                         </div>
-
                                         {% if not forloop.first %}
                                             <select class="form-select form-select-sm mt-2 select-equivalencia-visual">
                                                 <option value="">Buscar equivalencia...</option>
@@ -361,7 +324,6 @@
                                     {% endif %}
                                 </div>
                             </td>
-
                             <td>
                                 {% if v_form.instance.pk and v_form.instance.asignatura %}
                                     <span class="school-name">{{ v_form.instance.asignatura.plan.escuela.nombre }}</span>
@@ -369,12 +331,9 @@
                                     <span class="school-name text-muted">-</span>
                                 {% endif %}
                             </td>
-
+                            <td class="text-center">{{ v_form.cantidad }}</td>
                             <td class="text-center">
-                                {{ v_form.cantidad }} </td>
-
-                            <td class="text-center">
-                                <button type="button" class="btn btn-link text-danger p-0 delete-vacante {% if forloop.first %}d-none{% endif %}" title="Eliminar">
+                                <button type="button" class="btn btn-link text-danger p-0 delete-vacante {% if forloop.first %}d-none{% endif %}">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
@@ -392,7 +351,6 @@
         </div>
     </div>
 
-    <!-- Horarios de Sesiones -->
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-body">
             <div class="section-header">
@@ -403,11 +361,8 @@
             {{ horario_formset.management_form }}
 
             {% if horario_formset.non_form_errors %}
-                <div class="alert alert-danger d-flex align-items-center mb-3" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>
-                        {{ horario_formset.non_form_errors.0 }}
-                    </div>
+                <div class="alert alert-danger mb-3">
+                    {{ horario_formset.non_form_errors.0 }}
                 </div>
             {% endif %}
 
@@ -417,47 +372,38 @@
                     {{ h_form.id }}
                     {% if h_form.instance.pk %}{{ h_form.DELETE }}{% endif %}
 
-                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn delete-horario"
-                            title="Eliminar horario">
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn delete-horario" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
 
                     <div class="row g-3">
-                        <div class="col-md-2">
-                            <label class="form-label small fw-semibold">
-                                <i class="bi bi-calendar-day me-1"></i>Día
-                            </label>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold"><i class="bi bi-calendar-day me-1"></i>Día</label>
                             {{ h_form.dia }}
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-semibold">
-                                <i class="bi bi-tag me-1"></i>Tipo
-                            </label>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold"><i class="bi bi-tag me-1"></i>Tipo</label>
                             {{ h_form.tipo }}
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-semibold">
-                                <i class="bi bi-clock me-1"></i>Inicio
-                            </label>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold"><i class="bi bi-clock me-1"></i>Inicio</label>
                             {{ h_form.hora_inicio }}
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-semibold">
-                                <i class="bi bi-clock-fill me-1"></i>Fin
-                            </label>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold"><i class="bi bi-clock-fill me-1"></i>Fin</label>
                             {{ h_form.hora_fin }}
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-semibold">
-                                <i class="bi bi-door-open me-1"></i>Aula
-                            </label>
+
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold"><i class="bi bi-door-open me-1"></i>Aula</label>
                             {{ h_form.aula }}
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold"><i class="bi bi-person-badge me-1"></i>Docente</label>
+                            {{ h_form.docente }} </div>
                     </div>
                     {% if h_form.errors %}
-                        <div class="alert alert-danger mt-2 mb-0 py-2 small">
-                            <i class="bi bi-exclamation-triangle me-1"></i>{{ h_form.errors }}
-                        </div>
+                        <div class="alert alert-danger mt-2 mb-0 py-2 small">{{ h_form.errors }}</div>
                     {% endif %}
                 </div>
                 {% endfor %}
@@ -469,7 +415,6 @@
         </div>
     </div>
 
-    <!-- Botones de Acción -->
     <div class="card border-0 bg-transparent">
         <div class="card-body px-0">
             <div class="d-flex justify-content-between gap-3">
@@ -484,33 +429,22 @@
     </div>
 </form>
 
-<!-- Templates para formsets -->
 <script type="text/template" id="vacantes-template">
     <tr class="vacante-row">
         <td>
             <input type="hidden" name="vacantes-__prefix__-id" id="id_vacantes-__prefix__-id">
-
-            <div class="d-none">
-                {{ vacantes_formset.empty_form.asignatura }}
-            </div>
-
+            <div class="d-none">{{ vacantes_formset.empty_form.asignatura }}</div>
             <div class="course-info-display">
                 <div class="real-info d-none">
-                    <span class="course-code"></span>
-                    <span class="course-name"></span>
-                    <span class="plan-name"></span>
+                    <span class="course-code"></span><span class="course-name"></span><span class="plan-name"></span>
                 </div>
                 <select class="form-select form-select-sm select-equivalencia-visual">
                     <option value="">Seleccione una equivalencia...</option>
                 </select>
             </div>
         </td>
-        <td>
-            <span class="school-name">-</span>
-        </td>
-        <td class="text-center">
-            {{ vacantes_formset.empty_form.cantidad }}
-        </td>
+        <td><span class="school-name">-</span></td>
+        <td class="text-center">{{ vacantes_formset.empty_form.cantidad }}</td>
         <td class="text-center">
             <button type="button" class="btn btn-link text-danger p-0 delete-vacante">
                 <i class="bi bi-trash"></i>
@@ -522,39 +456,33 @@
 <script type="text/template" id="horarios-template">
     <div class="formset-row horario-row">
         <input type="hidden" name="horarios-__prefix__-id" id="id_horarios-__prefix__-id">
-        <button type="button" class="btn btn-sm btn-outline-danger delete-btn delete-horario" title="Eliminar horario">
+        <button type="button" class="btn btn-sm btn-outline-danger delete-btn delete-horario" title="Eliminar">
             <i class="bi bi-trash"></i>
         </button>
         <div class="row g-3">
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">
-                    <i class="bi bi-calendar-day me-1"></i>Día
-                </label>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold"><i class="bi bi-calendar-day me-1"></i>Día</label>
                 {{ horario_formset.empty_form.dia }}
             </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">
-                    <i class="bi bi-tag me-1"></i>Tipo
-                </label>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold"><i class="bi bi-tag me-1"></i>Tipo</label>
                 {{ horario_formset.empty_form.tipo }}
             </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">
-                    <i class="bi bi-clock me-1"></i>Inicio
-                </label>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold"><i class="bi bi-clock me-1"></i>Inicio</label>
                 {{ horario_formset.empty_form.hora_inicio }}
             </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-semibold">
-                    <i class="bi bi-clock-fill me-1"></i>Fin
-                </label>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold"><i class="bi bi-clock-fill me-1"></i>Fin</label>
                 {{ horario_formset.empty_form.hora_fin }}
             </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-semibold">
-                    <i class="bi bi-door-open me-1"></i>Aula
-                </label>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold"><i class="bi bi-door-open me-1"></i>Aula</label>
                 {{ horario_formset.empty_form.aula }}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold"><i class="bi bi-person-badge me-1"></i>Docente</label>
+                {{ horario_formset.empty_form.docente }}
             </div>
         </div>
     </div>
@@ -568,65 +496,46 @@
 
 <script>
 $(document).ready(function() {
-
-    // ==========================================
-    // 1. CONFIGURACIÓN Y VARIABLES GLOBALES
-    // ==========================================
-
-    // Almacena las equivalencias actuales de la asignatura seleccionada
     let equivalenciasData = [];
+    const urlDetalleAsignatura = "{% url 'api_asignatura_equivalencias' %}"; // Asegúrate que esta URL exista
+    const urlCargarAsignaturas = "{% url 'ajax_cargar_asignaturas' %}"; // Asegúrate que esta URL exista
 
-    // URLs (Django las renderiza)
-    const urlDetalleAsignatura = "{% url 'api_asignatura_equivalencias' %}";
-    const urlCargarAsignaturas = "{% url 'ajax_cargar_asignaturas' %}";
-
-    // Inicializador de Select2 (Solo para Horarios y Filtros)
+    // Función initSelect2 actualizada para el nuevo campo docente
     function initSelect2($container) {
+        // Asignatura Principal
         $container.find('.select2-asignatura').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'Buscar asignatura...',
-            allowClear: true
+            theme: 'bootstrap-5', width: '100%', placeholder: 'Buscar asignatura...', allowClear: true
         });
 
+        // Filtros Escuela
         $container.find('.select2-escuela').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'Seleccione escuela...',
-            allowClear: true
+            theme: 'bootstrap-5', width: '100%', placeholder: 'Seleccione escuela...', allowClear: true
         });
 
+        // NUEVO: Select de Docente en Horarios
         $container.find('.select2-docente').select2({
             theme: 'bootstrap-5',
             width: '100%',
             placeholder: 'Seleccione docente...',
-            allowClear: true
+            allowClear: true,
+            dropdownParent: $container // Importante para modales, aunque aquí ayuda al scope
         });
 
-        // Selects genéricos dentro de horarios
-        $container.find('.horario-row select:not(.select2-hidden-accessible)').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            minimumResultsForSearch: 10
+        // Aula y otros selects simples
+        $container.find('.select2-aula').select2({
+            theme: 'bootstrap-5', width: '100%', placeholder: 'Aula...', allowClear: true
         });
     }
 
-    // Inicializar al cargar la página
+    // Inicializar en carga
     initSelect2($('body'));
 
-
-    // ==========================================
-    // 2. LÓGICA DE ASIGNATURA PRINCIPAL (AJAX)
-    // ==========================================
-
-    // Filtros de Escuela/Ciclo
+    // --- LÓGICA DE FILTROS Y ASIGNATURAS (Tu código original) ---
     $('#id_escuela_filtro, #id_ciclo_filtro').on('change', function() {
         const escuelaId = $('#id_escuela_filtro').val();
         const ciclo = $('#id_ciclo_filtro').val();
         const $selectAsig = $('#id_asignatura');
-
         if (!escuelaId && !ciclo) return;
-
         $selectAsig.empty().prop('disabled', true);
 
         $.ajax({
@@ -634,36 +543,21 @@ $(document).ready(function() {
             data: { 'escuela_id': escuelaId, 'ciclo': ciclo },
             success: function(data) {
                 $selectAsig.append(new Option('Seleccione una asignatura...', '', true, true));
-                data.forEach(item => {
-                    $selectAsig.append(new Option(item.text, item.id, false, false));
-                });
+                data.forEach(item => $selectAsig.append(new Option(item.text, item.id, false, false)));
                 $selectAsig.trigger('change').prop('disabled', false);
-            },
-            error: function() {
-                console.error('Error al cargar asignaturas');
-                $selectAsig.prop('disabled', false);
             }
         });
     });
 
-    // Cambio de Asignatura Principal -> Traer Equivalencias
     $('.select2-asignatura').on('select2:select', function(e) {
         const asignaturaId = e.params.data.id;
         if (!asignaturaId) return;
-
         $.ajax({
             url: urlDetalleAsignatura,
             data: { 'id': asignaturaId },
             success: function(response) {
-                // 1. Actualizar Fila 0 (Principal)
                 actualizarFilaPrincipal(response);
-
-                // 2. Guardar datos para las nuevas filas
                 equivalenciasData = response.equivalencias || [];
-
-                // 3. Reiniciar filas de equivalencias si cambias la principal (Opcional, recomendado)
-                // $('.vacante-row').not(':first').remove();
-                // $('#id_vacantes-TOTAL_FORMS').val(1);
             }
         });
     });
@@ -671,65 +565,38 @@ $(document).ready(function() {
     function actualizarFilaPrincipal(response) {
         const $rowPrincipal = $('#vacantes-container tr').first();
         const principal = response.principal;
-
-        // Llenar select oculto de Django
         const $selectReal = $rowPrincipal.find('select[name$="-asignatura"]');
         if ($selectReal.find(`option[value='${response.id}']`).length === 0) {
              $selectReal.append(new Option("Principal", response.id, true, true));
         }
         $selectReal.val(response.id);
-
-        // Renderizar texto bonito
         renderCellInfo($rowPrincipal, {
-            codigo: principal.codigo,
-            nombre: principal.nombre,
-            plan: principal.plan,
-            escuela: principal.escuela
+            codigo: principal.codigo, nombre: principal.nombre, plan: principal.plan, escuela: principal.escuela
         });
     }
 
-
-    // ==========================================
-    // 3. LÓGICA DE VISUALIZACIÓN (Renderizado)
-    // ==========================================
-
-    // Transforma los inputs en texto formateado (Código azul, Nombre gris, etc.)
     function renderCellInfo($row, data) {
-        // Ocultar select visual y placeholder
         $row.find('.placeholder-info, .select-equivalencia-visual').addClass('d-none');
-
-        // Mostrar div con info real
         const $infoDiv = $row.find('.real-info').removeClass('d-none');
-
         $infoDiv.find('.course-code').text(`[${data.codigo}]`);
         $infoDiv.find('.course-name').text(data.nombre);
         $infoDiv.find('.plan-name').text(data.plan);
-
-        // Actualizar columna Escuela
         $row.find('.school-name').text(data.escuela);
     }
 
-
-    // ==========================================
-    // 4. GESTIÓN DE VACANTES (TABLA)
-    // ==========================================
-
+    // --- LÓGICA VACANTES (Agregar filas) ---
     $('#add-vacante').click(function() {
         const type = 'vacantes';
         const $totalForms = $(`#id_${type}-TOTAL_FORMS`);
         const currentIndex = parseInt($totalForms.val());
-
-        // 1. Clonar Template
         const templateHtml = $(`#${type}-template`).html().replace(/__prefix__/g, currentIndex);
         const $newRow = $(templateHtml);
 
-        // 2. Llenar el Select Visual (Equivalencias)
         const $selectVisual = $newRow.find('.select-equivalencia-visual');
         $selectVisual.empty().append(new Option('Seleccione equivalencia...', '', true, true));
 
         if (equivalenciasData.length > 0) {
             equivalenciasData.forEach(eq => {
-                // Guardamos el objeto completo 'eq' dentro del DOM del option
                 const $opt = $(new Option(eq.text, eq.id, false, false));
                 $opt.data('full-info', eq);
                 $selectVisual.append($opt);
@@ -739,92 +606,52 @@ $(document).ready(function() {
             $selectVisual.prop('disabled', true);
         }
 
-        // 3. Evento CHANGE específico para esta nueva fila
         $selectVisual.on('change', function() {
             const selectedId = $(this).val();
             if (!selectedId) return;
-
-            // Recuperar la info guardada en el option
             const data = $(this).find(':selected').data('full-info');
-
-            // Sincronizar con el Select Oculto de Django
             const $realDjangoSelect = $newRow.find('select[name$="-asignatura"]');
-
-            // Si el valor no existe en el select de Django, lo agregamos dinámicamente
             if ($realDjangoSelect.find(`option[value='${selectedId}']`).length === 0) {
                 $realDjangoSelect.append(new Option(data.nombre, selectedId, true, true));
             }
             $realDjangoSelect.val(selectedId);
-
-            // Convertir a texto bonito
             renderCellInfo($newRow, data);
         });
 
-        // 4. Agregar a la tabla
         $('#vacantes-container').append($newRow);
         $totalForms.val(currentIndex + 1);
-
-        // Estilo visual para el input de número
         $newRow.find('.vacantes-input').addClass('form-control-plaintext').attr('autocomplete', 'off');
     });
 
-
-    // ==========================================
-    // 5. GESTIÓN DE HORARIOS (TARJETAS)
-    // ==========================================
-
+    // --- LÓGICA HORARIOS (Agregar filas con Select2) ---
     $('#add-horario').click(function() {
         const type = 'horarios';
         const $totalForms = $(`#id_${type}-TOTAL_FORMS`);
         const currentIndex = parseInt($totalForms.val());
-
-        // 1. Clonar Template
         const templateHtml = $(`#${type}-template`).html().replace(/__prefix__/g, currentIndex);
         const $newRow = $(templateHtml);
 
-        // 2. Agregar al contenedor
         $('#horarios-container').append($newRow);
 
-        // 3. Inicializar Select2 en los nuevos elementos
+        // ¡IMPORTANTE! Inicializar Select2 en los nuevos elementos (Docente y Aula)
         initSelect2($newRow);
 
-        // 4. Actualizar contador
         $totalForms.val(currentIndex + 1);
     });
 
-
-    // ==========================================
-    // 6. ELIMINAR FILAS (GENÉRICO)
-    // ==========================================
-
+    // --- ELIMINAR FILAS ---
     $(document).on('click', '.delete-btn, .delete-vacante', function() {
-
-        // 1. Identificar la fila padre (sea TR o DIV)
         const $row = $(this).closest('.formset-row, .vacante-row');
-
-        // 2. Buscar el checkbox de eliminar oculto de Django
         const $deleteInput = $row.find('input[name$="-DELETE"]');
-
         if ($deleteInput.length) {
-            // A) Si el registro YA existe en la base de datos:
-            // Marcamos el checkbox para que Django lo borre al guardar
             $deleteInput.prop('checked', true);
-
-            // Ocultamos la fila visualmente y agregamos clase para depuración
             $row.addClass('d-none to-delete');
         } else {
-            // B) Si es una fila NUEVA (agregada con JS y no guardada aún):
-            // Simplemente la borramos del HTML
             $row.remove();
         }
     });
 
-    // ==========================================
-    // 7. INICIALIZACIÓN EXTRA
-    // ==========================================
-    // Asegurar estilo en inputs existentes al cargar (Edición)
     $('.vacantes-input').addClass('form-control-plaintext').attr('autocomplete', 'off');
-
 });
 </script>
 {% endblock %}
