@@ -1,5 +1,4 @@
 from django.contrib import admin
-<<<<<<< HEAD
 from django.contrib.auth.admin import UserAdmin
 from .models import Usuario
 
@@ -28,7 +27,3 @@ class UsuarioAdmin(UserAdmin):
     readonly_fields = ('username',)
 
     filter_horizontal = ('groups', 'user_permissions')
-=======
-
-# Register your models here.
->>>>>>> 71224ecb86f8f8c385092b501f3124b34fd8718b
