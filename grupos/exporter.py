@@ -5,11 +5,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from django.db.models import Prefetch
+from django.utils.text import slugify
 
 from horarios.models import Horario
 from grupos.models import Grupo
 from periodos.models import PeriodoAcademico
-
+from django.db.models import Q
 
 # Estilo del excel
 class ExcelEstilos:
@@ -38,23 +39,29 @@ class ExcelEstilos:
     ALIGN_RIGHT = Alignment(horizontal='right', vertical='center', wrap_text=True)
 
 def _agregar_cabecera(ws, facultad_nombre, dependencia_nombre, nombre_periodo, ancho_total=12):
-    """
-    Escribe la cabecera en las primeras filas
-    """
+    partes = dependencia_nombre.split(" - ")
+
+    linea_dependencia = partes[0]
+
+    linea_escuela = partes[1] if len(partes) > 1 else ""
+
     lines = [
         "UNIVERSIDAD NACIONAL MAYOR DE SAN MARCOS",
         facultad_nombre,
-        dependencia_nombre,
-        "",
-        f"HORARIOS DE ASIGNATURAS {nombre_periodo}"
+        linea_dependencia,
+        linea_escuela,
+        f"HORARIO DE ESTUDIOS SEMESTRE ACADEMICO {nombre_periodo}"
     ]
 
     for i, line in enumerate(lines, 1):
         cell = ws.cell(row=i, column=1)
         cell.value = line
-        cell.font = ExcelEstilos.FONT_TITLE_MAIN if i == 5 else ExcelEstilos.FONT_TITLE_SUB
 
-        # combina celdas
+        if i == 5:
+            cell.font = ExcelEstilos.FONT_TITLE_MAIN
+        else:
+            cell.font = ExcelEstilos.FONT_TITLE_SUB
+
         ws.merge_cells(start_row=i, start_column=1, end_row=i, end_column=ancho_total)
         cell.alignment = ExcelEstilos.ALIGN_CENTER
 
@@ -63,9 +70,9 @@ def _agregar_cabecera(ws, facultad_nombre, dependencia_nombre, nombre_periodo, a
 def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo):
     ws = wb.active
     if ws is None:
-        ws = wb.create_sheet("LISTA DE CURSOS")
+        ws = wb.create_sheet("Profesores")
     else:
-        ws.title = "LISTA DE CURSOS"
+        ws.title = "Profesores"
 
     current_row = 7
     ancho_tabla = 7
@@ -296,53 +303,119 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
 
 
 # Funcion principal para generar el reporte
-def generar_reporte_grupos(periodo_id, user):
-    if periodo_id:
-        try: periodo = PeriodoAcademico.objects.get(id=periodo_id)
-        except PeriodoAcademico.DoesNotExist: return None
-    else:
-        periodo = PeriodoAcademico.objects.get_activo()
+def generar_reporte_grupos(periodo_id=None, escuela_id=None, plan_id=None,
+                          ciclo=None, grupo_num=None, buscar=None, user=None):
 
-    if not periodo: return None
+    if not user:
+        return None
+
+    try:
+        if periodo_id:
+            periodo = PeriodoAcademico.objects.get(id=periodo_id)
+        else:
+            periodo = PeriodoAcademico.objects.get_activo()
+    except PeriodoAcademico.DoesNotExist:
+        return None
+
+    if not periodo:
+        return None
+
     nombre_periodo_str = str(periodo)
 
-    facultad_texto = user.facultad.nombre.upper() if user.facultad else "FACULTAD"
-    qs_grupos = Grupo.objects.filter(periodo=periodo)
+    facultad_texto = (
+        user.facultad.nombre.upper()
+        if getattr(user, "facultad", None)
+        else "FACULTAD"
+    )
+
+    rol_nombre = getattr(user.rol, "name", "")
     dependencia_texto = ""
-    escuela_para_vacantes = None
 
-    rol_nombre = user.rol.name if user.rol else ""
-
-    if rol_nombre == 'Vicedecano Académico':
+    if rol_nombre == "Vicedecano Académico":
         dependencia_texto = "VICEDECANATO ACADÉMICO"
+        if escuela_id and str(escuela_id).isdigit():
+            from escuelas.models import Escuela
+            try:
+                escuela = Escuela.objects.get(id=escuela_id)
+                dependencia_texto = f"VICEDECANATO ACADÉMICO - ESCUELA PROFESIONAL DE {escuela.nombre.upper()}"
+            except:
+                pass
 
-    elif rol_nombre in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
+
+    elif rol_nombre in [
+        "Coordinador de Estudios Generales",
+        "Jefe de Estudios Generales",
+    ]:
         dependencia_texto = "COORDINACIÓN DE ESTUDIOS GENERALES"
 
-    elif user.escuela:
-        dependencia_texto = f"ESCUELA PROFESIONAL DE {user.escuela.nombre.upper()}"
+    elif getattr(user, "escuela", None):
+        dependencia_texto = (
+            f"ESCUELA PROFESIONAL DE {user.escuela.nombre.upper()}"
+        )
 
     else:
         return None
+
     qs_grupos = (
         Grupo.objects
         .filter(periodo=periodo)
         .para_usuario(user)
         .con_info_completa()
-        .select_related('asignatura__plan__escuela__facultad')
-        .order_by('asignatura__ciclo', 'asignatura__nombre', 'numero')
+        .select_related("asignatura__plan__escuela__facultad")
+    )
+
+    filtros = {}
+
+    if escuela_id:
+        filtros["asignatura__plan__escuela_id"] = escuela_id
+
+    if plan_id:
+        filtros["asignatura__plan_id"] = plan_id
+
+    if ciclo:
+        filtros["asignatura__ciclo"] = ciclo
+
+    if grupo_num:
+        filtros["numero"] = grupo_num
+
+    if filtros:
+        qs_grupos = qs_grupos.filter(**filtros)
+
+    if buscar:
+        qs_grupos = qs_grupos.filter(
+            Q(asignatura__nombre__icontains=buscar) |
+            Q(asignatura__codigo__icontains=buscar)
+        )
+
+    qs_grupos = qs_grupos.order_by(
+        "asignatura__ciclo",
+        "asignatura__nombre",
+        "numero",
     )
 
     grupos = list(qs_grupos)
-    if not grupos: return None
+
+    if not grupos:
+        return None
 
     wb = Workbook()
 
-    _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str)
-    _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str)
+    _generar_hoja_lista_cursos(
+        wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str
+    )
+
+    _generar_hojas_horario_grafico(
+        wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str
+    )
 
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
 
-    return output, f"Horarios_{nombre_periodo_str}_{dependencia_texto.replace(' ', '_')}.xlsx"
+    periodo_slug = slugify(nombre_periodo_str)
+    dependencia_slug = slugify(dependencia_texto)
+
+    filename = f"horarios-{periodo_slug}-{dependencia_slug}.xlsx"
+
+    return output, filename
+

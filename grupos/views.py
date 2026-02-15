@@ -14,7 +14,7 @@ from periodos.models import PeriodoAcademico
 from escuelas.models import Escuela
 from planes.models import PlanEstudios
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, JsonResponse
 from .exporter import generar_reporte_grupos
 
 @login_required
@@ -268,18 +268,36 @@ def grupo_detail(request, pk):
 
 @login_required
 def grupo_export_excel(request):
-    periodo_id = request.GET.get('periodo_id')
+    periodo_id = request.GET.get('periodo_id') or request.GET.get('periodo')
+    escuela_id = request.GET.get('escuela')
+    plan_id = request.GET.get('plan')
+    ciclo = request.GET.get('ciclo')
+    grupo_num = request.GET.get('grupo')
+    buscar = request.GET.get('buscar', '').strip()
 
-    archivo_excel, nombre_archivo = generar_reporte_grupos(periodo_id=periodo_id, user=request.user)
+    resultado = generar_reporte_grupos(
+        periodo_id=periodo_id,
+        escuela_id=escuela_id,
+        plan_id=plan_id,
+        ciclo=ciclo,
+        grupo_num=grupo_num,
+        buscar=buscar,
+        user=request.user
+    )
 
-    if not archivo_excel:
-        raise Http404("No se encontraron datos para generar el reporte o no tiene permisos.")
+    if not resultado:
+        return JsonResponse(
+            {"error": "No se encontraron datos para generar el reporte con los filtros aplicados."},
+            status=400
+        )
+
+    archivo_excel, nombre_archivo = resultado
 
     response = HttpResponse(
         archivo_excel,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+    response['Content-Disposition'] = f'attachment; filename={nombre_archivo}'
 
     return response

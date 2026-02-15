@@ -70,9 +70,10 @@
     </div>
 
     <div class="d-flex gap-2">
-        <a href="{% url 'grupo_export_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success text-white">
+        <button type="button" onclick="exportarExcel()"
+                class="btn btn-success text-white">
             <i class="bi bi-file-earmark-excel me-2"></i>Exportar
-        </a>
+        </button>
 
         <a href="#" class="btn btn-outline-success">
             <i class="bi bi-upload me-2"></i>Cargar Excel
@@ -314,5 +315,91 @@
     </div>
 </div>
 {% endif %}
+
+<script>
+function exportarExcel() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Construye la URL con TODOS los filtros actuales
+    const exportUrl = "/grupos/export-excel/?" + params.toString();
+
+    fetch(exportUrl)
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                mostrarToast(data.error || "Error al generar el reporte", 'danger');
+                throw new Error("No data");
+            });
+        }
+
+        // Obtener nombre real del archivo desde el header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = "reporte_grupos.xlsx";
+
+        if (contentDisposition) {
+            const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (fileNameMatch != null && fileNameMatch[1]) {
+                filename = fileNameMatch[1].replace(/['"]/g, ''); // Elimina comillas extra
+            }
+        }
+
+        return response.blob().then(blob => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+        mostrarToast('Reporte descargado exitosamente', 'success');
+    })
+    .catch(error => {
+        console.log("Error en exportación:", error);
+    });
+}
+
+function mostrarToast(mensaje, tipo = 'info') {
+    // Crear contenedor de toasts si no existe
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+
+    // Crear el toast
+    const toastId = 'toast-' + Date.now();
+    const toastHTML = `
+        <div id="${toastId}" class="toast align-items-center text-white bg-${tipo} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${mensaje}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 3000
+    });
+    toast.show();
+
+    // Eliminar el toast del DOM después de ocultarse
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        toastElement.remove();
+    });
+}
+</script>
 
 {% endblock %}
