@@ -33,6 +33,8 @@ class PeriodoAcademico(models.Model):
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
 
+    fuente = models.URLField(blank=True, null=True, help_text="Link a la resolución o página web")
+
     objects = PeriodoManager()
 
     class Meta:
