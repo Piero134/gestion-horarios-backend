@@ -1,0 +1,84 @@
+facultad_codigo,nombre
+1,Literatura
+1,Filosofía
+1,Lingüística
+1,Comunicación Social
+1,Arte
+1,Bibliotecología y Ciencias de la Información
+2,Derecho Privado
+2,Derecho Público
+2,Ciencias Jurídicas y Políticas
+3,Ciencias Dinámicas
+3,Ciencias Morfológicas
+3,Cirugía Humana
+3,Enfermería
+3,Ginecología y Obstetricia
+3,Medicina Humana
+3,Medicina Preventiva y Salud Pública
+3,Microbiología Médica
+3,Nutrición
+3,Obstetricia
+3,Patología
+3,Pediatría
+3,Psiquiatría
+3,Tecnología Médica
+4,Matemática
+4,Investigación Operativa
+4,Estadística
+5,Biología Celular y Genética
+5,Zoología
+5,Microbiología y Parasitología
+5,Hidrobiología y Pesquería
+5,Botánica
+6,Economía
+7,Microbiología y Parasitología
+7,Bioquímica
+7,Farmacotecnia y Administración Farmacéutica
+7,"Farmacología, Bromatología y Toxicología"
+7,Química Básica y Aplicada
+8,Estomatología Rehabilitadora
+8,Estomatología Pediátrica
+8,Estomatología Médico Quirúrgica
+8,Ciencias Básicas
+8,Estomatología Preventiva y Social
+9,Educación
+9,Educación Física
+10,Ciencias Veterinarias Básicas
+10,Salud Animal y Salud Pública
+10,Producción Animal
+11,Análisis y Diseño de Procesos
+11,Química Inorgánica
+11,Química Orgánica
+11,Fisicoquímica
+11,Química Analítica e Instrumental
+11,Procesos
+11,Ciencias Básicas
+11,Operaciones Unitarias
+12,Administración
+12,Administración de Turismo
+12,Administración de Negocios Internacionales
+13,Contabilidad
+14,Física del Estado Sólido
+14,Física Interdisciplinaria
+14,"Física Atómica, Nuclear y Molecular"
+14,Ingeniería Mecánica de Fluidos
+15,Historia
+15,Sociología
+15,Antropología
+15,Arqueología
+15,Trabajo Social
+15,Ciencias Geográficas
+16,Ingeniería Geológica
+16,Ingeniería de Minas
+16,Ingeniería Metalúrgica
+16,Ingeniería Geográfica
+16,Ingeniería Civil
+17,Diseño y Tecnología Industrial
+17,Producción y Gestión Industrial
+17,Ingeniería de Sistemas e Informática
+18,Ingeniería Electrónica
+18,Ingeniería Eléctrica
+18,Ingeniería de Telecomunicaciones
+19,Psicología
+20,Ciencias de la Computación
+20,Ingeniería de Software

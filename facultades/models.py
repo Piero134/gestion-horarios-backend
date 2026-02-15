@@ -27,3 +27,20 @@ class Facultad(models.Model):
 
     def __str__(self):
         return f"Facultad de {self.nombre}"
+
+
+class Departamento(models.Model):
+    nombre = models.CharField(max_length=50)
+    facultad = models.ForeignKey(
+        Facultad,
+        on_delete=models.CASCADE,
+        related_name='departamentos'
+    )
+
+    class Meta:
+        unique_together = ('facultad', 'nombre')
+        verbose_name = "Departamento"
+        verbose_name_plural = "Departamentos"
+
+    def __str__(self):
+        return f"{self.nombre}"
