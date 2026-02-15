@@ -116,7 +116,7 @@
         <div class="menu-section">
             <div class="menu-section-title">Gestión Académica</div>
 
-            <a href="" class="menu-item {% if 'periodos' in request.path %}active{% endif %}">
+            <a href="{% url 'periodo_list' %}" class="menu-item {% if 'periodos' in request.path %}active{% endif %}">
                 <i class="bi bi-calendar-range"></i>
                 <span>Períodos Académicos</span>
             </a>
