@@ -178,7 +178,7 @@
         <div class="menu-section">
             <div class="menu-section-title">Recursos</div>
 
-            <a href="" class="menu-item {% if 'docentes' in request.path %}active{% endif %}">
+            <a href="{% url 'docente_list' %}" class="menu-item {% if 'docentes' in request.path %}active{% endif %}">
                 <i class="bi bi-person-workspace"></i>
                 <span>Docentes</span>
             </a>

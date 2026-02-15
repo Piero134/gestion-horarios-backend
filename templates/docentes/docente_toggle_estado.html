@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ accion|title }} Docente{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'docente_list' %}">Docentes</a></li>
+                    <li class="breadcrumb-item active">{{ accion|title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi {% if accion == 'desactivar' %}bi-x-circle{% else %}bi-check-circle{% endif %} me-2"></i>
+                        {{ accion|title }} Docente
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+                    {% if accion == 'desactivar' %}
+                        <div class="alert alert-danger border-0">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Atención:</strong> El docente será marcado como inactivo. Podrá reactivarlo cuando lo necesite.
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success border-0">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <strong>Nota:</strong> El docente volverá a estar activo en el sistema.
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-4 p-3 bg-light rounded">
+                        <h6 class="text-muted mb-3">Información del Docente</h6>
+
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <strong>Nombre Completo:</strong>
+                                <div class="text-primary">{{ docente.nombre_completo }}</div>
+                            </div>
+
+                            <div class="col-6">
+                                <strong>DNI:</strong>
+                                <div>{{ docente.dni }}</div>
+                            </div>
+
+                            {% if docente.codigo %}
+                            <div class="col-6">
+                                <strong>Código:</strong>
+                                <div>{{ docente.codigo }}</div>
+                            </div>
+                            {% endif %}
+
+                            <div class="col-6">
+                                <strong>Tipo:</strong>
+                                <div>
+                                    {% if docente.tipo == 'N' %}
+                                        <span class="badge bg-success">Nombrado</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Contratado</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-6">
+                                <strong>Estado Actual:</strong>
+                                <div>
+                                    {% if docente.activo %}
+                                        <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if docente.departamento %}
+                            <div class="col-12">
+                                <strong>Departamento:</strong>
+                                <div>{{ docente.departamento.nombre }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="mb-4">
+                        ¿Está seguro que desea
+                        <strong class="{% if accion == 'desactivar' %}text-warning{% else %}text-success{% endif %}">
+                            {{ accion }}
+                        </strong>
+                        a este docente?
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% url 'docente_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi {% if accion == 'desactivar' %}bi-x-circle{% else %}bi-check-circle{% endif %} me-1"></i>
+                                Confirmar {{ accion|title }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action|default:"Registrar" }} Docente{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+<style>
+    .required-field::after {
+        content: "*";
+        color: red;
+        margin-left: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">Docentes</a></li>
+                    <li class="breadcrumb-item active">{{ action|default:"Registrar" }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="bi bi-person-lines-fill me-2"></i>
+                        {{ action|default:"Registrar Nuevo" }} Docente
+                    </h5>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="post" id="docenteForm">
+                        {% csrf_token %}
+
+                        <h6 class="text-muted text-uppercase fw-bold mb-3 border-bottom pb-2">
+                            <i class="bi bi-person-badge me-1"></i>Datos Personales
+                        </h6>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Condición Laboral</label>
+                                {{ form.tipo }}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">DNI</label>
+                                {{ form.dni }}
+                                {% if form.dni.errors %}
+                                    <div class="text-danger small">{{ form.dni.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Correo Institucional</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                                    {{ form.email }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Apellido Paterno</label>
+                                {{ form.apellido_paterno }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Apellido Materno</label>
+                                {{ form.apellido_materno }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Nombres</label>
+                                {{ form.nombres }}
+                            </div>
+                        </div>
+
+                        <h6 class="text-muted text-uppercase fw-bold mb-3 border-bottom pb-2">
+                            <i class="bi bi-building me-1"></i>Ubicación Académica
+                        </h6>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" for="id_facultad">Facultad <span class="text-danger">*</span></label>
+                                {{ form.facultad }}
+                                {% if form.facultad.errors %}
+                                    <div class="text-danger small">{{ form.facultad.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6" id="div-departamento">
+                                <label class="form-label" for="id_departamento" id="label-departamento">Departamento Académico</label>
+                                {{ form.departamento }}
+                                <div class="form-text small" id="help-dept">Seleccione una facultad primero</div>
+                                {% if form.departamento.errors %}
+                                    <div class="text-danger small">{{ form.departamento.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div id="seccion-nombrado" style="display: none;">
+                            <h6 class="text-muted text-uppercase fw-bold mb-3 border-bottom pb-2">
+                                <i class="bi bi-mortarboard me-1"></i>Datos Académicos (Nombrados)
+                            </h6>
+
+                            <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-primary">Código Docente</label>
+                                    {{ form.codigo }}
+                                    {% if form.codigo.errors %}
+                                        <div class="text-danger small">{{ form.codigo.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Categoría</label>
+                                    {{ form.categoria }}
+                                    {% if form.categoria.errors %}
+                                        <div class="text-danger small">{{ form.categoria.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Dedicación/Clase</label>
+                                    {{ form.dedicacion }}
+                                    {% if form.dedicacion.errors %}
+                                        <div class="text-danger small">{{ form.dedicacion.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="#" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-5">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // 1. Configuración de Select2
+    $('.select2-facultad').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Seleccione Facultad'
+    });
+
+    $('.select2-departamento').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        placeholder: 'Seleccione Departamento'
+    });
+
+    // 2. Variables
+    const $selectFacultad = $('#id_facultad');
+    const $selectDepartamento = $('#id_departamento');
+    const $selectTipo = $('#id_tipo');
+    const $seccionNombrado = $('#seccion-nombrado');
+    const $divDepartamento = $('#div-departamento');
+    const $labelDepartamento = $('#label-departamento');
+    const urlCargarDeptos = "{% url 'api_load_departamentos' %}";
+
+    // ---------------------------------------------------------
+    // A. LÓGICA DE API: Cargar Departamentos según Facultad
+    // ---------------------------------------------------------
+    $selectFacultad.on('change', function() {
+        const facultadId = $(this).val();
+
+        // Limpiamos el select de departamentos
+        $selectDepartamento.empty().trigger('change');
+
+        if (facultadId) {
+            $.ajax({
+                url: urlCargarDeptos,
+                data: { 'facultad_id': facultadId },
+                success: function(data) {
+                    $selectDepartamento.append(new Option('---------', '', true, true));
+                    data.departamentos.forEach(function(dept) {
+                        $selectDepartamento.append(new Option(dept.nombre, dept.id, false, false));
+                    });
+                    $selectDepartamento.trigger('change');
+                }
+            });
+        }
+    });
+
+    // ---------------------------------------------------------
+    // B. LÓGICA VISUAL: Nombrado vs Contratado
+    // ---------------------------------------------------------
+    function toggleCampos() {
+        const esNombrado = $selectTipo.val() === 'N';
+
+        if (esNombrado) {
+            // Mostrar campos de nombrado
+            $seccionNombrado.slideDown();
+            // Hacer obligatorio visualmente el departamento
+            $labelDepartamento.addClass('fw-bold required-field');
+            $divDepartamento.show();
+        } else {
+            // Ocultar campos de nombrado
+            $seccionNombrado.slideUp();
+            $labelDepartamento.removeClass('fw-bold required-field');
+
+            // Opcional: Ocultar departamento para contratados
+            $divDepartamento.hide();
+            $selectDepartamento.val('').trigger('change');
+        }
+    }
+
+    // Ejecutar al inicio y al cambiar
+    toggleCampos();
+    $selectTipo.on('change', toggleCampos);
+});
+</script>
+{% endblock %}
