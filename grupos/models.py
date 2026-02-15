@@ -45,6 +45,16 @@ class GrupoQuerySet(models.QuerySet):
     def para_usuario(self, user):
         if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
             return self.filter(asignatura__plan__escuela__facultad=user.facultad)
+
+        if hasattr(user, 'rol') and user.rol.name in [
+            'Coordinador de Estudios Generales',
+            'Jefe de Estudios Generales'
+        ]:
+            return self.filter(
+                asignatura__plan__escuela__facultad=user.facultad,
+                asignatura__ciclo__in=[1, 2]
+            )
+
         if hasattr(user, 'escuela') and user.escuela:
             return self.filter(asignatura__plan__escuela=user.escuela)
         return self.none()
