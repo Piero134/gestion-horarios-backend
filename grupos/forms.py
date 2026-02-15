@@ -25,7 +25,7 @@ class HorarioForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['docente'].queryset = Docente.objects.all().order_by('apellido', 'nombre')
+        self.fields['docente'].queryset = Docente.objects.filter(activo=True).order_by('apellido_paterno', 'apellido_materno', 'nombres')
 
 
 class GrupoForm(forms.ModelForm):
