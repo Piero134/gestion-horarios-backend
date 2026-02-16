@@ -60,7 +60,7 @@ class Horario(models.Model):
 
     def __str__(self):
         nombre_aula = self.aula.nombre if self.aula else "Sin Aula"
-        nombre_docente = self.docente.nombre if self.docente else "Sin Docente"
+        nombre_docente = self.docente if self.docente else "Sin Docente"
         return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({nombre_aula}) - {nombre_docente}"
 
     def clean(self):
