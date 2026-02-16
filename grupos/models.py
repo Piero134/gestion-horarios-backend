@@ -24,8 +24,9 @@ class GrupoQuerySet(models.QuerySet):
         return self.filter(
             Q(asignatura__nombre__icontains=query) |
             Q(asignatura__codigo__icontains=query) |
-            Q(horarios__docente__nombre__icontains=query) |
-            Q(horarios__docente__apellido__icontains=query)
+            Q(horarios__docente__nombres__icontains=query) |
+            Q(horarios__docente__apellido_paterno__icontains=query) |
+            Q(horarios__docente__apellido_materno__icontains=query)
         ).distinct()
 
     def con_info_completa(self):
