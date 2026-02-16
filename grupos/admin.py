@@ -4,7 +4,7 @@ from horarios.models import Horario
 from asignaturas.models import Asignatura
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
-from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 class DistribucionVacantesInline(admin.TabularInline):
     model = DistribucionVacantes
@@ -86,8 +86,8 @@ class GrupoAdmin(admin.ModelAdmin):
 
     @admin.display(description="Docentes")
     def get_docentes(self, obj):
-        docentes = {f"{h.docente.nombre} {h.docente.apellido}" for h in obj.horarios.all() if h.docente}
-        return ", ".join(docentes) if docentes else format_html('<span style="color:red;">Sin asignar</span>')
+        docentes = {f"{h.docente}" for h in obj.horarios.all() if h.docente}
+        return ", ".join(docentes) if docentes else mark_safe('<span style="color:red;">Sin asignar</span>')
 
     @admin.display(description="Vacantes")
     def total_vacantes_display(self, obj):
