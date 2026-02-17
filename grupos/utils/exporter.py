@@ -303,110 +303,34 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
 
 
 # Funcion principal para generar el reporte
-def generar_reporte_grupos(periodo_id=None, escuela_id=None, plan_id=None,
-                          ciclo=None, grupo_num=None, buscar=None, user=None):
-
-    if not user:
+def generar_reporte_grupos(grupos_queryset, user):
+    if not grupos_queryset.exists():
         return None
 
-    try:
-        if periodo_id:
-            periodo = PeriodoAcademico.objects.get(id=periodo_id)
-        else:
-            periodo = PeriodoAcademico.objects.get_activo()
-    except PeriodoAcademico.DoesNotExist:
-        return None
+    # Obtenemos el periodo del primer grupo (ya que todos son del mismo periodo por el filtro)
+    first_group = grupos_queryset.first()
+    nombre_periodo_str = str(first_group.periodo)
 
-    if not periodo:
-        return None
-
-    nombre_periodo_str = str(periodo)
-
-    facultad_texto = (
-        user.facultad.nombre.upper()
-        if getattr(user, "facultad", None)
-        else "FACULTAD"
-    )
-
+    facultad_texto = user.facultad.nombre.upper() if getattr(user, "facultad", None) else "FACULTAD"
     rol_nombre = getattr(user.rol, "name", "")
     dependencia_texto = ""
 
     if rol_nombre == "Vicedecano Académico":
         dependencia_texto = "VICEDECANATO ACADÉMICO"
-        if escuela_id and str(escuela_id).isdigit():
-            from escuelas.models import Escuela
-            try:
-                escuela = Escuela.objects.get(id=escuela_id)
-                dependencia_texto = f"VICEDECANATO ACADÉMICO - ESCUELA PROFESIONAL DE {escuela.nombre.upper()}"
-            except:
-                pass
-
-
-    elif rol_nombre in [
-        "Coordinador de Estudios Generales",
-        "Jefe de Estudios Generales",
-    ]:
+        escuela_nombre = first_group.asignatura.plan.escuela.nombre.upper()
+        dependencia_texto += f" - ESCUELA PROFESIONAL DE {escuela_nombre}"
+    elif rol_nombre in ["Coordinador de Estudios Generales", "Jefe de Estudios Generales"]:
         dependencia_texto = "COORDINACIÓN DE ESTUDIOS GENERALES"
-
     elif getattr(user, "escuela", None):
-        dependencia_texto = (
-            f"ESCUELA PROFESIONAL DE {user.escuela.nombre.upper()}"
-        )
+        dependencia_texto = f"ESCUELA PROFESIONAL DE {user.escuela.nombre.upper()}"
 
-    else:
-        return None
-
-    qs_grupos = (
-        Grupo.objects
-        .filter(periodo=periodo)
-        .para_usuario(user)
-        .con_info_completa()
-        .select_related("asignatura__plan__escuela__facultad")
-    )
-
-    filtros = {}
-
-    if escuela_id:
-        filtros["asignatura__plan__escuela_id"] = escuela_id
-
-    if plan_id:
-        filtros["asignatura__plan_id"] = plan_id
-
-    if ciclo:
-        filtros["asignatura__ciclo"] = ciclo
-
-    if grupo_num:
-        filtros["numero"] = grupo_num
-
-    if filtros:
-        qs_grupos = qs_grupos.filter(**filtros)
-
-    if buscar:
-        qs_grupos = qs_grupos.filter(
-            Q(asignatura__nombre__icontains=buscar) |
-            Q(asignatura__codigo__icontains=buscar)
-        )
-
-    qs_grupos = qs_grupos.order_by(
-        "asignatura__ciclo",
-        "asignatura__nombre",
-        "numero",
-    )
-
-    grupos = list(qs_grupos)
-
-    if not grupos:
-        return None
+    grupos = list(grupos_queryset)
 
     wb = Workbook()
 
-    _generar_hoja_lista_cursos(
-        wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str
-    )
-
-    _generar_hojas_horario_grafico(
-        wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str
-    )
+    # Pasamos los datos a tus funciones de pintado (sin cambios internos en ellas)
+    _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str)
+    _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str)
 
     output = io.BytesIO()
     wb.save(output)
@@ -418,4 +342,3 @@ def generar_reporte_grupos(periodo_id=None, escuela_id=None, plan_id=None,
     filename = f"horarios-{periodo_slug}-{dependencia_slug}.xlsx"
 
     return output, filename
-

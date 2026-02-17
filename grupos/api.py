@@ -41,3 +41,27 @@ class GrupoViewSet(viewsets.ReadOnlyModelViewSet):
             'asignatura__codigo',
             'numero'
         )
+
+    # Acción personalizada para exportar a Excel
+    @action(detail=False, methods=['get'])
+    def exportar_excel(self, request):
+        queryset_filtrado = self.filter_queryset(self.get_queryset())
+
+        resultado = generar_reporte_grupos(queryset_filtrado, request.user)
+
+        # Manejo de errores
+        if not resultado:
+            return Response(
+                {"error": "No se encontraron datos para generar el reporte."},
+                status=400
+            )
+
+        archivo_io, nombre_archivo = resultado
+
+        response = HttpResponse(
+            archivo_io,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
+
+        return response
