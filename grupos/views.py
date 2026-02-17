@@ -15,62 +15,27 @@ from escuelas.models import Escuela
 from planes.models import PlanEstudios
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse, JsonResponse
-from .exporter import generar_reporte_grupos
+from .filters import GrupoFilter
+from .utils.exporter import generar_reporte_grupos
+from .utils.importer import importar_programacion, ExcelImportError
+from .excel_forms import UploadExcelForm
 
 @login_required
 def grupos_list(request):
     """Lista de grupos con filtros"""
 
-    # Obtener filtros
-    periodo_id = request.GET.get('periodo')
-    escuela_id = request.GET.get('escuela')
-    plan_id = request.GET.get('plan')
-    ciclo = request.GET.get('ciclo')
-    grupo_num = request.GET.get('grupo')
-    buscar = request.GET.get('buscar', '').strip()
-    page_number = request.GET.get('page')
+    filter_data = request.GET.copy()
 
-    # Base queryset según rol
-    user = request.user
-
-    grupos = Grupo.objects.para_usuario(user)
-
-    escuelas_para_filtro = Escuela.objects.none()
-    if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
-        escuelas_para_filtro = Escuela.objects.filter(facultad=user.facultad).order_by('codigo')
-
-    planes_para_filtro = PlanEstudios.objects.none()
-    if escuela_id and escuela_id.isdigit():
-        planes_para_filtro = PlanEstudios.objects.filter(escuela_id=escuela_id)
-    elif hasattr(user, 'escuela') and user.escuela:
-        planes_para_filtro = PlanEstudios.objects.filter(escuela=user.escuela)
-
-    # Aplicar filtros
-    if periodo_id and periodo_id.isdigit():
-        grupos = grupos.filter(periodo_id=periodo_id)
-    else:
-        # Por defecto: Periodo Activo
+    if not filter_data.get('periodo'):
         periodo_activo = PeriodoAcademico.objects.get_activo()
         if periodo_activo:
-            grupos = grupos.filter(periodo=periodo_activo)
-            periodo_id = periodo_activo.id
+            filter_data['periodo'] = periodo_activo.id
 
-    if escuela_id and str(escuela_id).isdigit() and user.rol.name == 'Vicedecano Académico':
-        grupos = grupos.filter(asignatura__plan__escuela_id=escuela_id)
+    qs = Grupo.objects.para_usuario(request.user)
 
-    if plan_id and plan_id.isdigit():
-        grupos = grupos.filter(asignatura__plan_id=plan_id)
+    filtro = GrupoFilter(filter_data, queryset=qs)
 
-    if ciclo and ciclo.isdigit():
-        grupos = grupos.filter(asignatura__ciclo=ciclo)
-
-    if grupo_num and grupo_num.isdigit():
-        grupos = grupos.filter(numero=grupo_num)
-
-    if buscar:
-        grupos = grupos.buscar(buscar)
-
-    grupos = grupos.con_info_completa().annotate(
+    grupos = filtro.qs.con_info_completa().annotate(
         total_vacantes_db=Coalesce(Sum('vacantes__cantidad'), Value(0))
     ).order_by(
         '-periodo__anio',
@@ -79,27 +44,37 @@ def grupos_list(request):
         'numero'
     )
 
-    paginator = Paginator(grupos, 20) # 20 items por página
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(grupos, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    user = request.user
+    escuelas = Escuela.objects.none()
+    planes = PlanEstudios.objects.none()
+
+    if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
+        escuelas = Escuela.objects.filter(facultad=user.facultad).order_by('codigo')
+
+    escuela_id = filter_data.get('escuela')
+    if escuela_id and str(escuela_id).isdigit():
+        planes = PlanEstudios.objects.filter(escuela_id=escuela_id)
+    elif hasattr(user, 'escuela') and user.escuela:
+        planes = PlanEstudios.objects.filter(escuela=user.escuela)
+
+    ciclos = range(1, 11)
+
+    if hasattr(user, 'rol') and user.rol.name in [
+        "Coordinador de Estudios Generales",
+        "Jefe de Estudios Generales"
+    ]:
+        ciclos = range(1, 3)
 
     context = {
         'grupos': page_obj,
-
-        # Datos para llenar los <select>
+        'filtros': filter_data,
         'periodos': PeriodoAcademico.objects.all().order_by('-anio', '-fecha_inicio'),
-        'escuelas': escuelas_para_filtro,
-        'planes': planes_para_filtro.order_by('nombre'),
-        'ciclos': range(1, 11),
-
-        # Estado actual de los filtros (para mantener seleccionado en el HTML)
-        'filtros': {
-            'periodo': int(periodo_id) if periodo_id else '',
-            'escuela': int(escuela_id) if escuela_id and str(escuela_id).isdigit() else '',
-            'plan': int(plan_id) if plan_id and str(plan_id).isdigit() else '',
-            'ciclo': int(ciclo) if ciclo and str(ciclo).isdigit() else '',
-            'grupo': grupo_num if grupo_num else '',
-            'buscar': buscar
-        }
+        'escuelas': escuelas,
+        'planes': planes.order_by('nombre'),
+        'ciclos': ciclos,
     }
 
     return render(request, 'grupos/grupos_list.html', context)
@@ -266,38 +241,3 @@ def grupo_detail(request, pk):
 
     return render(request, 'grupos/grupo_detail.html', context)
 
-@login_required
-def grupo_export_excel(request):
-    periodo_id = request.GET.get('periodo_id') or request.GET.get('periodo')
-    escuela_id = request.GET.get('escuela')
-    plan_id = request.GET.get('plan')
-    ciclo = request.GET.get('ciclo')
-    grupo_num = request.GET.get('grupo')
-    buscar = request.GET.get('buscar', '').strip()
-
-    resultado = generar_reporte_grupos(
-        periodo_id=periodo_id,
-        escuela_id=escuela_id,
-        plan_id=plan_id,
-        ciclo=ciclo,
-        grupo_num=grupo_num,
-        buscar=buscar,
-        user=request.user
-    )
-
-    if not resultado:
-        return JsonResponse(
-            {"error": "No se encontraron datos para generar el reporte con los filtros aplicados."},
-            status=400
-        )
-
-    archivo_excel, nombre_archivo = resultado
-
-    response = HttpResponse(
-        archivo_excel,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-
-    response['Content-Disposition'] = f'attachment; filename={nombre_archivo}'
-
-    return response

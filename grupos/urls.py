@@ -15,6 +15,4 @@ urlpatterns = [
     path('<int:pk>/eliminar/', views.grupo_delete, name='grupo_delete'),
 
     path('api/', include(router.urls)),
-
-    path('export-excel/', views.grupo_export_excel, name='grupo_export_excel'),
 ]

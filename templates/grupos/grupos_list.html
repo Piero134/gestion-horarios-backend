@@ -201,7 +201,7 @@
             <button type="button" onclick="exportarExcel()" class="btn btn-outline-success" title="Descargar reporte">
                 <i class="bi bi-file-earmark-excel"></i> <span class="d-none d-md-inline">Exportar</span>
             </button>
-            <a href="{% url 'importar_grupos' %}" class="btn btn-outline-secondary" title="Cargar masiva">
+            <a href="#" class="btn btn-outline-secondary" title="Cargar masiva">
                 <i class="bi bi-upload"></i> <span class="d-none d-md-inline">Importar</span>
             </a>
         </div>
@@ -215,7 +215,7 @@
 <div class="filter-card">
     <form method="get">
         <div class="row g-3 align-items-end">
-            <div class="col-md-4 col-lg-5">
+            <div class="col-12 {% if request.user.rol.name == 'Vicedecano Académico' %}col-lg-3{% else %}col-lg-5{% endif %}">
                 <label class="filter-label">Búsqueda Rápida</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
@@ -230,7 +230,37 @@
                 <select name="periodo" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">Todos</option>
                     {% for p in periodos %}
-                        <option value="{{ p.id }}" {% if filtros.periodo == p.id %}selected{% endif %}>{{ p.nombre }}</option>
+                        <option value="{{ p.id }}"
+                            {% if filtros.periodo|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+                            {{ p.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if request.user.rol.name == 'Vicedecano Académico' %}
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="filter-label">Escuela</label>
+                <select name="escuela" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for e in escuelas %}
+                        <option value="{{ e.id }}"
+                            {% if filtros.escuela|stringformat:"s" == e.id|stringformat:"s" %}selected{% endif %}>
+                            {{ e.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="filter-label">Plan</label>
+                <select name="plan" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    {% for p in planes %}
+                        <option value="{{ p.id }}"
+                            {% if filtros.plan|stringformat:"s" == p.id|stringformat:"s" %}selected{% endif %}>
+                            {{ p.nombre }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
@@ -240,18 +270,22 @@
                 <select name="ciclo" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">Todos</option>
                     {% for i in ciclos %}
-                        <option value="{{ i }}" {% if filtros.ciclo == i %}selected{% endif %}>Ciclo {{ i }}</option>
+                        <option value="{{ i }}"
+                            {% if filtros.ciclo|stringformat:"s" == i|stringformat:"s" %}selected{% endif %}>
+                            Ciclo {{ i }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
 
-            <div class="col-md-2 col-lg-1">
-                 {% if filtros.buscar or filtros.periodo or filtros.ciclo %}
+            <div class="col-12 col-lg-1 text-center text-lg-start mt-3 mt-lg-0">
+                 {% if filtros.buscar or filtros.periodo or filtros.ciclo or filtros.escuela or filtros.plan %}
                     <a href="{% url 'grupos_list' %}" class="btn btn-outline-danger btn-sm w-100">
                         <i class="bi bi-x-circle me-1"></i> Limpiar
                     </a>
                 {% endif %}
             </div>
+
         </div>
     </form>
 </div>
@@ -413,26 +447,24 @@
 function exportarExcel() {
     const params = new URLSearchParams(window.location.search);
 
-    // Construye la URL con TODOS los filtros actuales
-    const exportUrl = "/grupos/export-excel/?" + params.toString();
+    const exportUrl = "/grupos/api/grupos/exportar_excel/?" + params.toString();
 
     fetch(exportUrl)
     .then(response => {
         if (!response.ok) {
             return response.json().then(data => {
                 mostrarToast(data.error || "Error al generar el reporte", 'danger');
-                throw new Error("No data");
+                throw new Error("API Error");
             });
         }
 
-        // Obtener nombre real del archivo desde el header
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = "reporte_grupos.xlsx";
 
         if (contentDisposition) {
             const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
             if (fileNameMatch != null && fileNameMatch[1]) {
-                filename = fileNameMatch[1].replace(/['"]/g, ''); // Elimina comillas extra
+                filename = fileNameMatch[1].replace(/['"]/g, '');
             }
         }
 
@@ -451,7 +483,10 @@ function exportarExcel() {
         mostrarToast('Reporte descargado exitosamente', 'success');
     })
     .catch(error => {
-        console.log("Error en exportación:", error);
+        if (error.message !== "API Error") {
+            console.error("Error de red:", error);
+            mostrarToast('Error de conexión con el servidor', 'danger');
+        }
     });
 }
 
