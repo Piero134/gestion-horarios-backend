@@ -65,7 +65,7 @@ def obtener_equivalencias_asignatura(request):
                 'nombre': asig.nombre,
                 'plan': asig.plan.nombre,
                 'escuela': asig.plan.escuela.nombre,
-                'text': f"[{asig.codigo}] {asig.nombre}"
+                'text': f"[{asig.plan.escuela.nombre}] {asig.nombre}"
             })
 
         data = {
