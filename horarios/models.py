@@ -54,6 +54,7 @@ class Horario(models.Model):
     )
 
     class Meta:
+        unique_together = ('grupo', 'dia', 'hora_inicio')
         verbose_name = "Horario"
         verbose_name_plural = "Horarios"
         ordering = ['dia', 'hora_inicio']
@@ -63,57 +64,42 @@ class Horario(models.Model):
         nombre_docente = self.docente if self.docente else "Sin Docente"
         return f"{self.get_dia_display()}: {self.hora_inicio} - {self.hora_fin} ({nombre_aula}) - {nombre_docente}"
 
-    def clean(self):
-        if not self.hora_inicio or not self.hora_fin:
-            return
+    def obtener_cruce(self, queryset):
+        if self.pk:
+            queryset = queryset.exclude(pk=self.pk)
+        return queryset.filter(
+            dia=self.dia,
+            hora_inicio__lt=self.hora_fin,
+            hora_fin__gt=self.hora_inicio
+        ).first()
 
-        if self.hora_inicio >= self.hora_fin:
+    def clean(self):
+        if self.hora_inicio and self.hora_fin and self.hora_inicio >= self.hora_fin:
             raise ValidationError("La hora de inicio debe ser anterior a la hora de fin.")
 
-        try:
-            if not self.grupo_id:
-                return
+        if not self.grupo_id:
+            return
 
-            grupo = self.grupo
-            periodo = grupo.periodo
-            asignatura = grupo.asignatura
-        except ObjectDoesNotExist:
-             return
+        qs_periodo = Horario.objects.filter(grupo__periodo=self.grupo.periodo)
+
+        cruce_grupo = self.obtener_cruce(Horario.objects.filter(grupo=self.grupo))
+
+        if cruce_grupo:
+            raise ValidationError(f"El grupo ya tiene clase de {cruce_grupo.hora_inicio} a {cruce_grupo.hora_fin}.")
 
         if self.aula:
-            cruces_aula = Horario.objects.filter(
-                aula=self.aula,
-                dia=self.dia,
-                grupo__periodo=periodo,
-                hora_inicio__lt=self.hora_fin,
-                hora_fin__gt=self.hora_inicio
-            )
-
-            if self.pk:
-                cruces_aula = cruces_aula.exclude(pk=self.pk)
-
-            if cruces_aula.exists():
-                raise ValidationError(
-                    f"Conflicto de aula: El aula {self.aula} ya está ocupada en este rango."
-                )
+            cruce_aula = self.obtener_cruce(qs_periodo.filter(aula=self.aula))
+            if cruce_aula:
+                raise ValidationError(f"El aula {self.aula} ya está ocupada en este horario.")
 
         if self.docente:
-            cruces_docente = Horario.objects.filter(
-                docente=self.docente,
-                dia=self.dia,
-                grupo__periodo=periodo,
-                hora_inicio__lt=self.hora_fin,
-                hora_fin__gt=self.hora_inicio
-            )
-
-            if self.pk:
-                cruces_docente = cruces_docente.exclude(pk=self.pk)
-
-            if cruces_docente.exists():
-                cruce = cruces_docente.first()
+            cruce_docente = self._hay_traslape(qs_periodo.filter(docente=self.docente))
+            if cruce_docente:
                 raise ValidationError({
-                    'docente': f"El docente {self.docente} ya tiene clase a esta hora (Grupo {cruce.grupo})."
+                    'docente': f"El docente {self.docente} ya tiene clase en el Grupo {cruce_docente.grupo}."
                 })
+
+        asignatura = self.grupo.asignatura
 
         horas_requeridas = {
             'T': asignatura.horas_teoria,
@@ -130,7 +116,7 @@ class Horario(models.Model):
         total_por_tipo = {'T': 0, 'P': 0, 'L': 0}
 
         # Traemos horarios excluyendo el actual
-        horarios = grupo.horarios.all()
+        horarios = self.grupo.horarios.all()
         if self.pk:
             horarios = horarios.exclude(pk=self.pk)
 
