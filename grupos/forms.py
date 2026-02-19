@@ -83,17 +83,46 @@ class GrupoForm(forms.ModelForm):
             self.fields['periodo_display'].initial = str(self.periodo_activo)
 
         # Filtro segun rol
-        if self.user:
-            if hasattr(self.user, 'rol') and self.user.rol.name == 'Vicedecano Académico':
-                self.fields['escuela_filtro'].queryset = Escuela.objects.filter(
-                    facultad=self.user.facultad
+        if not self.user:
+            self.fields['escuela_filtro'].queryset = Escuela.objects.none()
+
+        else:
+            rol = getattr(self.user, 'rol', None)
+            facultad = getattr(self.user, 'facultad', None)
+            escuela_usuario = getattr(self.user, 'escuela', None)
+
+            qs_escuelas = Escuela.objects.none()
+
+            if rol and rol.name == 'Vicedecano Académico' and facultad:
+                qs_escuelas = Escuela.objects.filter(
+                    facultad=facultad
                 ).order_by('codigo')
-            elif hasattr(self.user, 'escuela') and self.user.escuela:
-                self.fields['escuela_filtro'].queryset = Escuela.objects.filter(
-                    pk=self.user.escuela.pk
+
+            elif rol and rol.name in [
+                'Coordinador de Estudios Generales',
+                'Jefe de Estudios Generales'
+            ] and facultad:
+                escuela_principal = (
+                        Escuela.objects
+                        .filter(facultad=facultad)
+                        .order_by('codigo')
+                        .first()
+                    )
+
+                if escuela_principal:
+                    qs_escuelas = Escuela.objects.filter(pk=escuela_principal.pk)
+                    self.fields['escuela_filtro'].initial = escuela_principal
+                    self.fields['escuela_filtro'].disabled = True
+
+            elif escuela_usuario:
+                qs_escuelas = Escuela.objects.filter(
+                    pk=escuela_usuario.pk
                 )
-                self.fields['escuela_filtro'].initial = self.user.escuela
-                self.fields['escuela_filtro'].widget = forms.HiddenInput()
+
+                self.fields['escuela_filtro'].initial = escuela_usuario
+                self.fields['escuela_filtro'].disabled = True
+
+            self.fields['escuela_filtro'].queryset = qs_escuelas
 
         # Lógica de carga de asignatura (Select2 AJAX friendly)
         self.fields['asignatura'].queryset = Asignatura.objects.none()
