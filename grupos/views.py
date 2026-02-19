@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Sum, Value, Q
+from django.db.models import Sum, Value
 from django.core.paginator import Paginator
 from grupos.models import Grupo
 from grupos.forms import (
@@ -14,7 +14,6 @@ from periodos.models import PeriodoAcademico
 from escuelas.models import Escuela
 from planes.models import PlanEstudios
 from django.db.models.functions import Coalesce
-from django.http import HttpResponse, JsonResponse
 from .filters import GrupoFilter
 from .utils.exporter import generar_reporte_grupos
 from .utils.importer import importar_programacion, ExcelImportError
@@ -241,3 +240,31 @@ def grupo_detail(request, pk):
 
     return render(request, 'grupos/grupo_detail.html', context)
 
+@login_required
+def importar_grupos_view(request):
+    if request.method == 'POST':
+        form = UploadExcelForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo = request.FILES['archivo']
+
+            try:
+                resultado = importar_programacion(archivo, request.user)
+
+                # Feedback al usuario
+                creados = resultado['creados']
+                errores = resultado['errores']
+
+                return render(request, 'grupos/importar_resultado.html', {
+                    'creados': creados,
+                    'errores': errores
+                })
+
+            except ExcelImportError as e:
+                form.add_error(None, f"Error en el formato del Excel: {str(e)}")
+            except Exception as e:
+                form.add_error(None, f"Error interno: {str(e)}")
+
+    else:
+        form = UploadExcelForm()
+
+    return render(request, 'grupos/importar_form.html', {'form': form})

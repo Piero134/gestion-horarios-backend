@@ -14,5 +14,6 @@ urlpatterns = [
     path('<int:pk>/editar/', views.grupo_edit, name='grupo_edit'),
     path('<int:pk>/eliminar/', views.grupo_delete, name='grupo_delete'),
 
+    path('importar/', views.importar_grupos_view, name='importar_grupos'),
     path('api/', include(router.urls)),
 ]
