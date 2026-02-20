@@ -311,19 +311,10 @@ def _get_or_create_docente(nombre_completo_raw, user):
         if not facultad and hasattr(user, 'escuela') and user.escuela:
             facultad = user.escuela.facultad
 
-        # Generar DNI Temporal
-        dni_temp = f"TMP{slugify(paterno)[:3]}{slugify(nombres)[:3]}"
-        counter = 1
-        base_dni = dni_temp
-        while Docente.objects.filter(dni=dni_temp).exists():
-            dni_temp = f"{base_dni}{counter}"
-            counter += 1
-
         docente = Docente.objects.create(
             apellido_paterno=paterno,
             apellido_materno=materno,
             nombres=nombres,
-            dni=dni_temp,
             tipo='C', # Contratado
             facultad=facultad
         )

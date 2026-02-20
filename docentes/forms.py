@@ -47,6 +47,20 @@ class DocenteForm(forms.ModelForm):
         elif self.instance.pk and self.instance.facultad:
             self.fields['departamento'].queryset = Departamento.objects.filter(facultad=self.instance.facultad).order_by('nombre')
 
+    def clean_dni(self):
+        dni = self.cleaned_data.get('dni')
+
+        if not dni:
+            raise forms.ValidationError("El DNI es obligatorio.")
+
+        if not dni.isdigit():
+            raise forms.ValidationError("El DNI debe contener solo números.")
+
+        if len(dni) != 8:
+            raise forms.ValidationError("El DNI debe tener exactamente 8 dígitos.")
+
+        return dni
+
     def clean(self):
         cleaned_data = super().clean()
         tipo = cleaned_data.get('tipo')

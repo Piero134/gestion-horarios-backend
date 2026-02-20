@@ -20,7 +20,7 @@ class Docente(models.Model):
     apellido_paterno = models.CharField(max_length=50)
     apellido_materno = models.CharField(max_length=50)
     nombres = models.CharField(max_length=100)
-    dni = models.CharField(max_length=8, unique=True)
+    dni = models.CharField(max_length=8, unique=True, blank=True, null=True)
     email = models.EmailField(verbose_name="Correo Institucional", unique=True, blank=True, null=True)
 
     tipo = models.CharField(
@@ -89,10 +89,6 @@ class Docente(models.Model):
     @property
     def nombre_completo(self):
         return f"{self.nombres} {self.apellido_paterno} {self.apellido_materno}"
-
-    @property
-    def get_tipo_display(self):
-        return self.get_tipo_display()
 
     def clean(self):
         if self.departamento and self.facultad:
