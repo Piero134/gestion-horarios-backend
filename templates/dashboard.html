@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet - Inicio</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root { --primary: #4f46e5; --bg-body: #f3f4f6; --bg-card: #ffffff; --text-main: #1f2937; --text-muted: #6b7280; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); margin: 0; display: flex; height: 100vh; color: var(--text-main); }
+        .sidebar { width: 250px; background-color: white; border-right: 1px solid #e5e7eb; display: flex; flex-direction: column; padding: 1.5rem; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-links { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
+        .nav-item { margin-bottom: 0.5rem; }
+        .nav-link { display: block; padding: 0.75rem 1rem; border-radius: 8px; text-decoration: none; color: var(--text-muted); font-weight: 500; transition: all 0.2s; }
+        .nav-link:hover, .nav-link.active { background-color: #eef2ff; color: var(--primary); }
+        .user-profile { border-top: 1px solid #e5e7eb; padding-top: 1rem; display: flex; align-items: center; gap: 0.8rem; }
+        .avatar { width: 40px; height: 40px; background-color: var(--primary); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; }
+        .main-content { flex: 1; padding: 2rem; overflow-y: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .welcome-text h1 { margin: 0; font-size: 1.8rem; }
+        .date { color: var(--text-muted); font-size: 0.9rem; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+        .card { background: var(--bg-card); padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: transform 0.2s; cursor: pointer; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main); }
+        .card-desc { font-size: 0.9rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo"><span>🚀</span> Mi Intranet</div>
+
+        <ul class="nav-links">
+            <li class="nav-item"><a href="#" class="nav-link active">Inicio</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">Mis Horarios</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">Cursos</a></li>
+            <li class="nav-item"><a href="#" class="nav-link">Configuración</a></li>
+        </ul>
+
+        <div class="user-profile">
+            <div class="avatar">{{ user.username|first|upper }}</div>
+            <div>
+                <div style="font-weight: 600; font-size: 0.9rem;">{{ user.username }}</div>
+                
+                <div id="logout-root"></div>
+
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="welcome-text">
+                <h1>¡Hola, {{ user.username }}! 👋</h1>
+                <p class="date">Bienvenido a tu panel de control.</p>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-title">📅 Mis Horarios</div>
+                <div class="card-desc">Revisa tus clases programadas para hoy.</div>
+            </div>
+            <div class="card">
+                <div class="card-title">📚 Cursos Activos</div>
+                <div class="card-desc">Accede al material de tus 3 cursos.</div>
+            </div>
+            <div class="card">
+                <div class="card-title">🔔 Notificaciones</div>
+                <div class="card-desc">Tienes 2 mensajes nuevos sin leer.</div>
+            </div>
+            <div class="card">
+                <div class="card-title">👤 Mi Perfil</div>
+                <div class="card-desc">Actualiza tus datos personales.</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Si tu URL de login se llama 'login_page' en urls.py
+        const LOGIN_REDIRECT_URL = "{% url 'accounts:login_page' %}"; 
+        // IMPORTANTE: Aquí pon la URL exacta de tu API (revisa tu urls.py)
+        const LOGOUT_API_URL = "/api/auth/logout/"; 
+    </script>
+
+    {% verbatim %}
+    <script type="text/babel">
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function LogoutButton() {
+            const handleLogout = async () => {
+                try {
+                    // Fetch a tu API
+                    await fetch(LOGOUT_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    // NO IMPORTA lo que responda la API (error 401 o 200),
+                    // siempre redirigimos al usuario al login.
+                    window.location.href = LOGIN_REDIRECT_URL;
+                } catch (error) {
+                    console.error("Error:", error);
+                    window.location.href = LOGIN_REDIRECT_URL;
+                }
+            };
+
+            return (
+                <button 
+                    onClick={handleLogout} 
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '0.8rem',
+                        padding: 0,
+                        textAlign: 'left'
+                    }}
+                >
+                    Cerrar Sesión
+                </button>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('logout-root'));
+        root.render(<LogoutButton />);
+    </script>
+    {% endverbatim %}
+
+</body>
+</html>
