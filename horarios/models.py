@@ -93,7 +93,7 @@ class Horario(models.Model):
                 raise ValidationError(f"El aula {self.aula} ya está ocupada en este horario.")
 
         if self.docente:
-            cruce_docente = self._hay_traslape(qs_periodo.filter(docente=self.docente))
+            cruce_docente = self.obtener_cruce(qs_periodo.filter(docente=self.docente))
             if cruce_docente:
                 raise ValidationError({
                     'docente': f"El docente {self.docente} ya tiene clase en el Grupo {cruce_docente.grupo}."
