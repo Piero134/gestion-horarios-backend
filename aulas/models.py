@@ -1,4 +1,5 @@
 from django.db import models
+from facultades.models import Facultad
 
 
 class Aula(models.Model):
@@ -9,9 +10,8 @@ class Aula(models.Model):
 
     class TipoSesion(models.TextChoices):
         TEORIA = 'T', 'Teoría'
-        PRÁCTICA = 'P', 'Práctica'
-        LABORATORIO = 'L', 'Laboratorio'
-        
+        PRACTICA = 'P', 'Práctica'
+
     nombre = models.CharField(
         max_length=20,
         unique=True,
@@ -35,13 +35,15 @@ class Aula(models.Model):
         choices=TipoSesion.choices,
         default=TipoSesion.TEORIA,
         verbose_name="Tipo de Sesión",
-        help_text="Define si el aula es para Teoría, Práctica o Laboratorio"
+        help_text="Define si el aula es para Teoría o Práctica"
     )
 
-    descripcion = models.TextField(
-        default="Sin asignar",
-        blank=True,
-        verbose_name="Descripción"
+    facultad = models.ForeignKey(
+        Facultad,
+        on_delete=models.CASCADE,
+        related_name='aulas',
+        verbose_name="Facultad",
+        help_text="Facultad a la que pertenece el aula"
     )
 
     activo = models.BooleanField(
@@ -59,7 +61,7 @@ class Aula(models.Model):
         ordering = ['pabellon', 'nombre']
 
     def __str__(self):
-        return f"{self.nombre} - {self.get_tipo_sesion_display()} ({self.vacantes} vacantes)"
+        return f"{self.nombre} - {self.get_tipo_sesion_display()} | {self.facultad}"
 
     @property
     def es_teoria(self):
@@ -69,9 +71,10 @@ class Aula(models.Model):
     @property
     def es_practica(self):
         """Indica si el aula es de tipo Práctica."""
-        return self.tipo_sesion == self.TipoSesion.PRÁCTICA
+        return self.tipo_sesion == self.TipoSesion.PRACTICA
 
     @property
     def es_laboratorio(self):
-        """Indica si el aula es de tipo Laboratorio."""
-        return self.tipo_sesion == self.TipoSesion.LABORATORIO
+        """Indica si el aula es de tipo Laboratorio (sesiones prácticas se realizan en laboratorios)."""
+        return self.tipo_sesion == self.TipoSesion.PRACTICA
+
