@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -101,9 +100,3 @@ class Usuario(AbstractUser):
     def __str__(self):
         rol_nombre = self.rol.name if self.rol else "Sin Rol"
         return f"{self.email} ({rol_nombre})"
-=======
-from django.db import models
-from django.contrib.auth.models import User
-
-# Create your models here.
->>>>>>> 71224ecb86f8f8c385092b501f3124b34fd8718b

@@ -1,86 +1,100 @@
-def serializar_periodo(periodo):
-    # Convierte un PeriodoAcademico a JSON.
-    return {
-        'id': periodo.id,
-        'nombre': periodo.nombre,
-        'tipo': periodo.tipo,
-        'anio': periodo.anio,
-        'fecha_inicio': periodo.fecha_inicio.isoformat(),
-        'fecha_fin': periodo.fecha_fin.isoformat(),
-        'activo': periodo.activo
-    }
+from rest_framework import serializers
+
+# --- IMPORTS DE LOS MODELOS POR APP ---
+from horarios.models import Horario
+from aulas.models import Aula
+from grupos.models import Grupo
+from periodos.models import PeriodoAcademico
+from asignaturas.models import Asignatura
+from docentes.models import Docente
 
 
-def serializar_asignatura(asignatura):
-    # Convierte una Asignatura a JSON.
-    return {
-        'id': asignatura.id,
-        'codigo': asignatura.codigo,
-        'nombre': asignatura.nombre,
-        'ciclo': asignatura.ciclo,
-        'tipo': asignatura.tipo,
-        'creditos': asignatura.creditos,
-        'horas_teoria': asignatura.horas_teoria,
-        'horas_practica': asignatura.horas_practica,
-        'horas_laboratorio': asignatura.horas_laboratorio,
-        'plan_id': asignatura.plan.id if asignatura.plan else None,
-        'escuela': asignatura.plan.escuela.nombre if asignatura.plan and asignatura.plan.escuela else None
-    }
+class PeriodoSerializer(serializers.ModelSerializer):
+    activo = serializers.ReadOnlyField()
+
+    class Meta:
+        model = PeriodoAcademico
+        fields = ['id', 'nombre', 'tipo', 'anio', 'fecha_inicio', 'fecha_fin', 'activo']
 
 
-def serializar_docente(docente):
-    # Convierte un Docente a JSON.
-    if not docente:
-        return None
-    return {
-        'id': docente.id,
-        'nombre': docente.nombre,
-        'apellido': docente.apellido,
-        'nombre_completo': f"{docente.nombre} {docente.apellido}",
-        'email': docente.email
-    }
+class AsignaturaSerializer(serializers.ModelSerializer):
+    plan_id = serializers.PrimaryKeyRelatedField(source='plan', read_only=True)
+    escuela = serializers.CharField(source='plan.escuela.nombre', default=None, read_only=True)
 
-
-def serializar_aula(aula):
-    # Convierte un Aula a JSON.
-    return {
-        'id': aula.id,
-        'nombre': aula.nombre,
-        'capacidad': aula.capacidad,
-        'es_laboratorio': aula.es_laboratorio
-    }
-
-
-def serializar_horario(horario):
-    # Convierte un Horario a JSON.
-    return {
-        'id': horario.id,
-        'grupo_id': horario.grupo.id,
-        'tipo': horario.tipo,
-        'tipo_display': horario.get_tipo_display(),
-        'dia': horario.dia,
-        'dia_display': horario.get_dia_display(),
-        'hora_inicio': horario.hora_inicio.strftime('%H:%M'),
-        'hora_fin': horario.hora_fin.strftime('%H:%M'),
-        'aula': serializar_aula(horario.aula)
-    }
-
-
-def serializar_grupo(grupo, incluir_horarios=False):
-    # Convierte un Grupo a JSON.
-    data = {
-        'id': grupo.id,
-        'nombre': grupo.nombre,
-        'asignatura': serializar_asignatura(grupo.asignatura),
-        'periodo': serializar_periodo(grupo.periodo),
-        'docente': serializar_docente(grupo.docente),
-        'total_vacantes': grupo.total_vacantes
-    }
-    
-    if incluir_horarios:
-        data['horarios'] = [
-            serializar_horario(horario)
-            for horario in grupo.horarios.all().order_by('dia', 'hora_inicio')
+    class Meta:
+        model = Asignatura
+        fields = [
+            'id', 'codigo', 'nombre', 'ciclo', 'tipo', 'creditos', 
+            'horas_teoria', 'horas_practica', 'horas_laboratorio', 
+            'plan_id', 'escuela'
         ]
-    
-    return data
+
+
+class DocenteSerializer(serializers.ModelSerializer):
+    nombre_completo = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Docente
+        fields = ['id', 'nombres', 'apellido_paterno', 'apellido_materno', 'nombre_completo', 'email']
+
+
+class AulaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Aula
+        fields = ['id', 'nombre', 'capacidad', 'es_laboratorio']
+
+
+class ClaseSerializer(serializers.ModelSerializer):
+    """Estructura de la clase individual para el detalle del horario"""
+    curso = serializers.CharField(source='grupo.asignatura.nombre', read_only=True)
+    docente = serializers.SerializerMethodField()
+    aula = serializers.SerializerMethodField()
+    tipo_display = serializers.CharField(source='get_tipo_display', read_only=True)
+    hora_inicio = serializers.TimeField(format="%H:%M")
+    hora_fin = serializers.TimeField(format="%H:%M")
+
+    class Meta:
+        model = Horario
+        fields = ['curso', 'docente', 'aula', 'tipo_display', 'hora_inicio', 'hora_fin']
+
+    def get_docente(self, obj):
+        # Extrae el docente directamente del modelo Horario
+        doc = obj.docente
+        return doc.nombre_completo if doc else "Sin docente asignado"
+
+    def get_aula(self, obj):
+        return obj.aula.nombre if obj.aula else "Sin aula asignada"
+
+
+class GrupoCustomSerializer(serializers.ModelSerializer):
+    """Serializer principal que agrupa los horarios por día"""
+    grupo_id = serializers.IntegerField(source='id', read_only=True)
+    numero = serializers.IntegerField(read_only=True)
+    asignatura = serializers.CharField(source='asignatura.nombre', read_only=True)
+    periodo_detalle = PeriodoSerializer(source='periodo', read_only=True)
+    horarios = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Grupo
+        fields = ['grupo_id', 'numero', 'asignatura', 'periodo_detalle', 'horarios']
+
+    def get_horarios(self, obj):
+        qs = obj.horarios.all().select_related(
+            'aula', 'docente', 'grupo__asignatura'
+        ).order_by('hora_inicio')
+        
+        dias_mapping = {
+            1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
+            4: 'Jueves', 5: 'Viernes', 6: 'Sábado', 7: 'Domingo'
+        }
+
+        lista_dias = []
+        for dia_id, dia_nombre in dias_mapping.items():
+            clases = [h for h in qs if h.dia == dia_id]
+            if clases:
+                lista_dias.append({
+                    "dia": dia_nombre,
+                    "clases": ClaseSerializer(clases, many=True).data
+                })
+
+        return [{"dias": lista_dias}] if lista_dias else []

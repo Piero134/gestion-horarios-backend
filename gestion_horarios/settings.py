@@ -41,7 +41,6 @@ LOGOUT_REDIRECT_URL = 'login'
 # Application definition
 
 INSTALLED_APPS = [
-    'api',
     'accounts',
     'django.contrib.admin',
     'django.contrib.auth',

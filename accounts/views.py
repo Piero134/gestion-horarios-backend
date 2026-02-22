@@ -1,5 +1,4 @@
 from django.shortcuts import render
-<<<<<<< HEAD
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
 from periodos.models import PeriodoAcademico
@@ -88,15 +87,3 @@ def home(request):
         context['chart_data'] = vacantes_por_escuela
 
     return render(request, 'home.html', context)
-=======
-
-# Create your views here.
-def login_page(request):
-    return render(request,'login.html')
-
-def register_page(request):
-    return render(request,'register.html')
-
-def dashboard_page(request):
-    return render(request,'dashboard.html')
->>>>>>> 71224ecb86f8f8c385092b501f3124b34fd8718b
