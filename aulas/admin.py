@@ -3,7 +3,7 @@ from .models import Aula
 
 @admin.register(Aula)
 class AulaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'capacidad', 'es_laboratorio')
-    list_filter = ('es_laboratorio',)
+    # Solo campos que EXISTEN en tu nuevo modelo
+    list_display = ('nombre', 'pabellon', 'vacantes', 'tipo_sesion', 'facultad')
+    list_filter = ('pabellon', 'tipo_sesion', 'facultad')
     search_fields = ('nombre',)
-    ordering = ('nombre',)
