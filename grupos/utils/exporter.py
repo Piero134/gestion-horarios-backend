@@ -1,16 +1,12 @@
 import io
+import hashlib
 from collections import defaultdict
 from itertools import groupby
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
-from django.db.models import Prefetch
 from django.utils.text import slugify
-
-from horarios.models import Horario
-from grupos.models import Grupo
-from periodos.models import PeriodoAcademico
-from django.db.models import Q
+from random import randint
 
 # Estilo del excel
 class ExcelEstilos:
@@ -37,6 +33,25 @@ class ExcelEstilos:
     ALIGN_CENTER = Alignment(horizontal='center', vertical='center', wrap_text=True)
     ALIGN_LEFT = Alignment(horizontal='left', vertical='center', wrap_text=True)
     ALIGN_RIGHT = Alignment(horizontal='right', vertical='center', wrap_text=True)
+
+
+def generar_color_hex(nombre):
+    nombre_normalizado = nombre.strip().upper()
+
+    hash_obj = hashlib.md5(nombre_normalizado.encode())
+    hash_hex = hash_obj.hexdigest()
+
+    # Tomar partes del hash para RGB
+    r = int(hash_hex[0:2], 16)
+    g = int(hash_hex[2:4], 16)
+    b = int(hash_hex[4:6], 16)
+
+    # Convertir a tonos suaves (pastel)
+    r = (r + 255) // 2
+    g = (g + 255) // 2
+    b = (b + 255) // 2
+
+    return f"{r:02X}{g:02X}{b:02X}"
 
 def _agregar_cabecera(ws, facultad_nombre, dependencia_nombre, nombre_periodo, ancho_total=12):
     partes = dependencia_nombre.split(" - ")
@@ -225,6 +240,8 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
     end_hour = 22
     total_horas = end_hour - start_hour
 
+    colores_por_curso = {}
+
     grupos_por_ciclo = defaultdict(list)
     for g in grupos:
         grupos_por_ciclo[g.asignatura.ciclo].append(g)
@@ -239,63 +256,136 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
         cell.fill = PatternFill(start_color=ExcelEstilos.COLOR_TITULO_CICLO, fill_type="solid")
         cell.alignment = ExcelEstilos.ALIGN_CENTER
         cell.border = ExcelEstilos.BORDER_THIN
-        fila_actual += 1
 
-        for idx, texto in enumerate(dias_label):
-            cell = ws.cell(row=fila_actual, column=idx+1, value=texto)
-            cell.font = ExcelEstilos.FONT_HEADER
-            cell.border = ExcelEstilos.BORDER_THIN
-            cell.alignment = ExcelEstilos.ALIGN_CENTER
-        fila_actual += 1
+        fila_actual += 2
 
-        fila_inicio_grid = fila_actual
-
-        for h in range(start_hour, end_hour):
-            row_idx = fila_inicio_grid + (h - start_hour)
-            hora_str = f"{h:02d}:00 - {h+1:02d}:00"
-            cell = ws.cell(row=row_idx, column=1, value=hora_str)
-            cell.font = ExcelEstilos.FONT_NORMAL
-            cell.border = ExcelEstilos.BORDER_THIN
-            cell.alignment = ExcelEstilos.ALIGN_CENTER
-            for c in range(2, 8):
-                ws.cell(row=row_idx, column=c).border = ExcelEstilos.BORDER_THIN
-
+        secciones = defaultdict(list)
         for grp in grupos_ciclo:
-            color_hex = "0000FF" if grp.numero % 2 == 0 else "000000"
+            secciones[grp.numero].append(grp)
 
-            for hor in grp.horarios.all():
-                if hor.dia not in col_dias: continue
+        for numero_seccion in sorted(secciones.keys()):
+            grupos_seccion = secciones[numero_seccion]
 
-                h_ini = hor.hora_inicio.hour
-                h_fin = hor.hora_fin.hour
-                if hor.hora_fin.minute > 0: h_fin += 1
-                if h_ini < start_hour: continue
+            # titulo de grupo
+            ws.merge_cells(start_row=fila_actual, start_column=1, end_row=fila_actual, end_column=7)
+            cell = ws.cell(row=fila_actual, column=1, value=f"G-{numero_seccion}")
+            cell.font = ExcelEstilos.FONT_HEADER
+            cell.fill = PatternFill(start_color=ExcelEstilos.COLOR_CABECERA_AZUL, fill_type="solid")
+            cell.alignment = ExcelEstilos.ALIGN_CENTER
+            cell.border = ExcelEstilos.BORDER_THIN
+            fila_actual += 1
 
-                col_idx = col_dias[hor.dia]
-                offset = h_ini - start_hour
-                duracion = h_fin - h_ini
-                row_start = fila_inicio_grid + offset
-                row_end = row_start + duracion - 1
-
-                # Agregar Aula al texto del gráfico
-                aula_str = f" - {hor.aula.nombre}" if hor.aula else ""
-                docente = str(hor.docente).split()[0] if hor.docente else "ND"
-                texto = f"{grp.asignatura.nombre}\nG{grp.numero} {docente}{aula_str}\n({hor.tipo})"
-
-                cell = ws.cell(row=row_start, column=col_idx)
-                if cell.value:
-                    cell.value = str(cell.value) + "\n\n" + texto
-                else:
-                    cell.value = texto
-
-                cell.font = Font(name='Calibri', size=8, bold=True, color=color_hex)
+            for idx, texto in enumerate(dias_label):
+                cell = ws.cell(row=fila_actual, column=idx + 1, value=texto)
+                cell.font = ExcelEstilos.FONT_HEADER
+                cell.border = ExcelEstilos.BORDER_THIN
                 cell.alignment = ExcelEstilos.ALIGN_CENTER
 
-                if duracion > 1:
-                    try: ws.merge_cells(start_row=row_start, start_column=col_idx, end_row=row_end, end_column=col_idx)
-                    except: pass
+            fila_actual += 1
+            fila_inicio_grid = fila_actual
 
-        fila_actual = fila_inicio_grid + total_horas + 2
+            for h in range(start_hour, end_hour):
+                row_idx = fila_inicio_grid + (h - start_hour)
+                hora_str = f"{h:02d}:00 - {h+1:02d}:00"
+
+                cell = ws.cell(row=row_idx, column=1, value=hora_str)
+                cell.font = ExcelEstilos.FONT_NORMAL
+                cell.border = ExcelEstilos.BORDER_THIN
+                cell.alignment = ExcelEstilos.ALIGN_CENTER
+
+                for c in range(2, 8):
+                    ws.cell(row=row_idx, column=c).border = ExcelEstilos.BORDER_THIN
+
+            bloques_por_columna = defaultdict(list)
+
+            for grp in grupos_seccion:
+                for hor in grp.horarios.all():
+
+                    if hor.dia not in col_dias:
+                        continue
+
+                    h_ini = hor.hora_inicio.hour
+                    h_fin = hor.hora_fin.hour
+                    if hor.hora_fin.minute > 0:
+                        h_fin += 1
+
+                    if h_ini < start_hour:
+                        continue
+
+                    col_idx = col_dias[hor.dia]
+                    offset = h_ini - start_hour
+                    duracion = h_fin - h_ini
+
+                    row_start = fila_inicio_grid + offset
+                    row_end = row_start + duracion - 1
+
+                    curso_nombre = grp.asignatura.nombre
+
+                    if curso_nombre not in colores_por_curso:
+                        colores_por_curso[curso_nombre] = generar_color_hex(curso_nombre)
+
+                    color_hex = colores_por_curso[curso_nombre]
+
+                    aula_str = f" - {hor.aula.nombre}" if hor.aula else ""
+                    docente = str(hor.docente).split()[0] if hor.docente else ""
+
+                    texto = f"{curso_nombre}\n{docente}{aula_str}"
+
+                    cell = ws.cell(row=row_start, column=col_idx)
+
+                    if cell.value:
+                        cell.value = str(cell.value) + "\n\n" + texto
+                    else:
+                        cell.value = texto
+
+                    cell.font = Font(name='Calibri', size=8, bold=True)
+                    cell.alignment = ExcelEstilos.ALIGN_CENTER
+                    cell.fill = PatternFill(start_color=color_hex,
+                                            end_color=color_hex,
+                                            fill_type="solid")
+
+
+                    bloques_por_columna[col_idx].append({
+                        "row_start": row_start,
+                        "row_end": row_end,
+                        "curso": curso_nombre
+                    })
+
+            for col_idx, bloques in bloques_por_columna.items():
+                bloques = sorted(bloques, key=lambda x: x["row_start"])
+
+                i = 0
+                while i < len(bloques):
+                    inicio = bloques[i]["row_start"]
+                    fin = bloques[i]["row_end"]
+                    curso_actual = bloques[i]["curso"]
+
+                    j = i + 1
+
+                    while (
+                        j < len(bloques) and
+                        bloques[j]["curso"] == curso_actual and
+                        bloques[j]["row_start"] == fin + 1
+                    ):
+                        fin = bloques[j]["row_end"]
+                        j += 1
+
+                    if fin > inicio:
+                        try:
+                            ws.merge_cells(
+                                start_row=inicio,
+                                start_column=col_idx,
+                                end_row=fin,
+                                end_column=col_idx
+                            )
+                        except:
+                            pass
+
+                    i = j
+
+            fila_actual = fila_inicio_grid + total_horas + 2
+
+        fila_actual += 2
 
     ws.column_dimensions['A'].width = 15
     for c in range(2, 8):
