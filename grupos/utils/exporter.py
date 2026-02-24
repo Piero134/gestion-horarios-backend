@@ -108,9 +108,8 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
         current_row += 2
 
         grupos_ciclo = grupos_por_ciclo[ciclo]
-        grupos_ciclo.sort(key=lambda x: x.asignatura.nombre)
 
-        for nombre_asig, grupos_iter in groupby(grupos_ciclo, key=lambda x: x.asignatura.nombre):
+        for codigo_asig, grupos_iter in groupby(grupos_ciclo, key=lambda x: x.asignatura.codigo):
             grupos_asignatura = list(grupos_iter)
             grupo_base = grupos_asignatura[0]
             asig = grupo_base.asignatura
