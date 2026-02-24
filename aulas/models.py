@@ -6,7 +6,6 @@ class Aula(models.Model):
     class Pabellon(models.TextChoices):
         ANTIGUO_PABELLON = 'AP', 'Antiguo Pabellón'
         NUEVO_PABELLON = 'NP', 'Nuevo Pabellón'
-        LABORATORIOS = 'LAB', 'Pabellón de Laboratorios'
 
     class TipoSesion(models.TextChoices):
         TEORIA = 'T', 'Teoría'
