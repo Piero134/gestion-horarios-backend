@@ -213,7 +213,6 @@ HorarioFormSet = inlineformset_factory(
     formset=BaseHorarioFormSet,
     extra=0,
     can_delete=True,
-    min_num=1,               # Obliga a tener al menos 1 horario
     validate_min=True        # Valida que se cumpla el min_num
 )
 
