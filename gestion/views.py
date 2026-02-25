@@ -9,12 +9,13 @@ from .services import HorarioService
 class ConsultarHorarioEstudianteView(APIView):
     def post(self, request):
         grupo_id = request.data.get('grupo')
+        ciclo_id = request.data.get('ciclo')
         
 
         if not grupo_id:
             return Response({"error": "Faltan datos"}, status=status.HTTP_400_BAD_REQUEST)
 
-        resultado = HorarioService.obtener_horario_estructurado(grupo_id)
+        resultado = HorarioService.obtener_horario_estructurado(grupo_id,ciclo_id)
 
         if resultado is None:
             return Response({"mensaje": "No hay horarios para este grupo/ciclo"}, status=status.HTTP_404_NOT_FOUND)

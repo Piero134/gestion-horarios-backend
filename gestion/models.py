@@ -2,8 +2,8 @@ from django.db import models
 
 class Docente(models.Model):
     nombre = models.CharField(max_length=100)
-    apellido = models.CharField(max_length=100, blank=True)
-    email = models.EmailField(max_length=100, unique=True)
+    apellido = models.CharField(max_length=100, null=True)
+    email = models.EmailField(max_length=100, null=True)
     activo = models.BooleanField(default=True)
 
     def __str__(self):
