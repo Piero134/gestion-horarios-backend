@@ -1,3 +1,4 @@
+import datetime
 from django import forms
 from django.forms import inlineformset_factory
 from grupos.models import Grupo, DistribucionVacantes
@@ -25,8 +26,56 @@ class HorarioForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        for field in self.fields:
+            if self.errors.get(field):
+                self.fields[field].widget.attrs['class'] += ' is-invalid'
         self.fields['docente'].queryset = Docente.objects.filter(activo=True).order_by('apellido_paterno', 'apellido_materno', 'nombres')
 
+    def clean(self):
+        cleaned_data = super().clean()
+        hora_inicio = cleaned_data.get('hora_inicio')
+        hora_fin = cleaned_data.get('hora_fin')
+
+        if hora_inicio and hora_fin:
+            if hora_inicio < datetime.time(8, 0) or hora_fin > datetime.time(22, 0):
+                self.add_error('hora_inicio', "El horario debe estar entre 08:00 a.m. y 10:00 p.m.")
+
+            if hora_fin <= hora_inicio:
+                self.add_error('hora_fin', "La hora de fin debe ser posterior a la hora de inicio.")
+
+        grupo = self.instance.grupo if self.instance.pk else self.initial.get('grupo')
+
+        if grupo and hora_inicio and hora_fin:
+            dia = cleaned_data.get('dia')
+            docente = cleaned_data.get('docente')
+            aula = cleaned_data.get('aula')
+            periodo = grupo.periodo
+
+            # Validar cruce de aula
+            if aula:
+                existe_cruce_aula = Horario.objects.filter(
+                    grupo__periodo=periodo,
+                    dia=dia,
+                    aula=aula,
+                    hora_inicio__lt=hora_fin,
+                    hora_fin__gt=hora_inicio
+                ).exclude(pk=self.instance.pk).exclude(grupo=grupo).exists()
+
+                if existe_cruce_aula:
+                    self.add_error('aula', "El aula ya está ocupada en ese horario.")
+
+            # Validar cruce de docente
+            if docente:
+                existe_cruce_docente = Horario.objects.filter(
+                    grupo__periodo=periodo,
+                    dia=dia,
+                    docente=docente,
+                    hora_inicio__lt=hora_fin,
+                    hora_fin__gt=hora_inicio
+                ).exclude(pk=self.instance.pk).exclude(grupo=grupo).exists()
+
+                if existe_cruce_docente:
+                    self.add_error('docente', "El docente ya tiene una clase en ese horario.")
 
 class GrupoForm(forms.ModelForm):
 
@@ -58,7 +107,7 @@ class GrupoForm(forms.ModelForm):
         model = Grupo
         fields = ['numero', 'asignatura']
         widgets = {
-            'numero': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1'}),
+            'numero': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'step': 1}),
             'asignatura': forms.Select(attrs={
                 'class': 'form-select select2-asignatura',
                 'data-placeholder': 'Buscar asignatura...'
@@ -162,6 +211,29 @@ class GrupoForm(forms.ModelForm):
             grupo.save()
         return grupo
 
+    def clean_numero(self):
+        numero = self.cleaned_data.get('numero')
+        if numero is not None and numero < 1:
+            raise forms.ValidationError("El número de grupo debe ser mayor o igual a 1.")
+        return numero
+
+    def clean(self):
+        cleaned_data = super().clean()
+        numero = cleaned_data.get('numero')
+        asignatura = cleaned_data.get('asignatura')
+
+        if numero and asignatura and self.periodo_activo:
+            existe = Grupo.objects.filter(
+                numero=numero,
+                asignatura=asignatura,
+                periodo=self.periodo_activo
+            ).exclude(pk=self.instance.pk).exists()
+
+            if existe:
+                self.add_error(
+                    'numero',
+                    f"Ya existe un grupo con número {numero} para esa asignatura en el período activo."
+                )
 
 class DistribucionVacantesForm(forms.ModelForm):
     """Formulario para distribución de vacantes"""
@@ -169,7 +241,7 @@ class DistribucionVacantesForm(forms.ModelForm):
         model = DistribucionVacantes
         fields = ['asignatura', 'cantidad']
         widgets = {
-            'asignatura': forms.Select(attrs={'class': 'form-select vacante-asignatura'}),
+            'asignatura': forms.Select(attrs={'class': 'form-select select2-asignatura-equivalente vacante-asignatura'}),
             'cantidad': forms.NumberInput(attrs={'class': 'form-control vacantes-input', 'min': '1'}),
         }
         labels = {
@@ -211,7 +283,7 @@ HorarioFormSet = inlineformset_factory(
     Horario,
     form=HorarioForm,        # Usamos el form horario
     formset=BaseHorarioFormSet,
-    extra=0,
+    extra=1,
     can_delete=True,
     validate_min=True        # Valida que se cumpla el min_num
 )

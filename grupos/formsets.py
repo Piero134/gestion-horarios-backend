@@ -2,35 +2,43 @@ from django import forms
 from datetime import datetime
 from django.core.exceptions import ValidationError
 
+
 class BaseHorarioFormSet(forms.BaseInlineFormSet):
+
     def clean(self):
         super().clean()
 
-        horarios_ingresados = []
+        horarios_validos = []
 
         for form in self.forms:
+
             if not hasattr(form, "cleaned_data"):
                 continue
 
             if self.can_delete and self._should_delete_form(form):
                 continue
 
-            # Ignorar formularios completamente vacíos
+            cleaned = form.cleaned_data
+
+            # Ignorar formularios vacíos
             if not any([
-                form.cleaned_data.get('dia'),
-                form.cleaned_data.get('hora_inicio'),
-                form.cleaned_data.get('hora_fin'),
-                form.cleaned_data.get('tipo')
+                cleaned.get('dia'),
+                cleaned.get('hora_inicio'),
+                cleaned.get('hora_fin'),
+                cleaned.get('tipo'),
+                cleaned.get('aula'),
+                cleaned.get('docente'),
             ]):
                 continue
 
-            horarios_ingresados.append(form.cleaned_data)
+            horarios_validos.append((form, cleaned))
 
-        if not horarios_ingresados:
+        # Validar que exista al menos un horario válido
+        if not horarios_validos:
             raise ValidationError("Debe registrar al menos un horario.")
 
         grupo = self.instance
-        if not grupo.asignatura:
+        if not grupo or not getattr(grupo, 'asignatura_id', None):
             return
 
         asignatura = grupo.asignatura
@@ -41,22 +49,23 @@ class BaseHorarioFormSet(forms.BaseInlineFormSet):
             'L': float(asignatura.horas_laboratorio or 0),
         }
 
-        acumulado = {k: 0.0 for k in requerido.keys()}
+        acumulado = {k: 0.0 for k in requerido}
+        dummy_date = datetime.today()
 
-        dummy = datetime.today()
-
-        for h in horarios_ingresados:
+        # Calcular horas ingresadas
+        for form, h in horarios_validos:
             tipo = h.get('tipo')
             inicio = h.get('hora_inicio')
             fin = h.get('hora_fin')
 
             if tipo in acumulado and inicio and fin:
-                dt_inicio = datetime.combine(dummy, inicio)
-                dt_fin = datetime.combine(dummy, fin)
+                dt_inicio = datetime.combine(dummy_date, inicio)
+                dt_fin = datetime.combine(dummy_date, fin)
 
-                diff_horas = (dt_fin - dt_inicio).total_seconds() / 3600
-                acumulado[tipo] += diff_horas
+                diff = (dt_fin - dt_inicio).total_seconds() / 3600
+                acumulado[tipo] += diff
 
+        # Validar carga horaria
         errores = []
 
         for tipo, horas_req in requerido.items():
@@ -65,13 +74,44 @@ class BaseHorarioFormSet(forms.BaseInlineFormSet):
             if abs(horas_req - horas_usuario) > 0.01:
                 if horas_req > 0 or horas_usuario > 0:
                     errores.append(
-                        f"{tipo}: Se requieren {horas_req}h, ingresaste {horas_usuario}h."
+                        f"{tipo}: Requiere {horas_req}h, ingresaste {horas_usuario}h."
                     )
 
         if errores:
-            raise ValidationError(
-                "La carga horaria no coincide:\n" + "\n".join(errores)
-            )
+            mensaje = "La carga horaria no coincide: " + " | ".join(errores)
+
+            for form, _ in horarios_validos:
+                form.add_error(None, mensaje)
+
+        # Validar cruces entre horarios
+
+        for i in range(len(horarios_validos)):
+            form1, h1 = horarios_validos[i]
+
+            for j in range(i + 1, len(horarios_validos)):
+                form2, h2 = horarios_validos[j]
+
+                mismo_dia = h1.get('dia') == h2.get('dia')
+
+                inicio1 = h1.get('hora_inicio')
+                fin1 = h1.get('hora_fin')
+                inicio2 = h2.get('hora_inicio')
+                fin2 = h2.get('hora_fin')
+
+                if not (inicio1 and fin1 and inicio2 and fin2):
+                    continue
+
+                cruce = inicio1 < fin2 and fin1 > inicio2
+
+                if mismo_dia and cruce:
+
+                    mensaje = (
+                        f"El horario {inicio1.strftime('%H:%M')} - {fin1.strftime('%H:%M')} "
+                        f"cruza con {inicio2.strftime('%H:%M')} - {fin2.strftime('%H:%M')}."
+                    )
+
+                    form1.add_error(None, mensaje)
+                    form2.add_error(None, mensaje)
 
 class BaseDistribucionVacantesFormSet(forms.BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
@@ -88,7 +128,6 @@ class BaseDistribucionVacantesFormSet(forms.BaseInlineFormSet):
         activos = []
 
         for form in self.forms:
-
             if not hasattr(form, "cleaned_data"):
                 continue
 
@@ -108,7 +147,6 @@ class BaseDistribucionVacantesFormSet(forms.BaseInlineFormSet):
                 form.add_error('asignatura', 'Debe seleccionar una asignatura.')
             activos.append(form)
 
-        # Si quieres permitir que no haya vacantes:
         if not activos:
             return
 
