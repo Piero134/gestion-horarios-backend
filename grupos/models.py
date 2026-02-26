@@ -5,6 +5,7 @@ from periodos.models import PeriodoAcademico
 from datetime import datetime
 from django.utils import timezone
 from django.db.models import Q
+from django.core.validators import MinValueValidator
 
 class GrupoQuerySet(models.QuerySet):
     def actuales(self):
@@ -77,7 +78,7 @@ class GrupoManager(models.Manager):
         return self.get_queryset().buscar(query)
 
 class Grupo(models.Model):
-    numero = models.PositiveSmallIntegerField()
+    numero = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     asignatura = models.ForeignKey(
         Asignatura, on_delete=models.CASCADE, related_name='grupos'
     )
