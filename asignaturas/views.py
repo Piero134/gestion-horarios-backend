@@ -76,8 +76,13 @@ def obtener_equivalencias_asignatura(request):
                 'plan': asignatura.plan.nombre,
                 'escuela': asignatura.plan.escuela.nombre
             },
-            'equivalencias': equivalentes
+            'equivalencias': equivalentes,
+
+            'horas_teoria': asignatura.horas_teoria,
+            'horas_practica': asignatura.horas_practica,
+            'horas_laboratorio': asignatura.horas_laboratorio
         }
+
         return JsonResponse(data)
 
     except Asignatura.DoesNotExist:
