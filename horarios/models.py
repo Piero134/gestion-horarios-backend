@@ -54,7 +54,6 @@ class Horario(models.Model):
     )
 
     class Meta:
-        unique_together = ('grupo', 'dia', 'hora_inicio')
         verbose_name = "Horario"
         verbose_name_plural = "Horarios"
         ordering = ['dia', 'hora_inicio']
@@ -81,11 +80,6 @@ class Horario(models.Model):
             return
 
         qs_periodo = Horario.objects.filter(grupo__periodo=self.grupo.periodo)
-
-        cruce_grupo = self.obtener_cruce(Horario.objects.filter(grupo=self.grupo))
-
-        if cruce_grupo:
-            raise ValidationError(f"El grupo ya tiene clase de {cruce_grupo.hora_inicio} a {cruce_grupo.hora_fin}.")
 
         if self.aula:
             cruce_aula = self.obtener_cruce(qs_periodo.filter(aula=self.aula))
