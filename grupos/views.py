@@ -112,15 +112,19 @@ def grupo_create(request):
                     else:
                          raise ValueError("Error en horarios")
 
-                messages.success(request, f"Grupo {grupo} creado exitosamente en {periodo_activo}.")
-                return redirect('grupo_detail', pk=grupo.pk)
+                if '_save_and_new' in request.POST:
+                    messages.success(request, f"✅ Grupo {grupo} creado. Complete el siguiente.")
+                    return redirect('grupo_create')
+                else:
+                    messages.success(request, f"Grupo {grupo} creado exitosamente en {periodo_activo}.")
+                    return redirect('grupo_detail', pk=grupo.pk)
 
             except ValueError as e:
                 messages.error(request, f"Por favor corrija los errores: {str(e)}")
 
         else:
-            print("🔴 ERRORES DEL FORM:", form.errors)
-            print("🔴 DATA RECIBIDA:", request.POST)
+            # print("🔴 ERRORES DEL FORM:", form.errors)
+            # print("🔴 DATA RECIBIDA:", request.POST)
             messages.error(request, "Error en el formulario principal.")
 
     else:
