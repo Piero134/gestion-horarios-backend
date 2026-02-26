@@ -1,657 +1,913 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}{{ action|default:"Crear" }} Grupo{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
 <style>
-    .section-header {
-        background: linear-gradient(135deg, rgba(193, 39, 45, 0.05) 0%, rgba(193, 39, 45, 0.1) 100%);
-        border-left: 4px solid var(--unmsm-red);
-        padding: 1rem 1.25rem;
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .section-header h5 {
-        margin: 0;
-        font-family: 'Sora', sans-serif;
-        font-weight: 700;
-        color: var(--unmsm-red);
-        font-size: 1.125rem;
-    }
-
-    .filter-row {
-        background: var(--bg-hover);
-        border: 2px dashed var(--border-color);
-        border-radius: 10px;
-        padding: 1.25rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .filter-label {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .formset-row {
-        background: var(--bg-surface);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        position: relative;
-        transition: all 0.2s ease;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .formset-row:hover {
-        box-shadow: var(--shadow-md);
-        border-color: var(--unmsm-red);
-    }
-
-    .formset-row.to-delete {
-        opacity: 0.5;
-        background-color: var(--danger-bg);
-        border-color: var(--danger-text);
-    }
-
-    .delete-btn {
-        position: absolute;
-        top: 0.75rem;
-        right: 0.75rem;
-        z-index: 10;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-    }
-
-    .add-formset-btn {
-        width: 100%;
-        border: 2px dashed var(--border-color);
-        background: transparent;
-        color: var(--text-secondary);
-        padding: 1rem;
-        border-radius: 10px;
-        transition: all 0.3s ease;
-        font-weight: 600;
-    }
-
-    .add-formset-btn:hover {
-        border-color: var(--unmsm-red);
-        color: var(--unmsm-red);
-        background: rgba(193, 39, 45, 0.05);
-        transform: translateY(-2px);
-    }
-
-    .form-help-text {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-top: 0.375rem;
-    }
-
-    .required-field::after {
-        content: "*";
-        color: var(--unmsm-red);
-        margin-left: 0.25rem;
-    }
-
-    /* Estilos tabla vacantes estilo imagen */
-    .table-vacantes {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-    }
-    .table-vacantes thead th {
-        background-color: #f8f9fa;
-        color: #1a1a1a;
-        font-weight: 700;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    .table-vacantes tbody td {
-        padding: 16px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    /* Texto formateado */
-    .course-code {
-        color: #4a6fa5;
-        font-weight: 700;
-        font-size: 0.95rem;
-    }
-    .course-name {
-        color: #555;
-        font-weight: 400;
-        margin-left: 6px;
-        text-transform: uppercase;
-    }
-    .plan-name {
-        display: block;
-        font-size: 0.75rem;
-        color: #888;
-        margin-top: 2px;
-    }
-    .school-name {
-        color: #6c757d;
-        font-size: 0.9rem;
-    }
-
-    /* Input de vacantes (solo el número en negrita) */
-    .vacantes-input {
-        width: 80px;
-        text-align: center;
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: #2c3e50;
-        border: 1px solid #dee2e6;
-        background-color: transparent;
-    }
-    .vacantes-input:focus {
-        border-color: #4a6fa5;
-        box-shadow: 0 0 0 0.2rem rgba(74, 111, 165, 0.15);
-    }
-
-    /* Select2 adaptado al tema */
-    .select2-container--bootstrap-5 .select2-selection {
-        border-color: var(--border-color);
-        background: var(--bg-surface);
-    }
-    .select2-container--bootstrap-5 .select2-selection:focus {
-        border-color: var(--unmsm-red);
-    }
+:root{--red:#c1272d;--red-light:rgba(193,39,45,.08);--surface:#fff;--hover:#f8f9fa;--border:#e2e8f0;--text:#1e293b;--muted:#64748b}
+.section-header{background:var(--red-light);border-left:4px solid var(--red);padding:.7rem 1rem;border-radius:8px;margin-bottom:1.25rem;display:flex;align-items:center;gap:.6rem}
+.section-header h5{margin:0;font-family:'Sora',sans-serif;font-weight:700;color:var(--red);font-size:1rem}
+.filter-row{background:var(--hover);border:1px dashed #cbd5e1;border-radius:8px;padding:.85rem 1rem;margin-bottom:1.25rem}
+.filter-label{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem;text-transform:uppercase;letter-spacing:.5px}
+.field-error{display:flex;align-items:flex-start;gap:.35rem;color:#991b1b;font-size:.75rem;font-weight:600;margin-top:.35rem;padding:.3rem .5rem;background:#fef2f2;border-left:3px solid #dc2626;border-radius:0 4px 4px 0;line-height:1.4}
+.field-error i{flex-shrink:0;margin-top:1px}
+.form-error-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:.5rem;color:#991b1b;font-size:.82rem;font-weight:600}
+.form-error-banner i{flex-shrink:0;font-size:1rem;margin-top:1px}
+.form-error-banner ul{margin:0;padding-left:1rem}
+.is-invalid-field{border-color:#dc2626!important;box-shadow:0 0 0 2px rgba(220,38,38,.15)!important}
+.horario-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:.75rem;position:relative;transition:border-color .15s}
+.horario-row:hover{border-color:#94a3b8}
+.horario-row.to-delete{opacity:.35;pointer-events:none;background:#fef2f2;border-color:#fca5a5}
+.horario-row.has-error{border-color:#dc2626;background:#fff8f8}
+.horario-grid{display:grid;grid-template-columns:130px 80px 1.4fr 1fr 1fr 36px;gap:.75rem;align-items:start}
+.horario-grid>div>label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:block}
+.tipo-selector{display:flex;flex-direction:column;gap:4px}
+.tipo-btn{width:100%;padding:.32rem .2rem;border:1px solid var(--border);border-radius:6px;font-size:.72rem;font-weight:700;background:#f8fafc;color:var(--muted);cursor:pointer;text-align:center;transition:all .12s;line-height:1;position:relative}
+.tipo-btn:hover:not(.completed):not(.d-none){border-color:#3b82f6;color:#3b82f6;background:#eff6ff}
+.tipo-btn.active-T{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd}
+.tipo-btn.active-P{background:#dcfce7;color:#166534;border-color:#86efac}
+.tipo-btn.active-L{background:#fef3c7;color:#92400e;border-color:#fde68a}
+/* Completado: grisado, con tilde, no interactivo */
+.tipo-btn.completed{opacity:.4;cursor:not-allowed;pointer-events:none;background:#f1f5f9!important;border-color:#cbd5e1!important;color:#94a3b8!important}
+.tipo-btn.completed::after{content:'✓';position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.65rem;color:#22c55e}
+.tipo-btn.d-none{display:none!important}
+.hora-range-wrapper{display:flex;flex-direction:column;gap:6px}
+.hora-display{display:flex;gap:6px;align-items:flex-end}
+.hora-display>div{flex:1;min-width:0}
+.hora-display>span{color:var(--muted);font-size:.8rem;flex-shrink:0;padding-bottom:6px}
+.hora-display-label{font-size:.6rem;color:var(--muted);font-weight:700;margin-bottom:2px}
+.hora-display input[type="time"]{border:1px solid var(--border);border-radius:6px;padding:5px 6px;font-size:.85rem;font-weight:700;font-family:monospace;color:var(--text);background:#fff;width:100%;text-align:center;box-sizing:border-box}
+.hora-display input[type="time"]:focus{border-color:#3b82f6;outline:none;box-shadow:0 0 0 2px rgba(59,130,246,.2)}
+.hora-errors-box{margin-top:4px}
+.hora-inline-error{display:flex;align-items:center;gap:.25rem;color:#991b1b;font-size:.68rem;font-weight:700;padding:.2rem .4rem;background:#fef2f2;border-left:3px solid #dc2626;border-radius:0 4px 4px 0;line-height:1.3;animation:fadeErr .15s ease;margin-bottom:2px}
+.hora-inline-error.warn-type{color:#92400e;background:#fef3c7;border-left-color:#f59e0b}
+@keyframes fadeErr{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.hora-bar{display:flex;border-radius:7px;overflow:hidden;border:1px solid var(--border);background:#f8fafc;cursor:pointer;user-select:none;height:28px}
+.hora-slot{flex:1;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:700;font-family:monospace;color:#94a3b8;border-right:1px solid #e2e8f0;transition:background .08s}
+.hora-slot:last-child{border-right:none}
+.hora-slot:hover{background:#dbeafe;color:#1d4ed8}
+.hora-slot.sel-ini{background:#1d4ed8;color:#fff;border-radius:4px 0 0 4px}
+.hora-slot.sel-fin{background:#1d4ed8;color:#fff;border-radius:0 4px 4px 0}
+.hora-slot.sel-mid{background:#93c5fd;color:#1e3a5f}
+.hora-slot.sel-ini.sel-fin{border-radius:4px}
+.horario-notif{display:flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:700;padding:.3rem .6rem;margin-top:.4rem;border-radius:6px;animation:fadeErr .15s ease}
+.btn-del-horario{width:32px;height:32px;border:none;border-radius:6px;margin-top:22px;background:#fee2e2;color:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s;flex-shrink:0}
+.btn-del-horario:hover{background:#dc2626;color:#fff}
+.add-horario-btn{width:100%;border:2px dashed var(--border);background:transparent;color:var(--muted);padding:.65rem;border-radius:10px;font-weight:600;transition:all .2s;margin-top:.5rem}
+.add-horario-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-light)}
+.btn-copy-horario{font-size:.72rem;border:1px dashed var(--border);color:var(--muted);background:transparent;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.btn-copy-horario:hover{border-color:#3b82f6;color:#3b82f6;background:#eff6ff}
+.table-vacantes{width:100%;border-collapse:separate;border-spacing:0}
+.table-vacantes thead th{background:#f8f9fa;color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;padding:.65rem 1rem;border-bottom:2px solid var(--border)}
+.table-vacantes tbody td{padding:.65rem 1rem;vertical-align:middle;border-bottom:1px solid #f1f5f9}
+.course-code{font-weight:700;font-size:.85rem;font-family:monospace;background:#e0f2fe;color:#0369a1;padding:1px 5px;border-radius:3px}
+.course-name{color:var(--text);font-weight:600;margin-left:6px;font-size:.88rem}
+.plan-name{font-size:.72rem;color:var(--muted);margin-top:2px;display:block}
+.school-name{color:var(--muted);font-size:.85rem}
+.vacantes-input{width:72px;text-align:center;font-weight:700;font-size:1rem;border:1px solid var(--border);border-radius:6px;padding:.3rem .4rem}
+.vacantes-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);outline:none}
+.equivalencia-select-wrap{max-width:380px}
+.equivalencia-select-wrap .select2-container{width:100%!important}
+.real-info .edit-link{font-size:.7rem;color:#3b82f6;cursor:pointer;text-decoration:underline;margin-left:8px}
+.horas-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe}
+.horas-badge.ok{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.horas-badge.warn{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.horas-badge.err{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.sticky-actions{position:sticky;bottom:0;z-index:100;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:.75rem 1.25rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -4px 16px rgba(0,0,0,.07);margin-top:1.5rem;border-radius:12px 12px 0 0}
+kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;padding:1px 6px;font-size:.68rem;font-family:monospace}
+.select2-container--bootstrap-5 .select2-selection{border-color:var(--border);border-radius:6px}
+.horario-errors{margin-top:.5rem;padding:.4rem .6rem;background:#fef2f2;border-radius:6px;border:1px solid #fecaca}
+.horario-errors .error-item{color:#991b1b;font-size:.73rem;font-weight:600;display:flex;align-items:flex-start;gap:.3rem;margin-bottom:.2rem}
+.horario-errors .error-item:last-child{margin-bottom:0}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="mb-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}">Grupos</a></li>
-            <li class="breadcrumb-item active">{{ action|default:"Crear" }} Grupo</li>
-        </ol>
-    </nav>
-
-    <h2 style="font-family: 'Sora', sans-serif; font-weight: 700;">
-        <i class="bi bi-{% if action == 'Editar' %}pencil{% else %}plus-circle{% endif %} text-danger me-2"></i>
-        {{ action|default:"Crear" }} Grupo
-    </h2>
+<div class="mb-3 d-flex justify-content-between align-items-end">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}" class="text-decoration-none text-muted">Grupos</a></li>
+            <li class="breadcrumb-item active fw-semibold">{{ action|default:"Crear" }} Grupo</li>
+        </ol></nav>
+        <h2 style="font-family:'Sora',sans-serif;font-weight:700;margin:0;">
+            <i class="bi bi-{% if action == 'Editar' %}pencil-square{% else %}plus-square-dotted{% endif %} text-danger me-2"></i>
+            {{ action|default:"Crear" }} Grupo
+        </h2>
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);text-align:right;">
+        <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Guardar &nbsp;|&nbsp; <kbd>Ctrl</kbd>+<kbd>H</kbd> Añadir horario
+    </div>
 </div>
 
-<form method="post" id="grupoForm">
-    {% csrf_token %}
+{% if form.errors or horario_formset.non_form_errors or vacantes_formset.non_form_errors %}
+<div class="form-error-banner">
+    <i class="bi bi-exclamation-octagon-fill"></i>
+    <div>
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:.25rem;">Por favor corrige los siguientes errores:</div>
+        <ul>
+            {% for field in form %}{% for e in field.errors %}<li><strong>{{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
+            {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+            {% for e in horario_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}
+            {% for e in vacantes_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}
+            {% for hf in horario_formset %}{% if hf.errors %}
+                {% for field in hf %}{% for e in field.errors %}<li><strong>Horario – {{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
+                {% for e in hf.non_field_errors %}<li><strong>Horario:</strong> {{ e }}</li>{% endfor %}
+            {% endif %}{% endfor %}
+            {% for vf in vacantes_formset %}{% if vf.errors %}
+                {% for field in vf %}{% for e in field.errors %}<li><strong>Vacante – {{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
+            {% endif %}{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
 
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body">
-            <div class="section-header">
-                <i class="bi bi-info-circle fs-5"></i>
-                <h5>Información del Grupo</h5>
-            </div>
+<form method="post" id="grupoForm" autocomplete="off">
+{% csrf_token %}
 
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">
-                        <i class="bi bi-calendar3 me-1"></i>Periodo Académico
-                    </label>
-                    {{ form.periodo_display }}
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label required-field">{{ form.numero.label }}</label>
-                    {{ form.numero }}
-                    {% if form.numero.errors %}
-                        <div class="text-danger small mt-1">{{ form.numero.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                </div>
-
-            <div class="filter-row mt-4">
-                <div class="filter-label">
-                    <i class="bi bi-funnel-fill text-primary"></i>
-                    <span>Filtros para seleccionar asignatura</span>
-                </div>
-
-                <div class="row g-3">
-                    {% if form.escuela_filtro %}
-                    <div class="col-md-6">
-                        <label class="form-label small fw-semibold">
-                            <i class="bi bi-building me-1"></i>{{ form.escuela_filtro.label }}
-                        </label>
-                        {{ form.escuela_filtro }}
-                    </div>
-                    {% endif %}
-
-                    <div class="{% if form.escuela_filtro %}col-md-6{% else %}col-md-12{% endif %}">
-                        <label class="form-label small fw-semibold">
-                            <i class="bi bi-list-ol me-1"></i>{{ form.ciclo_filtro.label }}
-                        </label>
-                        {{ form.ciclo_filtro }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label required-field">
-                        <i class="bi bi-book me-1"></i>{{ form.asignatura.label }}
-                    </label>
-                    {{ form.asignatura }}
-                    <div class="form-help-text">
-                        {% if form.asignatura.errors %}
-                            <span class="text-danger">{{ form.asignatura.errors.0 }}</span>
-                        {% else %}
-                            <i class="bi bi-lightbulb me-1"></i>Use los filtros arriba para facilitar la búsqueda de la asignatura.
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+{# ── Info del Grupo ── #}
+<div class="card mb-3 border-0 shadow-sm"><div class="card-body p-4">
+    <div class="section-header"><i class="bi bi-info-circle-fill fs-5"></i><h5>Información del Grupo</h5></div>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label small fw-bold text-muted"><i class="bi bi-calendar3 me-1"></i>Periodo Académico</label>
+            {{ form.periodo_display }}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold text-muted">Número <span class="text-danger">*</span></label>
+            {{ form.numero }}
+            {% for e in form.numero.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
         </div>
     </div>
 
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="p-3">
-                <div class="section-header mb-0">
-                    <i class="bi bi-person-plus fs-5"></i>
-                    <h5>Distribución de Vacantes</h5>
-                </div>
+    {% if action != 'Editar' %}
+    <div class="filter-row mt-3">
+        <div class="filter-label"><i class="bi bi-funnel-fill"></i>Filtros de asignatura</div>
+        <div class="row g-3">
+            {% if form.escuela_filtro %}
+            <div class="col-md-6">
+                <label class="form-label small fw-semibold">{{ form.escuela_filtro.label }}</label>
+                {{ form.escuela_filtro }}
+                {% for e in form.escuela_filtro.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
             </div>
-
-            {{ vacantes_formset.management_form }}
-
-            <div class="table-responsive">
-                <table class="table table-vacantes mb-0">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">ASIGNATURA / PLAN</th>
-                            <th style="width: 35%;">ESCUELA</th>
-                            <th style="width: 10%; text-align: center;">VACANTES</th>
-                            <th style="width: 5%;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="vacantes-container">
-                        {% for v_form in vacantes_formset %}
-                        <tr class="vacante-row {% if v_form.instance.pk and v_form.DELETE.value %}d-none{% endif %}">
-                            <td>
-                                {{ v_form.id }}
-                                {% if v_form.instance.pk %}
-                                <div class="d-none">
-                                    {{ v_form.DELETE }}
-                                </div>
-                                {% endif %}
-
-                                <div class="d-none">
-                                    {{ v_form.asignatura }}
-                                </div>
-
-                                <div class="course-info-display">
-                                    {% if v_form.instance.pk and v_form.instance.asignatura %}
-                                        <div>
-                                            <span class="course-code">[{{ v_form.instance.asignatura.codigo }}]</span>
-                                            <span class="course-name">{{ v_form.instance.asignatura.nombre }}</span>
-                                        </div>
-                                        <span class="plan-name">{{ v_form.instance.asignatura.plan.nombre }}</span>
-                                    {% else %}
-                                        <div class="placeholder-info text-muted small fst-italic">
-                                            {% if forloop.first %}Seleccione asignatura arriba...{% else %}Seleccione equivalencia...{% endif %}
-                                        </div>
-                                        <div class="real-info d-none">
-                                            <span class="course-code"></span><span class="course-name"></span><span class="plan-name"></span>
-                                        </div>
-                                        {% if not forloop.first %}
-                                            <select class="form-select form-select-sm mt-2 select-equivalencia-visual">
-                                                <option value="">Buscar equivalencia...</option>
-                                            </select>
-                                        {% endif %}
-                                    {% endif %}
-                                </div>
-                            </td>
-                            <td>
-                                {% if v_form.instance.pk and v_form.instance.asignatura %}
-                                    <span class="school-name">{{ v_form.instance.asignatura.plan.escuela.nombre }}</span>
-                                {% else %}
-                                    <span class="school-name text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">{{ v_form.cantidad }}</td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-link text-danger p-0 delete-vacante {% if forloop.first %}d-none{% endif %}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="p-3 border-top bg-light">
-                <button type="button" class="btn btn-outline-primary btn-sm" id="add-vacante">
-                    <i class="bi bi-plus-circle me-2"></i>Agregar Equivalencia
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body">
-            <div class="section-header">
-                <i class="bi bi-clock-history fs-5"></i>
-                <h5>Horarios de Sesiones</h5>
-            </div>
-
-            {{ horario_formset.management_form }}
-
-            {% if horario_formset.non_form_errors %}
-                <div class="alert alert-danger mb-3">
-                    {{ horario_formset.non_form_errors.0 }}
-                </div>
             {% endif %}
+            <div class="{% if form.escuela_filtro %}col-md-6{% else %}col-12{% endif %}">
+                <label class="form-label small fw-semibold">{{ form.ciclo_filtro.label }}</label>
+                {{ form.ciclo_filtro }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
-            <div id="horarios-container">
-                {% for h_form in horario_formset %}
-                <div class="formset-row horario-row">
-                    {{ h_form.id }}
-                    {% if h_form.instance.pk %}{{ h_form.DELETE }}{% endif %}
+    <div class="row g-3 mt-0">
+        <div class="col-12">
+            <label class="form-label small fw-bold text-muted"><i class="bi bi-book me-1"></i>Asignatura <span class="text-danger">*</span></label>
+            {{ form.asignatura }}
+            {% for e in form.asignatura.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+        </div>
+    </div>
+    {% for e in form.non_field_errors %}<div class="form-error-banner mt-3"><i class="bi bi-exclamation-octagon-fill"></i>{{ e }}</div>{% endfor %}
+</div></div>
 
-                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn delete-horario" title="Eliminar">
-                        <i class="bi bi-trash"></i>
-                    </button>
-
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold"><i class="bi bi-calendar-day me-1"></i>Día</label>
-                            {{ h_form.dia }}
+{# ── Distribución de Vacantes ── #}
+<div class="card mb-3 border-0 shadow-sm"><div class="card-body p-0">
+    <div class="p-3 pb-2"><div class="section-header mb-0"><i class="bi bi-people-fill fs-5"></i><h5>Distribución de Vacantes</h5></div></div>
+    {{ vacantes_formset.management_form }}
+    {% for e in vacantes_formset.non_form_errors %}<div class="mx-3 mb-2 form-error-banner"><i class="bi bi-exclamation-octagon-fill"></i>{{ e }}</div>{% endfor %}
+    <div class="table-responsive">
+    <table class="table table-vacantes mb-0">
+        <thead><tr>
+            <th style="width:52%;padding-left:1.25rem;">Asignatura / Plan</th>
+            <th style="width:28%;">Escuela</th>
+            <th style="width:12%;text-align:center;">Vacantes</th>
+            <th style="width:8%;"></th>
+        </tr></thead>
+        <tbody id="vacantes-container">
+        {% for vf in vacantes_formset %}
+        <tr class="vacante-row{% if vf.instance.pk and vf.DELETE.value %} d-none{% endif %}{% if vf.errors %} table-danger{% endif %}">
+            <td style="padding-left:1.25rem;">
+                {{ vf.id }}
+                {% if vf.instance.pk %}<div class="d-none">{{ vf.DELETE }}</div>{% endif %}
+                <div class="d-none">{{ vf.asignatura }}</div>
+                <div class="course-info-display">
+                    {% if vf.instance.pk and vf.instance.asignatura %}
+                        <div>
+                            <span class="course-code">{{ vf.instance.asignatura.codigo }}</span>
+                            <span class="course-name">{{ vf.instance.asignatura.nombre }}</span>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold"><i class="bi bi-tag me-1"></i>Tipo</label>
-                            {{ h_form.tipo }}
+                        <span class="plan-name">{{ vf.instance.asignatura.plan.nombre }}</span>
+                        <a class="edit-link cambiar-equivalencia">cambiar</a>
+                    {% else %}
+                        <div class="placeholder-info text-muted small fst-italic py-1">
+                            {% if forloop.first %}<i class="bi bi-arrow-up-circle me-1"></i>Se completará al seleccionar la asignatura…{% endif %}
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold"><i class="bi bi-clock me-1"></i>Inicio</label>
-                            {{ h_form.hora_inicio }}
+                        <div class="real-info d-none">
+                            <div><span class="course-code"></span><span class="course-name"></span></div>
+                            <span class="plan-name"></span>
+                            <a class="edit-link cambiar-equivalencia">cambiar</a>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-semibold"><i class="bi bi-clock-fill me-1"></i>Fin</label>
-                            {{ h_form.hora_fin }}
+                        {% if not forloop.first %}
+                        <div class="equivalencia-select-wrap">
+                            <select class="form-select form-select-sm select2-equivalencia"><option value=""></option></select>
                         </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold"><i class="bi bi-door-open me-1"></i>Aula</label>
-                            {{ h_form.aula }}
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold"><i class="bi bi-person-badge me-1"></i>Docente</label>
-                            {{ h_form.docente }} </div>
-                    </div>
-                    {% if h_form.errors %}
-                        <div class="alert alert-danger mt-2 mb-0 py-2 small">{{ h_form.errors }}</div>
+                        {% endif %}
                     {% endif %}
                 </div>
-                {% endfor %}
-            </div>
-
-            <button type="button" class="add-formset-btn mt-3" id="add-horario">
-                <i class="bi bi-plus-circle me-2"></i>Agregar Horario
-            </button>
-        </div>
-    </div>
-
-    <div class="card border-0 bg-transparent">
-        <div class="card-body px-0">
-            <div class="d-flex justify-content-between gap-3">
-                <a href="{% url 'grupos_list' %}" class="btn btn-outline-secondary btn-lg">
-                    <i class="bi bi-x-circle me-2"></i>Cancelar
-                </a>
-                <button type="submit" class="btn btn-primary btn-lg px-5 shadow">
-                    <i class="bi bi-check-circle me-2"></i>Guardar Grupo
+                {% for e in vf.asignatura.errors %}<div class="field-error mt-1"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            </td>
+            <td><span class="school-name{% if not vf.instance.pk %} text-muted{% endif %}">
+                {% if vf.instance.pk and vf.instance.asignatura %}{{ vf.instance.asignatura.plan.escuela.nombre }}{% else %}-{% endif %}
+            </span></td>
+            <td class="text-center">
+                {{ vf.cantidad }}
+                {% for e in vf.cantidad.errors %}<div class="field-error mt-1" style="text-align:left"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante{% if forloop.first %} d-none{% endif %}">
+                    <i class="bi bi-trash3-fill"></i>
                 </button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <div class="p-3 border-top bg-light text-center" style="border-radius:0 0 12px 12px;">
+        <button type="button" class="btn btn-outline-primary btn-sm px-4 fw-semibold" id="add-vacante">
+            <i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia
+        </button>
+    </div>
+\</div></div>
+
+{# ── Programación de Horarios ── #}
+<div class="card mb-0 border-0 shadow-sm"><div class="card-body p-4">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="section-header mb-0" style="flex:1;min-width:240px;">
+            <i class="bi bi-calendar-range-fill fs-5"></i><h5>Programación de Horarios</h5>
+        </div>
+        <div class="bg-light border rounded-3 px-3 py-2" style="font-size:.8rem;">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="fw-bold text-muted" style="width:90px;flex-shrink:0;">REQUERIDO:</span>
+                <div id="horas-requerido"><span class="text-muted small fst-italic">—</span></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-muted" style="width:90px;flex-shrink:0;">ASIGNADO:</span>
+                <div id="horas-summary"><span class="text-muted small fst-italic">—</span></div>
             </div>
         </div>
     </div>
+
+    {{ horario_formset.management_form }}
+    {% if horario_formset.non_form_errors %}
+    <div class="form-error-banner mb-3"><i class="bi bi-exclamation-octagon-fill"></i>{{ horario_formset.non_form_errors.0 }}</div>
+    {% endif %}
+
+    <div id="horarios-container">
+    {% for hf in horario_formset %}
+    <div class="horario-row{% if hf.errors %} has-error{% endif %}">
+        {{ hf.id }}
+        {% if hf.instance.pk %}{{ hf.DELETE }}{% endif %}
+        <div class="horario-grid">
+            <div>
+                <label>Día</label>{{ hf.dia }}
+                {% for e in hf.dia.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            </div>
+            <div>
+                <label>Tipo</label>
+                <div class="d-none tipo-hidden-select">{{ hf.tipo }}</div>
+                <div class="tipo-selector">
+                    <button type="button" class="tipo-btn" data-tipo="T">Teoría</button>
+                    <button type="button" class="tipo-btn" data-tipo="P">Práctica</button>
+                    <button type="button" class="tipo-btn" data-tipo="L">Lab</button>
+                </div>
+                {% for e in hf.tipo.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            </div>
+            <div>
+                <label>Horario</label>
+                <div class="hora-range-wrapper">
+                    <div class="hora-display">
+                        <div><div class="hora-display-label">INICIO</div>{{ hf.hora_inicio }}</div>
+                        <span style="margin-top:18px;">→</span>
+                        <div><div class="hora-display-label">FIN</div>{{ hf.hora_fin }}</div>
+                    </div>
+                    <div class="hora-bar"></div>
+                    {% if hf.hora_inicio.errors or hf.hora_fin.errors %}
+                    <div class="hora-errors-box">
+                        {% for e in hf.hora_inicio.errors %}<div class="hora-inline-error server-error"><i class="bi bi-exclamation-circle-fill"></i>Inicio: {{ e }}</div>{% endfor %}
+                        {% for e in hf.hora_fin.errors %}<div class="hora-inline-error server-error"><i class="bi bi-exclamation-circle-fill"></i>Fin: {{ e }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <label>Aula</label>{{ hf.aula }}
+                {% for e in hf.aula.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            </div>
+            <div>
+                <label>Docente</label>{{ hf.docente }}
+                {% for e in hf.docente.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            </div>
+            <button type="button" class="btn-del-horario delete-horario"><i class="bi bi-trash3-fill" style="font-size:.75rem;"></i></button>
+        </div>
+        {% if hf.non_field_errors %}
+        <div class="horario-errors mt-2">{% for e in hf.non_field_errors %}<div class="error-item"><i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i><span>{{ e }}</span></div>{% endfor %}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mt-2">
+        <button type="button" class="add-horario-btn" id="add-horario" title="Ctrl+H">
+            <i class="bi bi-plus-circle-fill me-2"></i>Añadir horario
+        </button>
+        <button type="button" class="btn-copy-horario" id="copy-last-horario">
+            <i class="bi bi-copy me-1"></i>Duplicar último
+        </button>
+    </div>
+</div></div>
+
+<div class="sticky-actions">
+    <a href="{% url 'grupos_list' %}" class="btn btn-light border fw-semibold"><i class="bi bi-arrow-left me-1"></i>Cancelar</a>
+    <div class="d-flex gap-2">
+        {% if action != 'Editar' %}
+        <button type="submit" name="_save_and_new" value="1" class="btn btn-outline-primary fw-semibold px-4">
+            <i class="bi bi-layer-forward me-1"></i>Guardar y crear otro
+        </button>
+        {% endif %}
+        <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
+            <i class="bi bi-check2-circle me-1 fs-5"></i>Guardar
+        </button>
+    </div>
+</div>
 </form>
 
 <script type="text/template" id="vacantes-template">
-    <tr class="vacante-row">
-        <td>
-            <input type="hidden" name="vacantes-__prefix__-id" id="id_vacantes-__prefix__-id">
-            <div class="d-none">{{ vacantes_formset.empty_form.asignatura }}</div>
-            <div class="course-info-display">
-                <div class="real-info d-none">
-                    <span class="course-code"></span><span class="course-name"></span><span class="plan-name"></span>
-                </div>
-                <select class="form-select form-select-sm select-equivalencia-visual">
-                    <option value="">Seleccione una equivalencia...</option>
-                </select>
+<tr class="vacante-row">
+    <td style="padding-left:1.25rem;">
+        <input type="hidden" name="vacantes-__prefix__-id" id="id_vacantes-__prefix__-id">
+        <div class="d-none">{{ vacantes_formset.empty_form.asignatura }}</div>
+        <div class="course-info-display">
+            <div class="real-info d-none">
+                <div><span class="course-code"></span><span class="course-name"></span></div>
+                <span class="plan-name"></span>
+                <a class="edit-link cambiar-equivalencia">cambiar</a>
             </div>
-        </td>
-        <td><span class="school-name">-</span></td>
-        <td class="text-center">{{ vacantes_formset.empty_form.cantidad }}</td>
-        <td class="text-center">
-            <button type="button" class="btn btn-link text-danger p-0 delete-vacante">
-                <i class="bi bi-trash"></i>
-            </button>
-        </td>
-    </tr>
+            <div class="equivalencia-select-wrap">
+                <select class="form-select form-select-sm select2-equivalencia"><option value=""></option></select>
+            </div>
+        </div>
+    </td>
+    <td><span class="school-name text-muted">-</span></td>
+    <td class="text-center">{{ vacantes_formset.empty_form.cantidad }}</td>
+    <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante"><i class="bi bi-trash3-fill"></i></button></td>
+</tr>
 </script>
 
 <script type="text/template" id="horarios-template">
-    <div class="formset-row horario-row">
-        <input type="hidden" name="horarios-__prefix__-id" id="id_horarios-__prefix__-id">
-        <button type="button" class="btn btn-sm btn-outline-danger delete-btn delete-horario" title="Eliminar">
-            <i class="bi bi-trash"></i>
-        </button>
-        <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold"><i class="bi bi-calendar-day me-1"></i>Día</label>
-                {{ horario_formset.empty_form.dia }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold"><i class="bi bi-tag me-1"></i>Tipo</label>
-                {{ horario_formset.empty_form.tipo }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold"><i class="bi bi-clock me-1"></i>Inicio</label>
-                {{ horario_formset.empty_form.hora_inicio }}
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-semibold"><i class="bi bi-clock-fill me-1"></i>Fin</label>
-                {{ horario_formset.empty_form.hora_fin }}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-semibold"><i class="bi bi-door-open me-1"></i>Aula</label>
-                {{ horario_formset.empty_form.aula }}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-semibold"><i class="bi bi-person-badge me-1"></i>Docente</label>
-                {{ horario_formset.empty_form.docente }}
+<div class="horario-row">
+    <input type="hidden" name="horarios-__prefix__-id" id="id_horarios-__prefix__-id">
+    <div class="horario-grid">
+        <div><label>Día</label>{{ horario_formset.empty_form.dia }}</div>
+        <div>
+            <label>Tipo</label>
+            <div class="d-none tipo-hidden-select">{{ horario_formset.empty_form.tipo }}</div>
+            <div class="tipo-selector">
+                <button type="button" class="tipo-btn" data-tipo="T">Teoría</button>
+                <button type="button" class="tipo-btn" data-tipo="P">Práctica</button>
+                <button type="button" class="tipo-btn" data-tipo="L">Lab</button>
             </div>
         </div>
+        <div>
+            <label>Horario</label>
+            <div class="hora-range-wrapper">
+                <div class="hora-display">
+                    <div><div class="hora-display-label">INICIO</div>{{ horario_formset.empty_form.hora_inicio }}</div>
+                    <span style="margin-top:18px;">→</span>
+                    <div><div class="hora-display-label">FIN</div>{{ horario_formset.empty_form.hora_fin }}</div>
+                </div>
+                <div class="hora-bar"></div>
+            </div>
+        </div>
+        <div><label>Aula</label>{{ horario_formset.empty_form.aula }}</div>
+        <div><label>Docente</label>{{ horario_formset.empty_form.docente }}</div>
+        <button type="button" class="btn-del-horario delete-horario"><i class="bi bi-trash3-fill" style="font-size:.75rem;"></i></button>
     </div>
+</div>
 </script>
-
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
-$(document).ready(function() {
-    let equivalenciasData = [];
-    const urlDetalleAsignatura = "{% url 'api_asignatura_equivalencias' %}"; // Asegúrate que esta URL exista
-    const urlCargarAsignaturas = "{% url 'ajax_cargar_asignaturas' %}"; // Asegúrate que esta URL exista
+$(function(){
+    const URL_DETALLE = "{% url 'api_asignatura_equivalencias' %}";
+    const URL_ASIG    = "{% url 'ajax_cargar_asignaturas' %}";
+    const ES_EDICION = "{{ action }}" === "Editar";
 
-    // Función initSelect2 actualizada para el nuevo campo docente
-    function initSelect2($container) {
-        // Asignatura Principal
-        $container.find('.select2-asignatura').select2({
-            theme: 'bootstrap-5', width: '100%', placeholder: 'Buscar asignatura...', allowClear: true
-        });
+    // Slots 08:00–22:00 cada 30 min
+    const SLOTS=[];
+    for(let h=8;h<=22;h++){ SLOTS.push(p(h)+':00'); if(h<22) SLOTS.push(p(h)+':30'); }
+    function p(n){ return String(n).padStart(2,'0'); }
 
-        // Filtros Escuela
-        $container.find('.select2-escuela').select2({
-            theme: 'bootstrap-5', width: '100%', placeholder: 'Seleccione escuela...', allowClear: true
-        });
+    let eqData=[], horasReq={T:0,P:0,L:0};
+    const eqMap={};
 
-        // NUEVO: Select de Docente en Horarios
-        $container.find('.select2-docente').select2({
-            theme: 'bootstrap-5',
-            width: '100%',
-            placeholder: 'Seleccione docente...',
-            allowClear: true,
-            dropdownParent: $container // Importante para modales, aunque aquí ayuda al scope
-        });
+    // ── Tiempo ────────────────────────────────────────────────────
+    const toMin=v=>{ if(!v) return -1; const [h,m]=v.split(':').map(Number); return h*60+m; };
+    const fromMin=t=>`${p(Math.floor(t/60))}:${p(t%60)}`;
+    const snapSlot=m=>fromMin(Math.min(Math.max(Math.round(m/30)*30,480),1320));
+    const normHora=v=>{ if(!v) return ''; const[h,m]=v.split(':').map(Number); if(h<8||h>22) return ''; return `${p(h)}:${p(m>=15&&m<45?30:0)}`; };
 
-        // Aula y otros selects simples
-        $container.find('.select2-aula').select2({
-            theme: 'bootstrap-5', width: '100%', placeholder: 'Aula...', allowClear: true
+    // ── Cálculo horas ─────────────────────────────────────────────
+    function calcHoras(){
+        const a={T:0,P:0,L:0};
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            const t=$(this).find('select[name$="-tipo"]').val();
+            const i=$(this).find('input[name$="-hora_inicio"]').val();
+            const f=$(this).find('input[name$="-hora_fin"]').val();
+            if(t in a&&i&&f){ const d=(toMin(f)-toMin(i))/60; if(d>0) a[t]+=d; }
         });
+        return a;
     }
 
-    // Inicializar en carga
-    initSelect2($('body'));
-
-    // --- LÓGICA DE FILTROS Y ASIGNATURAS (Tu código original) ---
-    $('#id_escuela_filtro, #id_ciclo_filtro').on('change', function() {
-        const escuelaId = $('#id_escuela_filtro').val();
-        const ciclo = $('#id_ciclo_filtro').val();
-        const $selectAsig = $('#id_asignatura');
-        if (!escuelaId && !ciclo) return;
-        $selectAsig.empty().prop('disabled', true);
-
-        $.ajax({
-            url: urlCargarAsignaturas,
-            data: { 'escuela_id': escuelaId, 'ciclo': ciclo },
-            success: function(data) {
-                $selectAsig.append(new Option('Seleccione una asignatura...', '', true, true));
-                data.forEach(item => $selectAsig.append(new Option(item.text, item.id, false, false)));
-                $selectAsig.trigger('change').prop('disabled', false);
-            }
+    function horasRestantes(tipo,$exc){
+        const req=horasReq[tipo]||0; if(!req) return 0;
+        let ac=0;
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            if($exc&&$(this).is($exc)) return;
+            const t=$(this).find('select[name$="-tipo"]').val();
+            const i=$(this).find('input[name$="-hora_inicio"]').val();
+            const f=$(this).find('input[name$="-hora_fin"]').val();
+            if(t===tipo&&i&&f){ const d=(toMin(f)-toMin(i))/60; if(d>0) ac+=d; }
         });
-    });
+        return Math.max(0,req-ac);
+    }
 
-    $('.select2-asignatura').on('select2:select', function(e) {
-        const asignaturaId = e.params.data.id;
-        if (!asignaturaId) return;
-        $.ajax({
-            url: urlDetalleAsignatura,
-            data: { 'id': asignaturaId },
-            success: function(response) {
-                actualizarFilaPrincipal(response);
-                equivalenciasData = response.equivalencias || [];
-            }
-        });
-    });
-
-    function actualizarFilaPrincipal(response) {
-        const $rowPrincipal = $('#vacantes-container tr').first();
-        const principal = response.principal;
-        const $selectReal = $rowPrincipal.find('select[name$="-asignatura"]');
-        if ($selectReal.find(`option[value='${response.id}']`).length === 0) {
-             $selectReal.append(new Option("Principal", response.id, true, true));
+    // ── Ajuste de rango ───────────────────────────────────────────
+    // Ajusta hora_fin si supera lo permitido; muestra aviso si hay mensajes
+    function ajustarRango($row,silencioso){
+        const tipo=$row.find('select[name$="-tipo"]').val(); if(!tipo) return;
+        const req=horasReq[tipo]||0; if(!req) return;
+        const $i=$row.find('input[name$="-hora_inicio"]'), $f=$row.find('input[name$="-hora_fin"]');
+        const iv=$i.val(), fv=$f.val(); if(!iv||!fv) return;
+        const rest=horasRestantes(tipo,$row), diff=(toMin(fv)-toMin(iv))/60;
+        if(diff<=0) return;
+        const lbl=tipo==='T'?'Teoría':tipo==='P'?'Práctica':'Lab';
+        if(rest<=0){
+            $i.val(''); $f.val(''); pintarBarra($row.find('.hora-bar'),'','');
+            if(!silencioso) errHora($i,`Las horas de ${lbl} ya están completas`,'warn');
+        } else if(diff>rest){
+            const fc=snapSlot(toMin(iv)+Math.round(rest*60));
+            $f.val(fc); pintarBarra($row.find('.hora-bar'),iv,fc);
+            if(!silencioso) errHora($f,`Ajustado a ${fc} — solo quedan ${rest}h de ${lbl}`,'warn');
         }
-        $selectReal.val(response.id);
-        renderCellInfo($rowPrincipal, {
-            codigo: principal.codigo, nombre: principal.nombre, plan: principal.plan, escuela: principal.escuela
+    }
+
+    // ── Errores de hora ───────────────────────────────────────────
+    function errHora($inp,msg,niv){
+        clearErrHora($inp);
+        const key=($inp.attr('name')||'').endsWith('-hora_inicio')?'ini':'fin';
+        const $wrap=$inp.closest('.hora-range-wrapper');
+        $inp.addClass('is-invalid-field');
+        let $box=$wrap.find('.hora-errors-box');
+        if(!$box.length) $box=$('<div class="hora-errors-box"></div>').appendTo($wrap);
+        const ico=niv==='warn'?'bi-exclamation-triangle-fill':'bi-exclamation-circle-fill';
+        const $t=$(`<div class="hora-inline-error hora-err-${key}${niv==='warn'?' warn-type':''}"><i class="bi ${ico}"></i>${msg}</div>`);
+        $box.append($t);
+        setTimeout(()=>$t.fadeOut(250,()=>{ $t.remove(); $inp.removeClass('is-invalid-field'); if(!$box.children().length) $box.remove(); }),4500);
+    }
+    function clearErrHora($inp){
+        $inp.removeClass('is-invalid-field');
+        const key=($inp.attr('name')||'').endsWith('-hora_inicio')?'ini':'fin';
+        const $wrap=$inp.closest('.hora-range-wrapper');
+        $wrap.find(`.hora-err-${key}:not(.server-error)`).remove();
+        if(!$wrap.find('.hora-errors-box').children().length) $wrap.find('.hora-errors-box:not(:has(.server-error))').remove();
+    }
+    function validarHora($inp){
+        const v=$inp.val(); if(!v) return;
+        const m=toMin(v);
+        if(m<480){ $inp.val('08:00'); errHora($inp,'Mínimo 08:00','err'); }
+        else if(m>1320){ $inp.val('22:00'); errHora($inp,'Máximo 22:00','err'); }
+        else clearErrHora($inp);
+        const $row=$inp.closest('.horario-row');
+        const $i=$row.find('input[name$="-hora_inicio"]'), $f=$row.find('input[name$="-hora_fin"]');
+        if($i.val()&&$f.val()&&toMin($f.val())<=toMin($i.val())){
+            $f.val(''); pintarBarra($row.find('.hora-bar'),$i.val(),'');
+            errHora($f,'La hora fin debe ser posterior al inicio','err');
+        }
+    }
+    $(document).on('change','input[name$="-hora_inicio"],input[name$="-hora_fin"]',function(){
+        validarHora($(this));
+        const $row=$(this).closest('.horario-row');
+        if($row.length){ ajustarRango($row,false); actualizarHoras(); }
+    });
+
+    // ── Resumen de horas ──────────────────────────────────────────
+    const TIPO_STYLE={T:'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;',P:'background:#dcfce7;color:#166534;border-color:#86efac;',L:'background:#fef3c7;color:#92400e;border-color:#fde68a;'};
+    const TIPO_LABEL={T:'Teoría',P:'Práctica',L:'Lab'};
+
+    function actualizarHoras(){
+        const a=calcHoras();
+        const $sr=$('#horas-requerido').empty(), $sa=$('#horas-summary').empty();
+        let hayReq=false, hayAsig=false;
+        ['T','P','L'].forEach(t=>{
+            const req=horasReq[t]||0, got=Math.round(a[t]*100)/100;
+            if(req>0){ hayReq=true; $sr.append(`<span class="horas-badge" style="${TIPO_STYLE[t]}"><i class="bi bi-clock"></i>${TIPO_LABEL[t]}: ${req}h</span>`); }
+            if(!req&&!got) return;
+            hayAsig=true;
+            let cls='horas-badge';
+            if(req>0&&Math.abs(req-got)<.01) cls+=' ok';
+            else if(req>0&&got>0&&got<req)   cls+=' warn';
+            else if(req>0&&got>req)           cls+=' err';
+            $sa.append(`<span class="${cls}"><i class="bi bi-clock-fill"></i>${TIPO_LABEL[t]}: ${got}h</span>`);
+        });
+        if(!hayReq) $sr.html('<span class="text-muted small fst-italic">—</span>');
+        if(!hayAsig) $sa.html('<span class="text-muted small fst-italic">—</span>');
+        actualizarBotonesTipo();
+    }
+
+    // ── Botones Tipo ──────────────────────────────────────────────
+    function setVisibilidad($row){
+        $row.find('.tipo-btn').each(function(){
+            const t=$(this).data('tipo');
+            horasReq[t]>0?$(this).removeClass('d-none'):$(this).addClass('d-none');
         });
     }
 
-    function renderCellInfo($row, data) {
-        $row.find('.placeholder-info, .select-equivalencia-visual').addClass('d-none');
-        const $infoDiv = $row.find('.real-info').removeClass('d-none');
-        $infoDiv.find('.course-code').text(`[${data.codigo}]`);
-        $infoDiv.find('.course-name').text(data.nombre);
-        $infoDiv.find('.plan-name').text(data.plan);
-        $row.find('.school-name').text(data.escuela);
-    }
+    /**
+     * Dos pasadas:
+     * 1) Marca completed los botones cuyo tipo está cubierto por OTRAS filas.
+     *    El tipo activo de la fila NUNCA se marca como completed (siempre clickeable).
+     * 2) Reasigna automáticamente si el tipo activo de una fila quedó cubierto.
+     */
+    function actualizarBotonesTipo(){
+        const a=calcHoras();
 
-    // --- LÓGICA VACANTES (Agregar filas) ---
-    $('#add-vacante').click(function() {
-        const type = 'vacantes';
-        const $totalForms = $(`#id_${type}-TOTAL_FORMS`);
-        const currentIndex = parseInt($totalForms.val());
-        const templateHtml = $(`#${type}-template`).html().replace(/__prefix__/g, currentIndex);
-        const $newRow = $(templateHtml);
-
-        const $selectVisual = $newRow.find('.select-equivalencia-visual');
-        $selectVisual.empty().append(new Option('Seleccione equivalencia...', '', true, true));
-
-        if (equivalenciasData.length > 0) {
-            equivalenciasData.forEach(eq => {
-                const $opt = $(new Option(eq.text, eq.id, false, false));
-                $opt.data('full-info', eq);
-                $selectVisual.append($opt);
+        // Pasada 1: marcar botones
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            const $row=$(this), tipoAct=$row.find('select[name$="-tipo"]').val();
+            $row.find('.tipo-btn').each(function(){
+                const t=$(this).data('tipo'), req=horasReq[t]||0;
+                if(!req){ $(this).addClass('d-none'); return; }
+                $(this).removeClass('d-none');
+                // Horas de este tipo en OTRAS filas
+                let otras=a[t];
+                if(t===tipoAct){
+                    const iv=$row.find('input[name$="-hora_inicio"]').val();
+                    const fv=$row.find('input[name$="-hora_fin"]').val();
+                    if(iv&&fv){ const d=(toMin(fv)-toMin(iv))/60; if(d>0) otras-=d; }
+                }
+                // Completado solo si está cubierto POR OTRAS filas y NO es el tipo activo
+                const cubierto=Math.round(otras*100)/100>=req;
+                if(cubierto&&t!==tipoAct) $(this).addClass('completed').prop('disabled',true);
+                else                      $(this).removeClass('completed').prop('disabled',false);
             });
-        } else {
-            $selectVisual.append(new Option('No hay equivalencias disponibles', '', false, false));
-            $selectVisual.prop('disabled', true);
-        }
-
-        $selectVisual.on('change', function() {
-            const selectedId = $(this).val();
-            if (!selectedId) return;
-            const data = $(this).find(':selected').data('full-info');
-            const $realDjangoSelect = $newRow.find('select[name$="-asignatura"]');
-            if ($realDjangoSelect.find(`option[value='${selectedId}']`).length === 0) {
-                $realDjangoSelect.append(new Option(data.nombre, selectedId, true, true));
-            }
-            $realDjangoSelect.val(selectedId);
-            renderCellInfo($newRow, data);
         });
 
-        $('#vacantes-container').append($newRow);
-        $totalForms.val(currentIndex + 1);
-        $newRow.find('.vacantes-input').addClass('form-control-plaintext').attr('autocomplete', 'off');
-    });
+        // Pasada 2: reasignar si el tipo activo quedó cubierto por otras filas
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            const $row=$(this), $sel=$row.find('select[name$="-tipo"]');
+            const tipoAct=$sel.val(); if(!tipoAct) return;
+            const req=horasReq[tipoAct]||0; if(!req) return;
+            // Horas de tipoAct solo en OTRAS filas
+            let otras=0;
+            $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+                if($(this).is($row)) return;
+                const t=$(this).find('select[name$="-tipo"]').val();
+                const iv=$(this).find('input[name$="-hora_inicio"]').val();
+                const fv=$(this).find('input[name$="-hora_fin"]').val();
+                if(t===tipoAct&&iv&&fv){ const d=(toMin(fv)-toMin(iv))/60; if(d>0) otras+=d; }
+            });
+            if(Math.round(otras*100)/100<req) return; // aún hay espacio → no reasignar
+            // Siguiente tipo libre ignorando esta fila
+            const sig=proximoLibre($row);
+            if(sig){
+                $sel.val(sig);
+                $row.find('.tipo-btn').removeClass('active-T active-P active-L');
+                $row.find(`.tipo-btn[data-tipo="${sig}"]`).addClass(`active-${sig}`).removeClass('completed').prop('disabled',false);
+                ajustarRango($row,true);
+                notif($row,`Tipo cambiado a ${TIPO_LABEL[sig]}`,'info');
+            } else {
+                $row.find('input[name$="-hora_inicio"],input[name$="-hora_fin"]').val('');
+                pintarBarra($row.find('.hora-bar'),'','');
+                notif($row,'Todos los tipos ya están cubiertos','warn');
+            }
+        });
+    }
 
-    // --- LÓGICA HORARIOS (Agregar filas con Select2) ---
-    $('#add-horario').click(function() {
-        const type = 'horarios';
-        const $totalForms = $(`#id_${type}-TOTAL_FORMS`);
-        const currentIndex = parseInt($totalForms.val());
-        const templateHtml = $(`#${type}-template`).html().replace(/__prefix__/g, currentIndex);
-        const $newRow = $(templateHtml);
-
-        $('#horarios-container').append($newRow);
-
-        // ¡IMPORTANTE! Inicializar Select2 en los nuevos elementos (Docente y Aula)
-        initSelect2($newRow);
-
-        $totalForms.val(currentIndex + 1);
-    });
-
-    // --- ELIMINAR FILAS ---
-    $(document).on('click', '.delete-btn, .delete-vacante', function() {
-        const $row = $(this).closest('.formset-row, .vacante-row');
-        const $deleteInput = $row.find('input[name$="-DELETE"]');
-        if ($deleteInput.length) {
-            $deleteInput.prop('checked', true);
-            $row.addClass('d-none to-delete');
-        } else {
-            $row.remove();
+    // Primer tipo con horas pendientes, excluyendo completamente $excRow
+    function proximoLibre($excRow){
+        for(const t of ['T','P','L']){
+            const req=horasReq[t]||0; if(!req) continue;
+            let ac=0;
+            $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+                if($(this).is($excRow)) return;
+                const ti=$(this).find('select[name$="-tipo"]').val();
+                const iv=$(this).find('input[name$="-hora_inicio"]').val();
+                const fv=$(this).find('input[name$="-hora_fin"]').val();
+                if(ti===t&&iv&&fv){ const d=(toMin(fv)-toMin(iv))/60; if(d>0) ac+=d; }
+            });
+            if(Math.round(ac*100)/100<req) return t;
         }
+        return null;
+    }
+
+    // Primer tipo pendiente (para fila nueva, sin excluir ninguna)
+    function proximoPendiente(){
+        const a=calcHoras();
+        for(const t of ['T','P','L']){
+            const req=horasReq[t]||0; if(!req) continue;
+            if(Math.round(a[t]*100)/100<req) return t;
+        }
+        return null;
+    }
+
+    function notif($row,msg,tipo){
+        const C={info:{bg:'#eff6ff',bd:'#93c5fd',cl:'#1d4ed8',ic:'bi-info-circle-fill'},warn:{bg:'#fef3c7',bd:'#fde68a',cl:'#92400e',ic:'bi-exclamation-triangle-fill'}}[tipo]||{bg:'#eff6ff',bd:'#93c5fd',cl:'#1d4ed8',ic:'bi-info-circle-fill'};
+        $row.find('.horario-notif').remove();
+        const $n=$(`<div class="horario-notif" style="background:${C.bg};border:1px solid ${C.bd};color:${C.cl};"><i class="bi ${C.ic}" style="flex-shrink:0;"></i>${msg}</div>`);
+        $row.append($n);
+        setTimeout(()=>$n.fadeOut(300,()=>$n.remove()),4000);
+    }
+
+    // ── Barra de hora ─────────────────────────────────────────────
+    function pintarBarra($bar,ini,fin){
+        const iN=normHora(ini), fN=normHora(fin), iM=toMin(iN), fM=toMin(fN);
+        $bar.find('.hora-slot').each(function(){
+            const s=$(this).data('slot'), m=toMin(s);
+            $(this).removeClass('sel-ini sel-fin sel-mid');
+            if(!iN) return;
+            if(s===iN&&(!fN||s===fN)) $(this).addClass('sel-ini sel-fin');
+            else if(s===iN)           $(this).addClass('sel-ini');
+            else if(fN&&s===fN)       $(this).addClass('sel-fin');
+            else if(fN&&m>iM&&m<fM)  $(this).addClass('sel-mid');
+        });
+    }
+
+    function buildHoraBar($row){
+        const $bar=$row.find('.hora-bar').empty();
+        const $i=$row.find('input[name$="-hora_inicio"]'), $f=$row.find('input[name$="-hora_fin"]');
+        $i.attr({min:'08:00',max:'22:00'}); $f.attr({min:'08:00',max:'22:00'});
+        SLOTS.forEach(s=>{ const[h,m]=s.split(':').map(Number); $bar.append(`<div class="hora-slot" data-slot="${s}">${m===0?s:''}</div>`); });
+        pintarBarra($bar,$i.val(),$f.val());
+        let wait=false, tmp=null;
+        $bar.on('mouseenter','.hora-slot',function(){
+            if(!wait) return;
+            let[a,b]=[tmp,$(this).data('slot')];
+            if(toMin(b)<=toMin(a))[a,b]=[b,a];
+            pintarBarra($bar,a,b); $i.val(a); $f.val(b);
+        });
+        $bar.on('click','.hora-slot',function(){
+            const s=$(this).data('slot');
+            if(!wait){
+                tmp=s; wait=true; $bar.css('cursor','e-resize');
+                pintarBarra($bar,s,null); $i.val(s).trigger('change'); $f.val('').trigger('change');
+            } else {
+                let[a,b]=[tmp,s]; if(toMin(b)<=toMin(a))[a,b]=[b,a];
+                $i.val(a).trigger('change'); $f.val(b).trigger('change');
+                pintarBarra($bar,a,b); wait=false; tmp=null; $bar.css('cursor','pointer');
+                ajustarRango($row,false); actualizarHoras();
+            }
+        });
+        $(document).on('keydown.hb',e=>{ if(e.key==='Escape'&&wait){ wait=false; tmp=null; $bar.css('cursor','pointer'); pintarBarra($bar,$i.val(),$f.val()); } });
+        $i.on('change',()=>{ if(!wait){ pintarBarra($bar,normHora($i.val()),normHora($f.val())); actualizarHoras(); } });
+        $f.on('change input',()=>{ if(!wait){ pintarBarra($bar,normHora($i.val()),normHora($f.val())); actualizarHoras(); } });
+    }
+
+    // ── Init fila horario ─────────────────────────────────────────
+    function initHorarioRow($row,autoTipo){
+        const $sel=$row.find('.tipo-hidden-select select'), $btns=$row.find('.tipo-btn');
+        const ti=$sel.val()||autoTipo;
+        setVisibilidad($row);
+        if(ti){ $sel.val(ti); $btns.removeClass('active-T active-P active-L'); $btns.filter(`[data-tipo="${ti}"]`).addClass(`active-${ti}`); }
+        $btns.on('click',function(){
+            if($(this).hasClass('completed')||$(this).prop('disabled')) return;
+            const t=$(this).data('tipo');
+            $sel.val(t); $btns.removeClass('active-T active-P active-L'); $(this).addClass(`active-${t}`);
+            ajustarRango($row,true);
+            pintarBarra($row.find('.hora-bar'),$row.find('input[name$="-hora_inicio"]').val(),$row.find('input[name$="-hora_fin"]').val());
+            actualizarHoras();
+        });
+        buildHoraBar($row);
+        $row.find('.select2-docente').select2({theme:'bootstrap-5',width:'100%',placeholder:'Docente…',allowClear:true,dropdownParent:$row});
+        $row.find('.select2-aula').select2({theme:'bootstrap-5',width:'100%',placeholder:'Aula…',allowClear:true,dropdownParent:$row});
+    }
+    $('#horarios-container .horario-row').each(function(){ initHorarioRow($(this),null); });
+    $(document).on('change','#horarios-container select[name$="-tipo"]',actualizarHoras);
+
+    // ── Agregar / duplicar horario ────────────────────────────────
+    function agregarHorario(clonar){
+        const $total=$('#id_horarios-TOTAL_FORMS'), idx=parseInt($total.val());
+        const $row=$(($('#horarios-template').html()).replace(/__prefix__/g,idx));
+        $('#horarios-container').append($row);
+        initHorarioRow($row,proximoPendiente());
+        $total.val(idx+1);
+        if(clonar){
+            const $p=$('#horarios-container .horario-row').eq(-2);
+            if($p.length){
+                $row.find('select[name$="-dia"]').val($p.find('select[name$="-dia"]').val());
+                const tf=proximoPendiente()||$p.find('.tipo-hidden-select select').val();
+                if(tf){ $row.find('.tipo-hidden-select select').val(tf); $row.find('.tipo-btn').removeClass('active-T active-P active-L'); $row.find(`.tipo-btn[data-tipo="${tf}"]`).addClass(`active-${tf}`); }
+                const iv=normHora($p.find('input[name$="-hora_inicio"]').val()), fv=normHora($p.find('input[name$="-hora_fin"]').val());
+                $row.find('input[name$="-hora_inicio"]').val(iv); $row.find('input[name$="-hora_fin"]').val(fv);
+                pintarBarra($row.find('.hora-bar'),iv,fv); ajustarRango($row,false);
+            }
+        }
+        $row[0].scrollIntoView({behavior:'smooth',block:'center'}); actualizarHoras();
+    }
+    $('#add-horario').on('click',()=>agregarHorario(false));
+    $('#copy-last-horario').on('click',()=>agregarHorario(true));
+    $(document).on('click','.delete-horario',function(){
+        const $row=$(this).closest('.horario-row'), $del=$row.find('input[name$="-DELETE"]');
+        if($del.length){ $del.prop('checked',true); $row.addClass('to-delete'); }
+        else { $row.remove(); renum('horarios'); }
+        actualizarHoras();
     });
 
-    $('.vacantes-input').addClass('form-control-plaintext').attr('autocomplete', 'off');
+    // ── Select2 base ──────────────────────────────────────────────
+    $('body').find('.select2-asignatura').select2({theme:'bootstrap-5',width:'100%',placeholder:'Buscar asignatura…',allowClear:true});
+    $('body').find('.select2-escuela').select2({theme:'bootstrap-5',width:'100%',placeholder:'Escuela…',allowClear:true});
+
+    // ── Select2 equivalencias ─────────────────────────────────────
+    function initEq($sel){
+        if($sel.data('select2')) $sel.select2('destroy');
+        $sel.empty().append('<option value=""></option>');
+        eqData.forEach(eq=>$sel.append($('<option>').val(eq.id).text(`[${eq.escuela}] ${eq.codigo} — ${eq.nombre}`)));
+        const sin=!eqData.length;
+        $sel.prop('disabled',sin).select2({
+            theme:'bootstrap-5', width:'100%',
+            placeholder:{id:'',text:sin?'Sin equivalencias disponibles':'Buscar por escuela, código o nombre…'},
+            allowClear:!sin,
+            language:{noResults:()=>'Sin coincidencias',searching:()=>'Buscando…'}
+        });
+        $sel.next('.select2-container').css('opacity',sin?'.55':'').attr('title',sin?'No hay equivalencias registradas':'');
+        $sel.off('select2:select.eq select2:clear.eq');
+        $sel.on('select2:select.eq',function(e){
+            const eq=eqMap[String(e.params.data.id)]; if(!eq) return;
+            const $row=$(this).closest('.vacante-row'), $real=$row.find('select[name$="-asignatura"]');
+            if(!$real.find(`option[value="${eq.id}"]`).length) $real.append(new Option(eq.nombre,eq.id,true,true));
+            $real.val(eq.id); renderCell($row,eq);
+        });
+        $sel.on('select2:clear.eq',function(){
+            const $row=$(this).closest('.vacante-row');
+            $row.find('select[name$="-asignatura"]').val('');
+            $row.find('.real-info').addClass('d-none');
+            $row.find('.school-name').text('-').addClass('text-muted');
+            $row.find('.equivalencia-select-wrap').removeClass('d-none');
+        });
+    }
+    function reinitEqs(){
+        Object.keys(eqMap).forEach(k=>delete eqMap[k]);
+        eqData.forEach(eq=>{ eqMap[String(eq.id)]=eq; });
+        $('#vacantes-container .select2-equivalencia').each(function(){ initEq($(this)); });
+    }
+    function renderCell($row,d){
+        $row.find('.placeholder-info').addClass('d-none');
+        $row.find('.equivalencia-select-wrap').addClass('d-none');
+        const $ri=$row.find('.real-info').removeClass('d-none');
+        $ri.find('.course-code').text(d.codigo||'');
+        $ri.find('.course-name').text(' '+(d.nombre||''));
+        $ri.find('.plan-name').text(d.plan||'');
+        $row.find('.school-name').text(d.escuela||'-').removeClass('text-muted');
+    }
+    $(document).on('click','.cambiar-equivalencia',function(){
+        const $row=$(this).closest('.vacante-row');
+        $row.find('.real-info').addClass('d-none');
+        $row.find('.equivalencia-select-wrap').removeClass('d-none');
+        $row.find('.school-name').text('-').addClass('text-muted');
+        $row.find('select[name$="-asignatura"]').val('');
+        initEq($row.find('.select2-equivalencia'));
+    });
+
+    // ── Cargar datos de asignatura ────────────────────────────────
+    function cargarAsignatura(id,cb){
+        $.get(URL_DETALLE,{id},r=>{
+            eqData=r.equivalencias||[];
+            Object.keys(eqMap).forEach(k=>delete eqMap[k]);
+            eqData.forEach(eq=>{ eqMap[String(eq.id)]=eq; });
+            horasReq={T:parseFloat(r.horas_teoria||0),P:parseFloat(r.horas_practica||0),L:parseFloat(r.horas_laboratorio||0)};
+            if(cb) cb(r);
+        });
+    }
+
+    // ── Filtros asignatura ────────────────────────────────────────
+    $('#id_escuela_filtro,#id_ciclo_filtro').on('change',function(){
+        const esc=$('#id_escuela_filtro').val(), cic=$('#id_ciclo_filtro').val();
+        if(!esc&&!cic) return;
+        const $s=$('#id_asignatura').empty().prop('disabled',true);
+        $.get(URL_ASIG,{escuela_id:esc,ciclo:cic},d=>{
+            $s.append(new Option('Seleccione…','',true,true));
+            d.forEach(i=>$s.append(new Option(i.text,i.id)));
+            $s.trigger('change').prop('disabled',false);
+        });
+    });
+
+    // ── Al seleccionar asignatura ─────────────────────────────────
+    $('.select2-asignatura').on('select2:select',function(e){
+        const id=e.params.data.id; if(!id) return;
+        cargarAsignatura(id,r=>{
+            if(!ES_EDICION) actualizarFilaPrincipal(r);
+            actualizarHoras(); reinitEqs();
+        });
+    });
+    $('.select2-asignatura').on('select2:unselect',function(){
+        horasReq={T:0,P:0,L:0}; eqData=[];
+        Object.keys(eqMap).forEach(k=>delete eqMap[k]);
+        $('#horas-requerido').html('<span class="text-muted small fst-italic">—</span>');
+        actualizarHoras(); reinitEqs();
+    });
+
+    function actualizarFilaPrincipal(r){
+        const $row=$('#vacantes-container .vacante-row').first(), p=r.principal;
+        const $s=$row.find('select[name$="-asignatura"]');
+        if(!$s.find(`option[value='${r.id}']`).length) $s.append(new Option(p.nombre,r.id,true,true));
+        $s.val(r.id);
+        renderCell($row,{codigo:p.codigo,nombre:p.nombre,plan:p.plan,escuela:p.escuela});
+    }
+
+    // ── Vacantes ──────────────────────────────────
+    $('#add-vacante').on('click',function(){
+        const asigId=$('#id_asignatura').val();
+        if(!asigId){
+            $('#id_asignatura').closest('.col-12').find('.select2-container .select2-selection')
+                .css({'border-color':'#dc2626','box-shadow':'0 0 0 2px rgba(220,38,38,.15)'});
+            setTimeout(()=>$('#id_asignatura').closest('.col-12').find('.select2-container .select2-selection').css({'border-color':'','box-shadow':''}),2500);
+            return;
+        }
+        if(!eqData.length){
+            const $btn=$(this).prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Cargando…');
+            cargarAsignatura(asigId,()=>{ actualizarHoras(); agregarVacante(); $btn.prop('disabled',false).html('<i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia'); });
+            return;
+        }
+        agregarVacante();
+    });
+
+    function agregarVacante(){
+        const $total=$('#id_vacantes-TOTAL_FORMS'), idx=parseInt($total.val());
+        const $row=$(($('#vacantes-template').html()).replace(/__prefix__/g,idx));
+        $('#vacantes-container').append($row);
+        $total.val(idx+1);
+        $row.find('.vacantes-input').addClass('form-control');
+        const $sel=$row.find('.select2-equivalencia');
+        initEq($sel);
+        if(eqData.length) setTimeout(()=>{ try{ $sel.select2('open'); }catch(e){} },50);
+    }
+
+    $(document).on('click','.delete-vacante',function(){
+        const $row=$(this).closest('.vacante-row'), $del=$row.find('input[name$="-DELETE"]');
+        if($del.length){ $del.prop('checked',true); $row.addClass('d-none to-delete'); }
+        else { $row.remove(); renum('vacantes'); }
+    });
+
+    // ── Renumeración ──────────────────────────────────────────────
+    function renum(prefix){
+        const sel=prefix==='horarios'?'#horarios-container .horario-row:not(.to-delete)':'#vacantes-container .vacante-row:not(.to-delete)';
+        let n=0;
+        $(sel).each(function(){
+            $(this).find('input,select,textarea').each(function(){
+                ['name','id'].forEach(a=>{ const v=$(this).attr(a); if(v) $(this).attr(a,v.replace(new RegExp(`(${prefix}-)(\\d+)(-)`),`$1${n}$3`)); });
+            }); n++;
+        });
+        $(`#id_${prefix}-TOTAL_FORMS`).val(n);
+    }
+
+    // ── Validación número ─────────────────────────────────────────
+    $('#id_numero').attr('min','1')
+        .on('input change',function(){ const v=parseInt($(this).val()); if(!isNaN(v)&&v<1) $(this).val(1); })
+        .on('keydown',function(e){ if(e.key==='0'&&!$(this).val()) e.preventDefault(); });
+
+    // ── Atajos ────────────────────────────────────────────────────
+    $(document).on('keydown',function(e){
+        if(e.ctrlKey&&e.key==='h'){ e.preventDefault(); agregarHorario(false); }
+        if(e.ctrlKey&&e.key==='Enter'){ e.preventDefault(); $('#grupoForm').submit(); }
+    });
+
+    // ── Marcar errores server-side ────────────────────────────────
+    $('.horario-row .server-error').each(function(){ $(this).closest('.horario-row').find('input[name$="-hora_inicio"],input[name$="-hora_fin"]').addClass('is-invalid-field'); });
+    $('.field-error').each(function(){ const $p=$(this).prev(); if($p.is('input,select,textarea')) $p.addClass('is-invalid-field'); });
+
+    // ── Carga inicial ─────────────────────────────────────────────
+    const asigIni=(()=>{
+        const opt=$('#id_asignatura option').filter(function(){ return $(this).attr('selected')!==undefined; }).val();
+        return opt||$('#id_asignatura').val()||'';
+    })();
+    if(asigIni){
+        cargarAsignatura(asigIni,r=>{
+            actualizarHoras();
+            // En creación con POST fallido, completar fila principal si está vacía
+            if(!ES_EDICION&&r.principal){
+                const $p=$('#vacantes-container .vacante-row').first();
+                if(!$p.find('select[name$="-asignatura"]').val()) actualizarFilaPrincipal(r);
+            }
+            reinitEqs();
+        });
+    } else {
+        actualizarHoras();
+    }
+
+    $('.vacantes-input').addClass('form-control');
 });
 </script>
 {% endblock %}
