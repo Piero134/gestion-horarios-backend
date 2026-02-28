@@ -4,7 +4,7 @@ from django.db import models
 
 class Facultad(models.Model):
     nombre = models.CharField(
-        max_length=50,
+        max_length=150,
         unique=True,
         verbose_name="Nombre"
     )
