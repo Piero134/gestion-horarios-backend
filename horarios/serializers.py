@@ -1,6 +1,4 @@
 from rest_framework import serializers
-
-# --- IMPORTS DE LOS MODELOS POR APP ---
 from horarios.models import Horario
 from aulas.models import Aula
 from grupos.models import Grupo
@@ -8,29 +6,9 @@ from periodos.models import PeriodoAcademico
 from asignaturas.models import Asignatura
 from docentes.models import Docente
 
-# Los serializadores de Periodo, Asignatura, Docente y Aula se mantienen por si los usas en otras vistas
-class PeriodoSerializer(serializers.ModelSerializer):
-    activo = serializers.ReadOnlyField()
-    class Meta:
-        model = PeriodoAcademico
-        fields = ['id', 'nombre', 'tipo', 'anio', 'fecha_inicio', 'fecha_fin', 'activo']
-
-class AsignaturaSerializer(serializers.ModelSerializer):
-    plan_id = serializers.PrimaryKeyRelatedField(source='plan', read_only=True)
-    escuela = serializers.CharField(source='plan.escuela.nombre', default=None, read_only=True)
-    class Meta:
-        model = Asignatura
-        fields = ['id', 'codigo', 'nombre', 'ciclo', 'tipo', 'creditos', 'horas_teoria', 'horas_practica', 'horas_laboratorio', 'plan_id', 'escuela']
-
-class DocenteSerializer(serializers.ModelSerializer):
-    nombre_completo = serializers.ReadOnlyField()
-    class Meta:
-        model = Docente
-        fields = ['id', 'nombres', 'apellido_paterno', 'apellido_materno', 'nombre_completo', 'email']
-
 # --- SERIALIZER PRINCIPAL PARA LA APP MÓVIL ---
 class ClaseSerializer(serializers.ModelSerializer):
-    """Estructura de la clase individual formateada para móvil"""
+    """Estructura de la clase individual formateada para la app móvil"""
     curso = serializers.SerializerMethodField()
     docente = serializers.SerializerMethodField()
     aula = serializers.SerializerMethodField()
@@ -53,17 +31,42 @@ class ClaseSerializer(serializers.ModelSerializer):
         return "SIN ASIGNAR"
 
     def get_aula(self, obj):
-        # RETORNA SIEMPRE STRING: El nombre del aula o "0"
+        # RETORNA SIEMPRE STRING: El nombre del aula o "0" para evitar crasheos en el móvil
         if obj.aula:
             return str(obj.aula.nombre)
         return "0"
 
     def get_tipo_clase(self, obj):
-        # Mapeo de tipos sin tildes para el requerimiento móvil
+        # Mapeo de tipos sin tildes
         mapping = {'T': 'Teoria', 'P': 'Practica', 'L': 'Laboratorio'}
         return mapping.get(obj.tipo, 'Teoria')
 
-# Serializer antiguo mantenido por compatibilidad
+
+# --- SERIALIZERS ANTIGUOS MANTENIDOS PARA OTRAS VISTAS ---
+class PeriodoSerializer(serializers.ModelSerializer):
+    activo = serializers.ReadOnlyField()
+    class Meta:
+        model = PeriodoAcademico
+        fields = ['id', 'nombre', 'tipo', 'anio', 'fecha_inicio', 'fecha_fin', 'activo']
+
+class AsignaturaSerializer(serializers.ModelSerializer):
+    plan_id = serializers.PrimaryKeyRelatedField(source='plan', read_only=True)
+    escuela = serializers.CharField(source='plan.escuela.nombre', default=None, read_only=True)
+    class Meta:
+        model = Asignatura
+        fields = ['id', 'codigo', 'nombre', 'ciclo', 'tipo', 'creditos', 'horas_teoria', 'horas_practica', 'horas_laboratorio', 'plan_id', 'escuela']
+
+class DocenteSerializer(serializers.ModelSerializer):
+    nombre_completo = serializers.ReadOnlyField()
+    class Meta:
+        model = Docente
+        fields = ['id', 'nombres', 'apellido_paterno', 'apellido_materno', 'nombre_completo', 'email']
+
+class AulaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Aula
+        fields = ['id', 'nombre', 'capacidad', 'es_laboratorio']
+
 class GrupoCustomSerializer(serializers.ModelSerializer):
     grupo_id = serializers.IntegerField(source='id', read_only=True)
     numero = serializers.IntegerField(read_only=True)

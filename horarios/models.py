@@ -4,7 +4,6 @@ from datetime import datetime
 from grupos.models import Grupo
 
 class Horario(models.Model):
-    # Dias de la semana
     DIAS_CHOICES = [
         (1, 'Lunes'),
         (2, 'Martes'),
