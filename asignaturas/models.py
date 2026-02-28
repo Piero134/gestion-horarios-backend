@@ -23,19 +23,19 @@ class Asignatura(models.Model):
     )
 
     codigo = models.CharField(
-        max_length=20,
+        max_length=50,
         #unique=True,
         verbose_name="Código"
     )
 
     tipo = models.CharField(
-        max_length=2,
+        max_length=5,
         choices=TipoAsignatura.choices,
         default=TipoAsignatura.OBLIGATORIO,
         verbose_name="Tipo"
     )
 
-    nombre = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=200)
 
     creditos = models.PositiveIntegerField()
 
@@ -104,7 +104,7 @@ class Prerequisito(models.Model):
 
 class Equivalencia(models.Model):
     nombre = models.CharField(
-        max_length=150,
+        max_length=200,
         help_text="Nombre común de la equivalencia"
     )
 

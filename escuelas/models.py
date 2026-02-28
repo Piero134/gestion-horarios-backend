@@ -7,8 +7,8 @@ class Escuela(models.Model):
         on_delete=models.PROTECT,
         related_name='escuelas'
     )
-    nombre = models.CharField(max_length=30, unique=True)
-    codigo = models.CharField(max_length=6, editable=False, unique=True)
+    nombre = models.CharField(max_length=150, unique=True)
+    codigo = models.CharField(max_length=50, editable=False, unique=True)
 
     class Meta:
         verbose_name = "Escuela Profesional"
