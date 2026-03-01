@@ -157,13 +157,13 @@
                 {% endif %}
             </a>
 
-            <a href="" class="menu-item {% if 'horarios' in request.path and 'generar' not in request.path %}active{% endif %}">
+            <a href="{% url 'horarios:horario_asignaturas' %}" class="menu-item {% if 'horarios' in request.path and 'generar' not in request.path %}active{% endif %}">
                 <i class="bi bi-calendar-week"></i>
                 <span>Horarios</span>
             </a>
 
             {% if user.rol.name == 'Secretaria de Escuela' or user.rol.name == 'Director de Escuela' or user.rol.name == 'Vicedecano Académico' or user.is_staff %}
-            <a href="" class="menu-item {% if 'generar' in request.path %}active{% endif %}">
+            <a href="{% url 'importar_grupos' %}" class="menu-item {% if 'generar' in request.path %}active{% endif %}">
                 <i class="bi bi-file-earmark-excel"></i>
                 <span>Importar Excel</span>
             </a>

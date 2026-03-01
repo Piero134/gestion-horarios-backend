@@ -7,4 +7,6 @@ urlpatterns = [
     # API REST para app móvil
     path('api/horarios/', HorarioPorDiaListView.as_view(), name='api_horarios'),
 
+    # Vistas para la interfaz web
+    path('', horario_asignaturas, name='horario_asignaturas'),
 ]
