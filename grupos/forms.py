@@ -6,6 +6,7 @@ from horarios.models import Horario
 from asignaturas.models import Asignatura
 from docentes.models import Docente
 from escuelas.models import Escuela
+from aulas.models import Aula
 from .formsets import BaseHorarioFormSet, BaseDistribucionVacantesFormSet
 
 class HorarioForm(forms.ModelForm):
@@ -25,11 +26,27 @@ class HorarioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        aulas_qs = Aula.objects.filter(activo=True)
+        docentes_qs = Docente.objects.filter(activo=True)
+
+        if user :
+            facultad_user = user.facultad
+            aulas_qs = aulas_qs.filter(facultad=facultad_user)
+            docentes_qs = docentes_qs.filter(facultad=facultad_user)
+
+        self.fields['aula'].queryset = aulas_qs.order_by('pabellon', 'nombre')
+        self.fields['docente'].queryset = docentes_qs.order_by(
+            'apellido_paterno',
+            'apellido_materno',
+            'nombres'
+        )
+
         for field in self.fields:
             if self.errors.get(field):
                 self.fields[field].widget.attrs['class'] += ' is-invalid'
-        self.fields['docente'].queryset = Docente.objects.filter(activo=True).order_by('apellido_paterno', 'apellido_materno', 'nombres')
 
     def clean(self):
         cleaned_data = super().clean()
