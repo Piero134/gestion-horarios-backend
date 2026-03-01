@@ -4,13 +4,13 @@ from django.db import models
 
 class Facultad(models.Model):
     nombre = models.CharField(
-        max_length=50,
+        max_length=150,
         unique=True,
         verbose_name="Nombre"
     )
 
     siglas = models.CharField(
-        max_length=10,
+        max_length=50,
         unique=True,
         verbose_name="Siglas"
     )
@@ -30,7 +30,7 @@ class Facultad(models.Model):
 
 
 class Departamento(models.Model):
-    nombre = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=150)
     facultad = models.ForeignKey(
         Facultad,
         on_delete=models.CASCADE,
