@@ -16,7 +16,7 @@
   }
   .filtros-grid {
     display: grid;
-    grid-template-columns: 1.8fr 1fr .7fr auto;
+    grid-template-columns: 1fr 1.4fr 0.8fr 0.5fr auto;
     gap: 12px; align-items: end;
   }
   @media (max-width: 860px) { .filtros-grid { grid-template-columns: 1fr 1fr; } .f-btn { grid-column: 1/-1; } }
@@ -233,8 +233,8 @@
 
   /* Columnas específicas — anchos fijos para consistencia entre días */
   .col-hora    { width: 130px; min-width: 130px; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
-  .col-asig    { width: 300px; font-weight: 600; color: var(--text-primary); }
-  .col-docente { width: 240px; color: var(--text-secondary); font-size: .82rem; }
+  .col-asig    { width: 160px; font-weight: 600; color: var(--text-primary); }
+  .col-docente { width: 380px; color: var(--text-secondary); font-size: .82rem; }
   .col-aula    { width: 110px; min-width: 90px; color: var(--text-secondary); font-size: .82rem; white-space: nowrap; }
   .col-tipo    { width: 120px; min-width: 110px; }
 
@@ -274,12 +274,24 @@
   <div class="filtros-card">
     <div class="filtros-grid">
       <div class="f-group">
+        <label for="select-periodo">Periodo académico</label>
+        <select id="select-periodo">
+          <option value="">— Periodo actual —</option>
+          {% for p in periodos %}
+            <option value="{{ p.id }}"
+              {% if periodo_activo and p.id == periodo_activo.id %}selected{% endif %}>
+              {{ p.nombre|default:p.id }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="f-group">
         <label for="select-escuela">Escuela académica</label>
         <select id="select-escuela" {% if escuelas.count == 1 %}disabled{% endif %}>
           {% if escuelas.count > 1 %}<option value="">— Seleccione escuela —</option>{% endif %}
           {% for esc in escuelas %}
             <option value="{{ esc.id }}" {% if escuelas.count == 1 %}selected{% endif %}>
-              {{ esc.nombre }}
+              {{ esc.codigo }} – {{ esc.nombre }}
             </option>
           {% endfor %}
         </select>
@@ -338,6 +350,7 @@
 document.addEventListener('DOMContentLoaded', function () {
 
   const selEscuela  = document.getElementById('select-escuela');
+  const selPeriodo  = document.getElementById('select-periodo');
   const selCiclo    = document.getElementById('select-ciclo');
   const inputGrupo  = document.getElementById('input-grupo');
   const btnBuscar   = document.getElementById('btn-buscar');
@@ -396,6 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ── Persistencia URL ── */
   function leerParamsURL() {
     const p = new URLSearchParams(window.location.search);
+    if (selPeriodo && p.get('periodo')) selPeriodo.value = p.get('periodo');
     if (selEscuela && p.get('escuela')) selEscuela.value = p.get('escuela');
     if (p.get('ciclo'))  selCiclo.value   = p.get('ciclo');
     if (p.get('grupo'))  inputGrupo.value = p.get('grupo');
@@ -404,6 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   function guardarParamsURL() {
     const p = new URLSearchParams();
+    if (selPeriodo && selPeriodo.value) p.set('periodo', selPeriodo.value);
     if (selEscuela && selEscuela.value) p.set('escuela', selEscuela.value);
     if (selCiclo.value)   p.set('ciclo',  selCiclo.value);
     if (inputGrupo.value) p.set('grupo',  inputGrupo.value);
@@ -441,6 +456,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const baseUrl = "{% url 'horarios:api_horarios' %}";
       let url = `${baseUrl}?ciclo=${encodeURIComponent(ciclo)}&grupo=${encodeURIComponent(grupo)}`;
       if (escuela) url += `&escuela=${encodeURIComponent(escuela)}`;
+      if (selPeriodo && selPeriodo.value) url += `&periodo=${encodeURIComponent(selPeriodo.value)}`;
 
       const res  = await fetch(url);
       const data = await res.json();
@@ -605,8 +621,8 @@ document.addEventListener('DOMContentLoaded', function () {
             <table class="list-table">
               <colgroup>
                 <col style="width:130px">
-                <col style="width:300px">
-                <col style="width:240px">
+                <col style="width:160px">
+                <col style="width:380px">
                 <col style="width:110px">
                 <col style="width:120px">
               </colgroup>

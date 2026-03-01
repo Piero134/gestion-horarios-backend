@@ -6,6 +6,7 @@ from horarios.models import Horario
 from horarios.serializers import HorarioDetalleSerializer
 from horarios.filters import HorarioFilter
 from escuelas.models import Escuela
+from periodos.models import PeriodoAcademico
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -28,6 +29,7 @@ class HorarioPorDiaListView(generics.ListAPIView):
         ciclo_param = request.query_params.get('ciclo')
         grupo_param = request.query_params.get('grupo')
         escuela_param = request.query_params.get('escuela')
+        periodo_param = request.query_params.get('periodo')
 
         if not ciclo_param or not grupo_param:
             raise ValidationError({
@@ -36,6 +38,14 @@ class HorarioPorDiaListView(generics.ListAPIView):
 
         # DRF filtra y serializa los datos automaticamente
         qs = self.get_queryset()
+
+        if not periodo_param:
+            periodo_activo = PeriodoAcademico.objects.get_activo()
+            if periodo_activo:
+                qs = qs.filter(grupo__periodo=periodo_activo)
+            else:
+                # Si no envían periodo y tampoco hay uno activo, devolvemos vacío
+                qs = qs.none()
 
         if not escuela_param:
             escuelas_permitidas = Escuela.objects.para_usuario(request.user)
@@ -92,6 +102,8 @@ def horario_asignaturas(request):
     context = {
         'escuelas': escuelas,
         'ciclos': ciclos,
+        'periodos': PeriodoAcademico.objects.all().order_by('-anio', '-fecha_inicio'),
+        'periodo_activo': PeriodoAcademico.objects.get_activo(),
     }
 
     return render(request, 'horarios/horario_asignaturas.html', context)
