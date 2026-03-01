@@ -35,23 +35,10 @@ class ExcelEstilos:
     ALIGN_RIGHT = Alignment(horizontal='right', vertical='center', wrap_text=True)
 
 
-def generar_color_hex(nombre):
-    nombre_normalizado = nombre.strip().upper()
-
-    hash_obj = hashlib.md5(nombre_normalizado.encode())
-    hash_hex = hash_obj.hexdigest()
-
-    # Tomar partes del hash para RGB
-    r = int(hash_hex[0:2], 16)
-    g = int(hash_hex[2:4], 16)
-    b = int(hash_hex[4:6], 16)
-
-    # Convertir a tonos suaves (pastel)
-    r = (r + 255) // 2
-    g = (g + 255) // 2
-    b = (b + 255) // 2
-
-    return f"{r:02X}{g:02X}{b:02X}"
+PALETA_COLORES = [
+    '3B82F6', '10B981', 'F97316', 'A855F7', 'F43F5E',
+    '14B8A6', 'F59E0B', '0EA5E9', 'EF4444', '6366F1'
+]
 
 def _agregar_cabecera(ws, facultad_nombre, dependencia_nombre, nombre_periodo, ancho_total=12):
     partes = dependencia_nombre.split(" - ")
@@ -240,6 +227,7 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
     total_horas = end_hour - start_hour
 
     colores_por_curso = {}
+    indice_color = 0
 
     grupos_por_ciclo = defaultdict(list)
     for g in grupos:
@@ -321,7 +309,8 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
                     curso_nombre = grp.asignatura.nombre
 
                     if curso_nombre not in colores_por_curso:
-                        colores_por_curso[curso_nombre] = generar_color_hex(curso_nombre)
+                        colores_por_curso[curso_nombre] = PALETA_COLORES[indice_color % len(PALETA_COLORES)]
+                        indice_color += 1
 
                     color_hex = colores_por_curso[curso_nombre]
 
