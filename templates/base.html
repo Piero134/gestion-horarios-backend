@@ -171,7 +171,7 @@
             <div class="menu-section-title">Reportes</div>
 
             <a href="javascript:void(0);"
-            onclick="exportarExcel()"
+            id="btnExportarExcel"
             class="menu-item {% if 'reportes' in request.path %}active{% endif %}">
                 <i class="bi bi-file-earmark-excel"></i> <span>Generar Reporte</span>
             </a>
@@ -234,51 +234,4 @@
     {% block extra_js %}{% endblock %}
 </body>
 
-<script>
-    function exportarExcel() {
-    const params = new URLSearchParams(window.location.search);
-
-    const exportUrl = "/grupos/api/grupos/exportar_excel/?" + params.toString();
-
-    fetch(exportUrl)
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(data => {
-                mostrarToast(data.error || "Error al generar el reporte", 'danger');
-                throw new Error("API Error");
-            });
-        }
-
-        const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = "reporte_grupos.xlsx";
-
-        if (contentDisposition) {
-            const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (fileNameMatch != null && fileNameMatch[1]) {
-                filename = fileNameMatch[1].replace(/['"]/g, '');
-            }
-        }
-
-        return response.blob().then(blob => ({ blob, filename }));
-    })
-    .then(({ blob, filename }) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-
-        mostrarToast('Reporte descargado exitosamente', 'success');
-    })
-    .catch(error => {
-        if (error.message !== "API Error") {
-            console.error("Error de red:", error);
-            mostrarToast('Error de conexión con el servidor', 'danger');
-        }
-    });
-}
-</script>
 </html>
