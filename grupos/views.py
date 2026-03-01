@@ -23,6 +23,7 @@ from .excel_forms import UploadExcelForm
 def grupos_list(request):
     """Lista de grupos con filtros"""
 
+    user = request.user
     filter_data = request.GET.copy()
 
     if not filter_data.get('periodo'):
@@ -30,8 +31,7 @@ def grupos_list(request):
         if periodo_activo:
             filter_data['periodo'] = periodo_activo.id
 
-    qs = Grupo.objects.para_usuario(request.user)
-
+    qs = Grupo.objects.para_usuario(user)
     filtro = GrupoFilter(filter_data, queryset=qs)
 
     grupos = filtro.qs.con_info_completa().annotate(
@@ -46,25 +46,18 @@ def grupos_list(request):
     paginator = Paginator(grupos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    user = request.user
-    escuelas = Escuela.objects.none()
-    planes = PlanEstudios.objects.none()
+    escuelas = Escuela.objects.para_usuario(user).order_by('codigo')
 
-    if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
-        escuelas = Escuela.objects.filter(facultad=user.facultad).order_by('codigo')
+    planes = PlanEstudios.objects.filter(escuela__in=escuelas)
 
     escuela_id = filter_data.get('escuela')
     if escuela_id and str(escuela_id).isdigit():
-        planes = PlanEstudios.objects.filter(escuela_id=escuela_id)
-    elif hasattr(user, 'escuela') and user.escuela:
-        planes = PlanEstudios.objects.filter(escuela=user.escuela)
+        planes = planes.filter(escuela_id=escuela_id)
 
     ciclos = range(1, 11)
+    rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
 
-    if hasattr(user, 'rol') and user.rol.name in [
-        "Coordinador de Estudios Generales",
-        "Jefe de Estudios Generales"
-    ]:
+    if rol_name in ["Coordinador de Estudios Generales", "Jefe de Estudios Generales"]:
         ciclos = range(1, 3)
 
     context = {
