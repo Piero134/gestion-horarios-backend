@@ -27,6 +27,12 @@
         gap: 0.5rem;
     }
 
+    .action-toolbar .btn-light:hover {
+        background-color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+    }
+
     /* --- 2. Barra de Filtros (Estilo Card Limpio) --- */
     .filter-card {
         background: #fff;
@@ -192,21 +198,22 @@
 
 <div class="page-header">
     <div>
-        <h2 class="mb-1 fw-bold" style="font-family: 'Sora', sans-serif;">Gestión de Grupos</h2>
+        <h2 class="mb-1 fw-bold" style="font-family: 'Sora', sans-serif;">Programación de Asignaturas</h2>
         <p class="text-muted mb-0 small">Administra la programación académica</p>
     </div>
 
     <div class="action-toolbar">
-        <div class="btn-group me-2">
-            <button type="button" onclick="exportarExcel()" class="btn btn-outline-success" title="Descargar reporte">
-                <i class="bi bi-file-earmark-excel"></i> <span class="d-none d-md-inline">Exportar</span>
+        <div class="btn-group shadow-sm">
+            <button type="button" onclick="exportarExcel()" class="btn btn-light border-success-subtle text-success fw-medium" title="Descargar reporte">
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> <span class="d-none d-md-inline">Exportar</span>
             </button>
-            <a href="{% url 'importar_grupos' %}" class="btn btn-outline-secondary" title="Cargar masiva">
-                <i class="bi bi-upload"></i> <span class="d-none d-md-inline">Importar</span>
+
+            <a href="{% url 'importar_grupos' %}" class="btn btn-light border-primary-subtle text-primary fw-medium" title="Carga masiva">
+                <i class="bi bi-cloud-arrow-up-fill me-1"></i> <span class="d-none d-md-inline">Importar</span>
             </a>
         </div>
 
-        <a href="{% url 'grupo_create' %}" class="btn btn-primary shadow-sm">
+        <a href="{% url 'grupo_create' %}" class="btn btn-primary shadow-sm fw-bold px-3">
             <i class="bi bi-plus-lg me-1"></i> Nuevo Grupo
         </a>
     </div>
