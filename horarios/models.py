@@ -1,7 +1,30 @@
 from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime
-from grupos.models import Grupo
+from escuelas.models import Escuela
+
+class HorarioQuerySet(models.QuerySet):
+    def para_usuario(self, user):
+        escuelas_permitidas = Escuela.objects.para_usuario(user)
+
+        if not escuelas_permitidas.exists():
+            return self.none()
+
+        qs = self.filter(grupo__asignatura__plan__escuela__in=escuelas_permitidas)
+
+        rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
+
+        if rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
+            qs = qs.filter(grupo__asignatura__ciclo__in=[1, 2])
+
+        return qs
+
+class HorarioManager(models.Manager):
+    def get_queryset(self):
+        return HorarioQuerySet(self.model, using=self._db)
+
+    def para_usuario(self, user):
+        return self.get_queryset().para_usuario(user)
 
 class Horario(models.Model):
     # Dias de la semana
@@ -52,6 +75,8 @@ class Horario(models.Model):
         blank=True,
         related_name='horarios_asignados' # Cambiamos el related_name
     )
+
+    objects = HorarioManager()
 
     class Meta:
         verbose_name = "Horario"

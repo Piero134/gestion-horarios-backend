@@ -6,6 +6,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.db.models import Q
 from django.core.validators import MinValueValidator
+from escuelas.models import Escuela
 
 class GrupoQuerySet(models.QuerySet):
     def actuales(self):
@@ -45,21 +46,18 @@ class GrupoQuerySet(models.QuerySet):
         )
 
     def para_usuario(self, user):
-        if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
-            return self.filter(asignatura__plan__escuela__facultad=user.facultad)
+        escuelas_permitidas = Escuela.objects.para_usuario(user)
+        if not escuelas_permitidas.exists():
+            return self.none()
 
-        if hasattr(user, 'rol') and user.rol.name in [
-            'Coordinador de Estudios Generales',
-            'Jefe de Estudios Generales'
-        ]:
-            return self.filter(
-                asignatura__plan__escuela__facultad=user.facultad,
-                asignatura__ciclo__in=[1, 2]
-            )
+        qs = self.filter(asignatura__plan__escuela__in=escuelas_permitidas)
 
-        if hasattr(user, 'escuela') and user.escuela:
-            return self.filter(asignatura__plan__escuela=user.escuela)
-        return self.none()
+        rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
+
+        if rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
+            qs = qs.filter(asignatura__ciclo__in=[1, 2])
+
+        return qs
 
 class GrupoManager(models.Manager):
     def get_queryset(self):

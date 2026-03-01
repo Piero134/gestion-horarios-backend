@@ -1,6 +1,32 @@
 from django.db import models
 from facultades.models import Facultad
 
+class EscuelaQuerySet(models.QuerySet):
+    def para_usuario(self, user):
+        rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
+
+        if rol_name == 'Vicedecano Académico' and hasattr(user, 'facultad'):
+            return self.filter(facultad=user.facultad)
+
+        if rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales'] and hasattr(user, 'facultad'):
+            # Lógica de escuela principal (ordenada por código)
+            escuela_principal = self.filter(facultad=user.facultad).order_by('codigo').first()
+            if escuela_principal:
+                return self.filter(pk=escuela_principal.pk)
+            return self.none()
+
+        if hasattr(user, 'escuela') and user.escuela:
+            return self.filter(id=user.escuela.id)
+
+        return self.none()
+
+class EscuelaManager(models.Manager):
+    def get_queryset(self):
+        return EscuelaQuerySet(self.model, using=self._db)
+
+    def para_usuario(self, user):
+        return self.get_queryset().para_usuario(user)
+
 class Escuela(models.Model):
     facultad = models.ForeignKey(
         Facultad,
@@ -9,6 +35,8 @@ class Escuela(models.Model):
     )
     nombre = models.CharField(max_length=30, unique=True)
     codigo = models.CharField(max_length=6, editable=False, unique=True)
+
+    objects = EscuelaManager()
 
     class Meta:
         verbose_name = "Escuela Profesional"
