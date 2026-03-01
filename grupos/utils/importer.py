@@ -13,33 +13,12 @@ import re
 class ExcelImportError(Exception):
     pass
 
-def importar_programacion(archivo_excel, user):
+def importar_programacion(archivo_excel, user, periodo):
     try:
         wb = openpyxl.load_workbook(archivo_excel, data_only=True)
         ws = wb.active
     except Exception as e:
         raise ExcelImportError(f"El archivo no es un Excel válido. {str(e)}")
-
-    celda_periodo = ws.cell(row=1, column=1).value
-
-    if not celda_periodo:
-        raise ExcelImportError("No se encontró el periodo académico.")
-
-    texto_periodo = str(celda_periodo).upper().strip()
-    match = re.search(r'(\d{4})[-–]?([0I12AB]{1,2})', texto_periodo)
-
-    if not match:
-        raise ExcelImportError(f"No se detectó un formato de periodo válido en: '{texto_periodo}'")
-
-    anio_str = match.group(1)
-    sufijo_str = match.group(2).replace("1", "I").replace("2", "II")
-    nombre_periodo = f"{anio_str}-{sufijo_str}"
-
-    try:
-        periodo = PeriodoAcademico.objects.get(nombre=nombre_periodo)
-    except PeriodoAcademico.DoesNotExist:
-        # periodo_activo = PeriodoAcademico.objects.get_activo()
-        raise ExcelImportError(f"El periodo '{nombre_periodo}' no existe en la base de datos.")
 
     header_row_idx = None
     col_map = {}

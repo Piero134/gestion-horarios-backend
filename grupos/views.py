@@ -243,24 +243,21 @@ def importar_grupos_view(request):
         form = UploadExcelForm(request.POST, request.FILES)
         if form.is_valid():
             archivo = request.FILES['archivo']
+            periodo = form.cleaned_data['periodo']
 
             try:
-                resultado = importar_programacion(archivo, request.user)
-
-                # Feedback al usuario
-                creados = resultado['creados']
-                errores = resultado['errores']
+                # Pasamos el periodo a la función
+                resultado = importar_programacion(archivo, request.user, periodo)
 
                 return render(request, 'grupos/importar_resultado.html', {
-                    'creados': creados,
-                    'errores': errores
+                    'creados': resultado['creados'],
+                    'errores': resultado['errores']
                 })
 
             except ExcelImportError as e:
-                form.add_error(None, f"Error en el formato del Excel: {str(e)}")
+                form.add_error(None, str(e))
             except Exception as e:
-                form.add_error(None, f"Error interno: {str(e)}")
-
+                form.add_error(None, f"Error crítico: {str(e)}")
     else:
         form = UploadExcelForm()
 
