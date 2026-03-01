@@ -186,7 +186,7 @@
                 <span>Docentes</span>
             </a>
 
-            <a href="" class="menu-item {% if 'aulas' in request.path %}active{% endif %}">
+            <a href="{% url 'aula_list' %}" class="menu-item {% if 'aulas' in request.path %}active{% endif %}">
                 <i class="bi bi-door-open"></i>
                 <span>Aulas</span>
             </a>
