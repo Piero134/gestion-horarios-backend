@@ -1,5 +1,6 @@
 from django import forms
 from periodos.models import PeriodoAcademico
+from escuelas.models import Escuela
 
 class UploadExcelForm(forms.Form):
     periodo = forms.ModelChoiceField(
@@ -7,6 +8,12 @@ class UploadExcelForm(forms.Form):
         label="Periodo Académico",
         empty_label="Seleccione un periodo...",
         widget=forms.Select(attrs={'class': 'form-control select2-busqueda'})
+    )
+
+    escuela = forms.ModelChoiceField(
+        queryset=Escuela.objects.none(), # Se llena en el __init__
+        label="Escuela Profesional",
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
 
     archivo = forms.FileField(
@@ -19,7 +26,16 @@ class UploadExcelForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        if user:
+            self.fields['escuela'].queryset = Escuela.objects.para_usuario(user)
+
+            if self.fields['escuela'].queryset.count() == 1:
+                self.fields['escuela'].initial = self.fields['escuela'].queryset.first()
+                self.fields['escuela'].widget = forms.HiddenInput()
+
         # Seleccionar automáticamente el periodo activo por defecto
         periodo_activo = PeriodoAcademico.objects.get_activo()
         if periodo_activo:

@@ -26,12 +26,26 @@ def grupos_list(request):
     user = request.user
     filter_data = request.GET.copy()
 
+    escuelas = Escuela.objects.para_usuario(user).order_by('codigo')
+
+    if escuelas.exists():
+        escuela_id = filter_data.get('escuela')
+        if not (escuela_id and str(escuela_id).isdigit() and escuelas.filter(id=escuela_id).exists()):
+            filter_data['escuela'] = str(escuelas.first().id)
+            escuela_id = filter_data['escuela']
+    else:
+        escuela_id = None
+
     if not filter_data.get('periodo'):
         periodo_activo = PeriodoAcademico.objects.get_activo()
         if periodo_activo:
             filter_data['periodo'] = periodo_activo.id
 
     qs = Grupo.objects.para_usuario(user)
+
+    if not escuelas.exists():
+        qs = qs.none()
+
     filtro = GrupoFilter(filter_data, queryset=qs)
 
     grupos = filtro.qs.con_info_completa().annotate(
@@ -46,12 +60,9 @@ def grupos_list(request):
     paginator = Paginator(grupos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    escuelas = Escuela.objects.para_usuario(user).order_by('codigo')
-
     planes = PlanEstudios.objects.filter(escuela__in=escuelas)
 
-    escuela_id = filter_data.get('escuela')
-    if escuela_id and str(escuela_id).isdigit():
+    if escuela_id:
         planes = planes.filter(escuela_id=escuela_id)
 
     ciclos = range(1, 11)
@@ -240,14 +251,15 @@ def grupo_detail(request, pk):
 @login_required
 def importar_grupos_view(request):
     if request.method == 'POST':
-        form = UploadExcelForm(request.POST, request.FILES)
+        form = UploadExcelForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             archivo = request.FILES['archivo']
             periodo = form.cleaned_data['periodo']
+            escuela = form.cleaned_data['escuela']
 
             try:
                 # Pasamos el periodo a la función
-                resultado = importar_programacion(archivo, request.user, periodo)
+                resultado = importar_programacion(archivo, request.user, periodo, escuela)
 
                 return render(request, 'grupos/importar_resultado.html', {
                     'creados': resultado['creados'],
@@ -259,6 +271,6 @@ def importar_grupos_view(request):
             except Exception as e:
                 form.add_error(None, f"Error crítico: {str(e)}")
     else:
-        form = UploadExcelForm()
+        form = UploadExcelForm(user=request.user)
 
     return render(request, 'grupos/importar_form.html', {'form': form})

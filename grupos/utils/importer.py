@@ -7,13 +7,14 @@ from docentes.models import Docente
 from grupos.models import Grupo, DistribucionVacantes
 from horarios.models import Horario
 from asignaturas.models import Asignatura, Equivalencia
-from periodos.models import PeriodoAcademico
+from aulas.models import Aula
 import re
 
 class ExcelImportError(Exception):
     pass
 
-def importar_programacion(archivo_excel, user, periodo):
+def importar_programacion(archivo_excel, user, periodo, escuela):
+
     try:
         wb = openpyxl.load_workbook(archivo_excel, data_only=True)
         ws = wb.active
@@ -53,11 +54,14 @@ def importar_programacion(archivo_excel, user, periodo):
         if col not in col_map:
             raise ExcelImportError(f"Falta la columna obligatoria: {col}")
 
-    # IDS de asignaturas que el usuario puede gestionar
-    qs_asignaturas = _queryset_asignaturas_para_usuario(user)
+    if not escuela:
+        raise ExcelImportError("Es necesario especificar una escuela para la importación.")
 
-    if not qs_asignaturas:
-        raise ExcelImportError("Su usuario no tiene permisos sobre ninguna asignatura o escuela.")
+    # IDS de asignaturas que el usuario puede gestionar
+    qs_asignaturas = _queryset_asignaturas_para_usuario(user, escuela)
+
+    if not qs_asignaturas.exists():
+        raise ExcelImportError(f"No se encontraron asignaturas para la escuela {escuela}.")
 
     errores = []
     registros_creados = 0
@@ -70,6 +74,15 @@ def importar_programacion(archivo_excel, user, periodo):
                 raw_asignatura = row[idx_asig]
                 nombre_asignatura = str(raw_asignatura).strip() if raw_asignatura else None
 
+                if not nombre_asignatura:
+                    continue
+
+                asignatura = qs_asignaturas.filter(nombre__iexact=nombre_asignatura).first()
+
+                if not asignatura:
+                    errores.append(f"Fila {row_idx}: Asignatura '{nombre_asignatura}' no encontrada en {escuela}.")
+                    continue
+
                 # Grupo
                 idx_grupo = col_map['GRUPO']
                 raw_grupo = row[idx_grupo]
@@ -78,14 +91,7 @@ def importar_programacion(archivo_excel, user, periodo):
                 else:
                     numero_grupo = str(raw_grupo).replace('G', '').strip() if raw_grupo else None
 
-                if not nombre_asignatura or not numero_grupo:
-                    continue
-
-
-                asignatura = qs_asignaturas.filter(nombre__iexact=nombre_asignatura).first()
-
-                if not asignatura:
-                    errores.append(f"Fila {row_idx}: Asignatura '{nombre_asignatura}' no encontrada.")
+                if not numero_grupo:
                     continue
 
                 grupo, _ = Grupo.objects.get_or_create(
@@ -139,88 +145,63 @@ def importar_programacion(archivo_excel, user, periodo):
                 dia_norm = _normalizar_dia(dia_raw)
 
                 # Aula
-                '''
-                aula_raw = None
-                if 'AULA' in col_map:
-                    aula_raw = row[col_map['AULA']]
-                    if aula_raw:
-                        aula_raw = str(aula_raw).strip()
-                '''
+                aula_raw = str(row[col_map['AULA']]).strip().upper() if row[col_map['AULA']] else ""
+                aula_obj = None
+
+                if aula_raw:
+                    if '-' in aula_raw:
+                        a_nom, p_raw = aula_raw.split('-', 1)
+                    else:
+                        a_nom, p_raw = aula_raw, 'NP'
+
+                    p_code = p_raw.strip()
+                    if p_code not in ['AP', 'NP']: p_code = 'NP'
+
+                    aula_obj, _ = Aula.objects.get_or_create(
+                        nombre=a_nom.strip(),
+                        pabellon=p_code,
+                        defaults={
+                            'facultad': escuela.facultad,
+                            'vacantes': 40,
+                            'tipo_sesion': 'T' if str(row[col_map['T']]).upper().startswith('T') else 'P'
+                        }
+                    )
 
                 if dia_norm and h_ini_raw and h_fin_raw:
-                    try:
-                        horario = Horario.objects.filter(
-                            grupo=grupo,
-                            dia=dia_norm,
-                            hora_inicio=h_ini_raw
-                        ).first()
+                    horario, created = Horario.objects.get_or_create(
+                        grupo=grupo, dia=dia_norm, hora_inicio=h_ini_raw,
+                        defaults={
+                            'hora_fin': h_fin_raw, 'tipo': tipo_raw[0].upper(),
+                            'docente': docente, 'aula': aula_obj
+                        }
+                    )
 
-                        if not horario:
-                            horario = Horario(
-                                grupo=grupo,
-                                dia=dia_norm,
-                                hora_inicio=h_ini_raw
-                            )
-
+                    if not created:
                         horario.hora_fin = h_fin_raw
-                        horario.tipo = tipo_raw[0].upper()
                         horario.docente = docente
-                        # horario.aula = aula_obj
-
-                        horario.full_clean()
-
+                        horario.aula = aula_obj
                         horario.save()
-                        registros_creados += 1
 
-                    except ValidationError as ve:
-                        if hasattr(ve, 'message_dict'):
-                            mensajes = ", ".join([f"{k}: {', '.join(v)}" for k, v in ve.message_dict.items()])
-                        else:
-                            mensajes = ", ".join(ve.messages)
+                    registros_creados += 1
 
-                        errores.append(f"Fila {row_idx} (Error de Horario): {mensajes}")
                 else:
-                    errores.append(f"Fila {row_idx}: Horario incompleto (Falta Día o Horas).")
+                    errores.append(f"Fila {row_idx}: Datos de horario incompletos.")
 
             except Exception as e:
                 errores.append(f"Fila {row_idx}: Error procesando datos - {str(e)}")
 
     return {"creados": registros_creados, "errores": errores}
 
-def _queryset_asignaturas_para_usuario(user):
-    queryset = Asignatura.objects.all()
+def _queryset_asignaturas_para_usuario(user, escuela):
 
-    if not hasattr(user, 'rol'):
-        return queryset.none()
+    qs = Asignatura.objects.filter(plan__escuela=escuela)
 
-    rol_name = user.rol.name if user.rol else ''
+    rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
 
-    if rol_name == 'Vicedecano Académico':
-        facultad = getattr(user, 'facultad', None)
-        # Si no tiene facultad directa, buscar por escuela->facultad
-        if not facultad and hasattr(user, 'escuela') and user.escuela:
-            facultad = user.escuela.facultad
+    if rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
+        qs = qs.filter(ciclo__in=[1, 2])
 
-        if facultad:
-            return queryset.filter(plan__escuela__facultad=facultad)
-
-    elif rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
-        facultad = getattr(user, 'facultad', None)
-
-        if facultad:
-            escuela_principal = facultad.escuelas.order_by('codigo').first()
-
-            if escuela_principal:
-                return queryset.filter(
-                    plan__escuela=escuela_principal,
-                    ciclo__in=[1, 2]
-                )
-
-    elif hasattr(user, 'escuela') and user.escuela:
-        return queryset.filter(plan__escuela=user.escuela)
-
-    # Default seguro
-    return queryset.none()
+    return qs
 
 def _resolver_asignatura_vacante(asignatura_base, sigla_escuela):
 

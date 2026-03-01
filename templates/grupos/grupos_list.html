@@ -222,7 +222,7 @@
 <div class="filter-card">
     <form method="get">
         <div class="row g-3 align-items-end">
-            <div class="col-12 {% if request.user.rol.name == 'Vicedecano Académico' %}col-lg-3{% else %}col-lg-5{% endif %}">
+            <div class="col-12 {% if escuelas|length > 1 %}col-lg-3{% else %}col-lg-5{% endif %}">
                 <label class="filter-label">Búsqueda Rápida</label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
@@ -244,7 +244,7 @@
                 </select>
             </div>
 
-            {% if request.user.rol.name == 'Vicedecano Académico' %}
+            {% if escuelas|length > 1 %}
             <div class="col-6 col-md-3 col-lg-2">
                 <label class="filter-label">Escuela</label>
                 <select name="escuela" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -412,7 +412,11 @@
                 </table>
             </div>
         </div>
-        {% endfor %} {% endfor %} <nav class="mt-4">
+        {% endfor %}
+
+    {% endfor %}
+
+    <nav class="mt-4">
         {% if grupos.has_other_pages %}
         <ul class="pagination justify-content-center">
             {% if grupos.has_previous %}
