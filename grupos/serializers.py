@@ -1,15 +1,6 @@
 from rest_framework import serializers
 from grupos.models import Grupo
-from horarios.models import Horario
-
-class HorarioSerializer(serializers.ModelSerializer):
-    dia_nombre = serializers.CharField(source='get_dia_display')
-    docente_nombre = serializers.CharField(source='docente.__str__', read_only=True)
-    aula_nombre = serializers.CharField(source='aula.nombre', read_only=True, default="-")
-
-    class Meta:
-        model = Horario
-        fields = ['dia_nombre', 'hora_inicio', 'hora_fin', 'tipo', 'docente_nombre', 'aula_nombre']
+from horarios.serializers import HorarioSerializer
 
 class GrupoSerializer(serializers.ModelSerializer):
     asignatura = serializers.CharField(source='asignatura.nombre')
