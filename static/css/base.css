@@ -286,12 +286,15 @@ body {
     align-items: center;
     justify-content: center;
     box-shadow: var(--shadow-md);
+    overflow: hidden;
 }
 
 .brand-logo img {
-    width: 24px;
-    height: 24px;
-    filter: brightness(0) invert(1);
+    width: 42px;
+    height: 42px;
+    filter: none;
+    object-fit: cover;
+    border-radius: 0;  /* sin border-radius propio, lo hereda del padre */
 }
 
 .brand-text h1 {
