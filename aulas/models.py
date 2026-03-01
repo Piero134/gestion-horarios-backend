@@ -13,7 +13,6 @@ class Aula(models.Model):
 
     nombre = models.CharField(
         max_length=20,
-        unique=True,
         verbose_name="Nombre del Aula",
         help_text="Ej: 101 NP, 203 AP, LAB 2"
     )
@@ -26,7 +25,8 @@ class Aula(models.Model):
 
     vacantes = models.PositiveIntegerField(
         verbose_name="Vacantes",
-        help_text="Capacidad máxima de alumnos"
+        help_text="Capacidad máxima de alumnos",
+        default=0
     )
 
     tipo_sesion = models.CharField(
@@ -55,6 +55,7 @@ class Aula(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
+        unique_together = ('nombre', 'pabellon')
         verbose_name = "Aula"
         verbose_name_plural = "Aulas"
         ordering = ['pabellon', 'nombre']
