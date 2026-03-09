@@ -60,7 +60,7 @@ class Aula(models.Model):
         ordering = ['pabellon', 'nombre']
 
     def __str__(self):
-        return f"{self.get_tipo_display()} {self.nombre} - {self.pabellon}"
+        return f"{self.get_tipo_display()} {self.nombre}-{self.pabellon}"
 
     @property
     def es_aula(self):

@@ -1,8 +1,7 @@
 import openpyxl
+import unicodedata
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.utils.text import slugify
-
 from docentes.models import Docente
 from grupos.models import Grupo, DistribucionVacantes
 from horarios.models import Horario
@@ -12,6 +11,13 @@ import re
 
 class ExcelImportError(Exception):
     pass
+
+MAPEO_SIGLAS_ESCUELA = {
+    'EPSIS': 'Ingeniería de Sistemas',
+    'EPISW': 'Ingeniería de Software',
+    'EPCC': 'Ciencias de la Computación',
+    # 'IA': 'Inteligencia Artificial',
+}
 
 def importar_programacion(archivo_excel, user, periodo, escuela):
 
@@ -25,9 +31,11 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
     col_map = {}
     vacantes_cols = {}
 
+    siglas_validas = list(MAPEO_SIGLAS_ESCUELA.keys())
+
     # Encontramos la cabecere y mapeamos columnas (ASIGNATURA, GRUPO, DIA, H.INI, H.FIN, DOCENTE, TIPO, AULA)
     for row_idx, row in enumerate(ws.iter_rows(values_only=True), 1):
-        row_str = [str(c).upper().strip() if c else '' for c in row]
+        row_str = [_limpiar_texto(c) for c in row]
         if "ASIGNATURA" in row_str and "GRUPO" in row_str:
             header_row_idx = row_idx
 
@@ -35,21 +43,16 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
             for col_idx, cell_value in enumerate(row_str):
                 if cell_value:
                     col_map[cell_value] = col_idx
-
-            # Detectar columnas de vacantes (después de AULA o DOCENTE)
-            inicio_vacantes = col_map.get('AULA', col_map.get('DOCENTE', -1)) + 1
-            if inicio_vacantes > 0:
-                for idx in range(inicio_vacantes, len(row_str)):
-                    sigla_escuela = row_str[idx]
-                    if sigla_escuela:
-                        vacantes_cols[idx] = sigla_escuela
+                    # BUSQUEDA DINÁMICA DE VACANTES BASADA EN LA GLOBAL
+                    if cell_value in siglas_validas:
+                        vacantes_cols[col_idx] = cell_value
             break
 
     if not header_row_idx:
         raise ExcelImportError("No se encontró la fila de cabecera con 'ASIGNATURA' y 'GRUPO'.")
 
     # Validar columnas
-    required_cols = ['ASIGNATURA', 'GRUPO', 'DIA', 'H.INI', 'H.FIN', 'DOCENTE', 'T']
+    required_cols = ['ASIGNATURA', 'GRUPO', 'DIA', 'H.INI', 'H.FIN', 'DOCENTE', 'TIPO']
     for col in required_cols:
         if col not in col_map:
             raise ExcelImportError(f"Falta la columna obligatoria: {col}")
@@ -72,7 +75,7 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                 # Asignatura
                 idx_asig = col_map['ASIGNATURA']
                 raw_asignatura = row[idx_asig]
-                nombre_asignatura = str(raw_asignatura).strip() if raw_asignatura else None
+                nombre_asignatura = _limpiar_texto(raw_asignatura)
 
                 if not nombre_asignatura:
                     continue
@@ -100,72 +103,65 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                     periodo=periodo,
                 )
 
-                vacantes_por_asignatura = {}
-
                 for col_idx, sigla_escuela in vacantes_cols.items():
-                    val_vacantes = row[col_idx]
-                    if val_vacantes and str(val_vacantes).isdigit() and int(val_vacantes) > 0:
-                        cantidad = int(val_vacantes)
-                        asignatura_vacante = _resolver_asignatura_vacante(asignatura, sigla_escuela)
-                        if asignatura_vacante:
-                            if asignatura_vacante in vacantes_por_asignatura:
-                                vacantes_por_asignatura[asignatura_vacante] += cantidad
-                            else:
-                                vacantes_por_asignatura[asignatura_vacante] = cantidad
-                        else:
-                            errores.append(f"Fila {row_idx}: No se pudo resolver equivalente para '{sigla_escuela}'.")
-
-                for asig_obj, total_vacantes in vacantes_por_asignatura.items():
-                    distribucion, created = DistribucionVacantes.objects.get_or_create(
-                        grupo=grupo,
-                        asignatura=asig_obj,
-                        defaults={'cantidad': total_vacantes}
-                    )
-                    # Si ya existía y el total es diferente, lo actualizamos
-                    if not created and distribucion.cantidad != total_vacantes:
-                        distribucion.cantidad = total_vacantes
-                        distribucion.save()
+                    val_v = row[col_idx]
+                    if val_v and str(val_v).isdigit() and int(val_v) > 0:
+                        asig_vacante = _resolver_asignatura_vacante(asignatura, sigla_escuela)
+                        if asig_vacante:
+                            DistribucionVacantes.objects.update_or_create(
+                                grupo=grupo, asignatura=asig_vacante,
+                                defaults={'cantidad': int(val_v)}
+                            )
 
                 # Docente
                 idx_docente = col_map['DOCENTE']
                 raw_docente = row[idx_docente]
                 docente = _get_or_create_docente(raw_docente, user)
 
-                # Horario
-                idx_dia = col_map['DIA']
-                idx_hini = col_map['H.INI']
-                idx_hfin = col_map['H.FIN']
-                idx_tipo = col_map['T']
-
-                dia_raw = row[idx_dia]
-                h_ini_raw = row[idx_hini]
-                h_fin_raw = row[idx_hfin]
-                tipo_raw = str(row[idx_tipo]).strip() if row[idx_tipo] else 'T'
-                # Normalización
-                dia_norm = _normalizar_dia(dia_raw)
-
                 # Aula
-                aula_raw = str(row[col_map['AULA']]).strip().upper() if row[col_map['AULA']] else ""
+                idx_aula_col = col_map.get('AULA')
+                aula_raw = _limpiar_texto(row[idx_aula_col]) if idx_aula_col is not None else ""
                 aula_obj = None
 
                 if aula_raw:
-                    if '-' in aula_raw:
-                        a_nom, p_raw = aula_raw.split('-', 1)
+                    if "LABORATORIO" in aula_raw or "LAB" in aula_raw:
+                        tipo_aula_final = Aula.Tipo.LABORATORIO
                     else:
-                        a_nom, p_raw = aula_raw, 'NP'
+                        tipo_aula_final = Aula.Tipo.AULA
 
-                    p_code = p_raw.strip()
-                    if p_code not in ['AP', 'NP']: p_code = 'NP'
+                    match_pabellon = re.search(r'(AP|NP)$', aula_raw)
+                    if match_pabellon:
+                        p_code = match_pabellon.group(0)
+                        a_nom_base = re.sub(r'[- ]?(AP|NP)$', '', aula_raw).strip()
+                    else:
+                        a_nom_base = aula_raw
+                        p_code = 'NP'
 
-                    aula_obj, _ = Aula.objects.get_or_create(
-                        nombre=a_nom.strip(),
+                    a_nom = a_nom_base.replace('LABORATORIO', '').replace('LAB', '').replace('AULA', '').strip()
+
+                    aula_obj, created = Aula.objects.get_or_create(
+                        nombre=a_nom,
                         pabellon=p_code,
                         defaults={
                             'facultad': escuela.facultad,
                             'vacantes': 40,
-                            'tipo_sesion': 'T' if str(row[col_map['T']]).upper().startswith('T') else 'P'
+                            'tipo': tipo_aula_final,
+                            'activo': True
                         }
                     )
+
+                # Horario
+                idx_dia = col_map['DIA']
+                idx_hini = col_map['H.INI']
+                idx_hfin = col_map['H.FIN']
+                idx_tipo = col_map['TIPO']
+
+                dia_raw = row[idx_dia]
+                h_ini_raw = row[idx_hini]
+                h_fin_raw = row[idx_hfin]
+                tipo_raw = _normalizar_tipo(row[idx_tipo])
+                # Normalización
+                dia_norm = _normalizar_dia(dia_raw)
 
                 if dia_norm and h_ini_raw and h_fin_raw:
                     horario, created = Horario.objects.get_or_create(
@@ -205,14 +201,7 @@ def _queryset_asignaturas_para_usuario(user, escuela):
 
 def _resolver_asignatura_vacante(asignatura_base, sigla_escuela):
 
-    MAPEO_SIGLAS_ESCUELA = {
-        'SI': 'Ingeniería de Sistemas',
-        'SW': 'Ingeniería de Software',
-        'CC': 'Ciencias de la Computación',
-        #'IA': 'INTELIGENCÍA ARTIFICIAL'
-    }
-
-    sigla_norm = str(sigla_escuela).strip().upper()
+    sigla_norm = _limpiar_texto(sigla_escuela)
     nombre_escuela_buscada = MAPEO_SIGLAS_ESCUELA.get(sigla_norm)
 
     if not nombre_escuela_buscada:
@@ -235,7 +224,7 @@ def _get_or_create_docente(nombre_completo_raw, user):
     if not nombre_completo_raw:
         return None
 
-    raw = str(nombre_completo_raw).strip().upper()
+    raw = _limpiar_texto(nombre_completo_raw)
 
     paterno, materno, nombres = "", "", "SIN NOMBRE"
 
@@ -298,3 +287,26 @@ def _normalizar_dia(dia_excel):
         dia_str = match.group(0)
 
     return dias.get(dia_str, None)
+
+def _normalizar_tipo(tipo_raw):
+    if not tipo_raw:
+        return 'T'
+
+    tipo = str(tipo_raw).strip().upper()
+
+    match = re.search(r'[TPL]$', tipo)
+
+    if match:
+        return tipo
+
+    return 'T'
+
+def _limpiar_texto(texto):
+    if not texto: return ""
+    # Quitar tildes y caracteres especiales
+    texto = str(texto).strip().upper()
+    texto = ''.join(
+        c for c in unicodedata.normalize('NFD', texto)
+        if unicodedata.category(c) != 'Mn'
+    )
+    return texto

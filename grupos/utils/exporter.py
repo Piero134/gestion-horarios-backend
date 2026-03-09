@@ -167,7 +167,7 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
                         docente_nombre = str(h.docente) if h.docente else "POR ASIGNAR"
                         ws.cell(row=current_row, column=6, value=docente_nombre)
                         # Col 7: Aula
-                        aula_nombre = h.aula.nombre if h.aula else "-"
+                        aula_nombre = str(h.aula) if h.aula else "-"
                         ws.cell(row=current_row, column=7, value=aula_nombre)
                     else:
                         # Rellenar con guiones si no hay horario
@@ -207,7 +207,7 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
         'D': 8,  # Inicio
         'E': 8,  # Fin
         'F': 40, # Docente (Más ancho para que quepa el nombre)
-        'G': 12  # Aula
+        'G': 15  # Aula
     }
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width

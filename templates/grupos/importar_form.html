@@ -9,39 +9,76 @@
         box-shadow: 0 4px 6px rgba(25, 135, 84, 0.2);
     }
 
-    /* Ajustes para que Select2 se vea bien con el diseño actual */
+    /* Tamaño de inputs balanceado (48px) - Ni tan grande, ni tan pequeño */
     .select2-container--default .select2-selection--single {
         border: 1px solid #dee2e6;
-        height: calc(3.5rem + 2px); /* Altura similar a inputs de BS5 */
-        padding: 0.75rem;
+        height: 48px;
+        padding: 0.35rem 0.75rem;
         border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        font-size: 0.95rem;
     }
     .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 50px;
+        height: 46px;
+        right: 10px;
     }
     .select2-container { width: 100% !important; }
 
+    /* Ajuste de altura para el input file */
+    input[type="file"].form-control {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.95rem;
+        height: 48px;
+    }
     input[type="file"]::file-selector-button {
         background-color: #f8f9fa;
         color: #495057;
         border: 1px solid #dee2e6;
         border-radius: 0.375rem;
         transition: background-color 0.2s;
+        padding: 0.25rem 0.75rem;
+        margin-top: -0.15rem;
+    }
+
+    /* Contenedor que adapta su altura mínima a la pantalla (restando aprox. el navbar/footer) */
+    .fullscreen-wrapper {
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
     }
 </style>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8">
+<div class="container fullscreen-wrapper">
+    <div class="row justify-content-center w-100 m-0">
+        <div class="col-lg-6 col-md-8 px-0">
             <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-body p-5">
-
-                    <div class="text-center mb-5">
-                        <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 64px; height: 64px;">
+                <div class="card-body p-4 p-md-5"> <div class="text-center mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 60px; height: 60px;">
                             <i class="bi bi-file-earmark-arrow-up fs-2"></i>
                         </div>
                         <h4 class="fw-bold text-dark mb-1">Importar Programación</h4>
-                        <p class="text-muted small">Carga el archivo Excel para actualizar los horarios.</p>
+                        <p class="text-muted small mb-0">Carga el archivo Excel para actualizar los horarios.</p>
+                    </div>
+
+                    <div class="alert alert-secondary bg-light border-0 p-3 mb-4 rounded-3 d-flex flex-column gap-2" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill text-primary me-2" style="font-size: 1rem;"></i>
+                            <span class="fw-semibold text-dark" style="font-size: 0.85rem;">Columnas requeridas en el archivo:</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 ms-4">
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">ASIGNATURA</span>
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">GRUPO</span>
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">TIPO</span>
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">DIA</span>
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">H.INI</span>
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">H.FIN</span>
+                            <span class="badge rounded-pill text-bg-light border border-secondary-subtle text-secondary py-1 px-2" style="font-size: 0.75rem;">DOCENTE</span>
+                        </div>
                     </div>
 
                     <form method="post" enctype="multipart/form-data" id="importForm">
@@ -54,7 +91,7 @@
                         {% endif %}
 
                         <div class="mb-4">
-                            <label for="{{ form.periodo.id_for_label }}" class="form-label fw-medium text-dark small">
+                            <label for="{{ form.periodo.id_for_label }}" class="form-label fw-medium text-dark mb-2" style="font-size: 0.9rem;">
                                 Periodo Académico Destino
                             </label>
                             {{ form.periodo }}
@@ -63,12 +100,12 @@
                                     {{ form.periodo.errors|striptags }}
                                 </div>
                             {% endif %}
-                            <div class="form-text small">Selecciona el periodo al cual pertenecen estos horarios.</div>
+                            <div class="form-text mt-1" style="font-size: 0.8rem;">Selecciona el periodo al cual pertenecen estos horarios.</div>
                         </div>
 
                         {% if not form.escuela.is_hidden %}
                             <div class="mb-4">
-                                <label for="{{ form.escuela.id_for_label }}" class="form-label fw-medium text-dark small">
+                                <label for="{{ form.escuela.id_for_label }}" class="form-label fw-medium text-dark mb-2" style="font-size: 0.9rem;">
                                     Escuela Profesional
                                 </label>
                                 {{ form.escuela }}
@@ -77,14 +114,14 @@
                                         {{ form.escuela.errors|striptags }}
                                     </div>
                                 {% endif %}
-                                <div class="form-text small">Como Vicedecano, debes especificar a qué escuela pertenece este Excel.</div>
+                                <div class="form-text mt-1" style="font-size: 0.8rem;">Especifica a qué escuela pertenece este Excel.</div>
                             </div>
                         {% else %}
                             {{ form.escuela }}
                         {% endif %}
 
                         <div class="mb-4">
-                            <label for="{{ form.archivo.id_for_label }}" class="form-label fw-medium text-dark small">
+                            <label for="{{ form.archivo.id_for_label }}" class="form-label fw-medium text-dark mb-2" style="font-size: 0.9rem;">
                                 Archivo Excel (.xlsx)
                             </label>
                             {{ form.archivo }}
@@ -95,13 +132,13 @@
                             {% endif %}
                         </div>
 
-                        <div class="d-grid gap-2 mt-5">
-                            <button type="submit" class="btn btn-success py-2 rounded-3 fw-medium transition-all" id="btnSubmit">
+                        <div class="d-flex gap-3 mt-5">
+                            <button type="submit" class="btn btn-success flex-grow-1 py-2 rounded-3 fw-medium transition-all fs-6" id="btnSubmit">
                                 <span id="btnText">Procesar e Importar</span>
                                 <span id="btnSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                                <span id="btnLoadingText" class="d-none ms-1">Analizando datos...</span>
+                                <span id="btnLoadingText" class="d-none ms-1">Analizando...</span>
                             </button>
-                            <a href="{% url 'grupos_list' %}" class="btn btn-light py-2 rounded-3 fw-medium text-muted transition-all">
+                            <a href="{% url 'grupos_list' %}" class="btn btn-light py-2 px-4 rounded-3 fw-medium text-muted transition-all fs-6">
                                 Cancelar
                             </a>
                         </div>
@@ -118,7 +155,6 @@
 
 <script>
     $(document).ready(function() {
-        // Inicializar Select2 con el ID generado por Django para el campo 'periodo'
         $('#id_periodo').select2({
             placeholder: "Buscar periodo académico...",
             allowClear: false,
@@ -127,7 +163,6 @@
             }
         });
 
-        // Manejo del estado de carga del formulario
         $('#importForm').on('submit', function(e) {
             var fileInput = $('input[type="file"]')[0];
 

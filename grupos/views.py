@@ -76,7 +76,7 @@ def grupos_list(request):
         'filtros': filter_data,
         'periodos': PeriodoAcademico.objects.all().order_by('-anio', '-fecha_inicio'),
         'escuelas': escuelas,
-        'planes': planes.order_by('nombre'),
+        'planes': planes,
         'ciclos': ciclos,
     }
 
@@ -89,9 +89,8 @@ def grupo_create(request):
     periodo_activo = PeriodoAcademico.objects.get_activo()
 
     if not periodo_activo:
-        return render(request, 'grupos/error_no_periodo.html', {
-            'mensaje': 'No existe un periodo académico activo actualmente. Contacte al administrador.'
-        })
+        messages.error(request, 'No existe un periodo académico activo actualmente. Contacte al administrador.')
+        return redirect('grupos_list')
 
     if request.method == 'POST':
         form = GrupoForm(request.POST, periodo_activo=periodo_activo, user=request.user)
