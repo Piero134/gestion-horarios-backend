@@ -6,10 +6,9 @@ class GrupoSerializer(serializers.ModelSerializer):
     asignatura = serializers.CharField(source='asignatura.nombre')
     codigo = serializers.CharField(source='asignatura.codigo')
     ciclo = serializers.IntegerField(source='asignatura.ciclo')
-    plan = serializers.CharField(source='asignatura.plan.nombre')
     horarios = HorarioSerializer(many=True, read_only=True)
     #vacantes = serializers.IntegerField(source='total_vacantes')
 
     class Meta:
         model = Grupo
-        fields = ['id', 'numero', 'codigo', 'asignatura', 'ciclo', 'plan', 'horarios']
+        fields = ['id', 'numero', 'codigo', 'asignatura', 'ciclo', 'horarios']

@@ -36,7 +36,7 @@ class PrerequisitoInline(admin.TabularInline):
 
 @admin.register(Asignatura)
 class AsignaturaAdmin(admin.ModelAdmin):
-    list_display = ('plan', 'ciclo', 'codigo', 'nombre', 'creditos', 'tipo')
+    list_display = ('codigo', 'nombre', 'plan', 'ciclo',  'creditos', 'tipo')
     list_filter = ('plan__escuela', 'ciclo', 'tipo')
     search_fields = ('codigo', 'nombre')
     ordering = ('plan', 'ciclo', 'codigo')

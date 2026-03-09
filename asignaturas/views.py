@@ -63,7 +63,7 @@ def obtener_equivalencias_asignatura(request):
                 'id': asig.id,
                 'codigo': asig.codigo,
                 'nombre': asig.nombre,
-                'plan': asig.plan.nombre,
+                'plan': f"Plan {asignatura.plan.anio}",
                 'escuela': asig.plan.escuela.nombre,
                 'text': f"[{asig.plan.escuela.nombre}] {asig.nombre}"
             })
@@ -73,7 +73,7 @@ def obtener_equivalencias_asignatura(request):
             'principal': {
                 'codigo': asignatura.codigo,
                 'nombre': asignatura.nombre,
-                'plan': asignatura.plan.nombre,
+                'plan': f"Plan {asignatura.plan.anio}",
                 'escuela': asignatura.plan.escuela.nombre
             },
             'equivalencias': equivalentes,

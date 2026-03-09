@@ -4,9 +4,9 @@ from .models import Facultad, Departamento
 @admin.register(Facultad)
 class FacultadAdmin(admin.ModelAdmin):
     list_display = (
+        'nombre',
         'codigo',
         'siglas',
-        'nombre',
     )
 
     list_display_links = ('nombre',)

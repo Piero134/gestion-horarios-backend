@@ -57,9 +57,6 @@ def grupos_list(request):
         'numero'
     )
 
-    paginator = Paginator(grupos, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
-
     planes = PlanEstudios.objects.filter(escuela__in=escuelas)
 
     if escuela_id:
@@ -72,7 +69,7 @@ def grupos_list(request):
         ciclos = range(1, 3)
 
     context = {
-        'grupos': page_obj,
+        'grupos': grupos,
         'filtros': filter_data,
         'periodos': PeriodoAcademico.objects.all().order_by('-anio', '-fecha_inicio'),
         'escuelas': escuelas,

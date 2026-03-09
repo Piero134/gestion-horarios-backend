@@ -59,7 +59,6 @@ def validar_horarios(modeladmin, request, queryset):
 class GrupoAdmin(admin.ModelAdmin):
     list_display = (
         '__str__',
-        'asignatura',
         'get_docentes',
         'periodo',
         'total_vacantes_display'

@@ -92,7 +92,7 @@ class Grupo(models.Model):
         ordering = ['periodo', 'asignatura', 'numero']
 
     def __str__(self):
-        return f"({self.periodo}) G-{self.numero} {self.asignatura.nombre}"
+        return f"G-{self.numero} {self.asignatura.nombre}"
 
     @property
     def total_vacantes(self):

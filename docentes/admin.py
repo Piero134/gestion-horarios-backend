@@ -3,22 +3,27 @@ from .models import Docente
 
 @admin.register(Docente)
 class DocenteAdmin(admin.ModelAdmin):
-    list_display = ('dni', '__str__', 'tipo', 'ver_codigo_o_dni', 'departamento')
-    list_filter = ('tipo', 'categoria', 'dedicacion')
-    search_fields = ('apellido_paterno', 'apellido_materno', 'nombres', 'dni', 'codigo')
+    list_display = ('obtener_nombre_completo', 'dni', 'tipo', 'facultad', 'departamento', 'codigo', 'activo')
 
-    # Organizar campos por secciones
+    list_filter = ('activo', 'tipo', 'facultad', 'departamento', 'categoria', 'dedicacion')
+
+    search_fields = ('apellido_paterno', 'apellido_materno', 'nombres', 'dni', 'codigo', 'email')
+
     fieldsets = (
         ('Datos Personales', {
-            'fields': ('tipo', 'dni', 'apellido_paterno', 'apellido_materno', 'nombres', 'email', 'departamento')
+            'fields': ('dni', 'apellido_paterno', 'apellido_materno', 'nombres', 'email')
+        }),
+        ('Datos Institucionales', {
+            'fields': ('activo', 'tipo', 'facultad', 'departamento')
         }),
         ('Datos Académicos (Solo Nombrados)', {
             'fields': ('codigo', 'categoria', 'dedicacion'),
-            'classes': ('collapse',), # Opcional: hace que esta sección sea colapsable
-            'description': 'Estos campos son obligatorios si el tipo es "Nombrado".'
+            'classes': ('collapse',),
+            'description': 'Estos campos son obligatorios si el tipo de docente es "Nombrado". Si es "Contratado", se limpiarán automáticamente.'
         }),
     )
 
-    def ver_codigo_o_dni(self, obj):
-        return obj.codigo if obj.codigo else "DNI: " + obj.dni
-    ver_codigo_o_dni.short_description = "ID / Código"
+    def obtener_nombre_completo(self, obj):
+        return obj.nombre_completo
+    obtener_nombre_completo.short_description = "Nombre del Docente"
+    obtener_nombre_completo.admin_order_field = 'apellido_paterno'

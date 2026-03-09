@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Detalle Grupo {{ grupo.nombre }}{% endblock %}
+{% block title %}Detalle Grupo {{ grupo.numero }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -67,7 +67,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}">Grupos</a></li>
-            <li class="breadcrumb-item active">Grupo {{ grupo.nombre }}</li>
+            <li class="breadcrumb-item active">Grupo {{ grupo.numero }}</li>
         </ol>
     </nav>
 
