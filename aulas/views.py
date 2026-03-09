@@ -3,16 +3,41 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Aula
 from .forms import AulaForm
+from facultades.models import Facultad
 
 @login_required
 def aula_list(request):
-    if request.user.is_superuser:
-        # El superuser quizás quiera ver todas, incluso las "borradas"
-        aulas = Aula.objects.filter(activo=True)
-    else:
-        aulas = Aula.objects.filter(facultad=request.user.facultad, activo=True)
+    # Capturar filtros de la URL
+    f_facultad = request.GET.get('facultad', '')
+    f_pabellon = request.GET.get('pabellon', '')
+    f_tipo = request.GET.get('tipo', '')
 
-    return render(request, 'aulas/aula_list.html', {'aulas': aulas})
+    aulas = Aula.objects.select_related('facultad').order_by('-activo', 'pabellon', 'nombre')
+
+    if request.user.is_superuser:
+        if f_facultad:
+            aulas = aulas.filter(facultad_id=f_facultad)
+    else:
+        # El usuario normal solo ve su facultad
+        aulas = aulas.filter(facultad=request.user.facultad)
+
+    # Filtros de Pabellón y Tipo
+    if f_pabellon:
+        aulas = aulas.filter(pabellon=f_pabellon)
+    if f_tipo:
+        aulas = aulas.filter(tipo=f_tipo)
+
+    context = {
+        'aulas': aulas,
+        'pabellones': Aula.Pabellon.choices,
+        'tipos': Aula.Tipo.choices,
+        'facultades': Facultad.objects.all() if request.user.is_superuser else None,
+        # Persistencia de filtros en el form
+        'f_facultad': f_facultad,
+        'f_pabellon': f_pabellon,
+        'f_tipo': f_tipo,
+    }
+    return render(request, 'aulas/aula_list.html', context)
 
 @login_required
 def aula_create(request):

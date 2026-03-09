@@ -4,12 +4,12 @@ from .models import Aula
 class AulaForm(forms.ModelForm):
     class Meta:
         model = Aula
-        fields = ['nombre', 'pabellon', 'vacantes', 'tipo_sesion', 'facultad', 'activo']
+        fields = ['nombre', 'pabellon', 'vacantes', 'tipo', 'facultad', 'activo']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 101 NP'}),
             'pabellon': forms.Select(attrs={'class': 'form-select'}),
             'vacantes': forms.NumberInput(attrs={'class': 'form-control'}),
-            'tipo_sesion': forms.Select(attrs={'class': 'form-select'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
             'facultad': forms.Select(attrs={'class': 'form-select select2-facultad'}),
             'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -27,4 +27,6 @@ class AulaForm(forms.ModelForm):
                 # Usuario normal: bloqueado a su facultad
                 if hasattr(user, 'facultad') and user.facultad:
                     self.fields['facultad'].initial = user.facultad
-                    # Usamos readonly y disabled para que no
+                    # Deshabilitar el campo para que no pueda cambiarlo
+                    self.fields['facultad'].disabled = True
+                    self.fields['facultad'].help_text = f"Asignado automáticamente a: {user.facultad.nombre}"
