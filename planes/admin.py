@@ -27,11 +27,11 @@ class AsignaturaEnPlanInline(admin.TabularInline):
 
 @admin.register(PlanEstudios)
 class PlanEstudiosAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'escuela')
+    list_display = ('anio', 'escuela')
     list_filter = ('escuela',)
-    search_fields = ('nombre', 'escuela__nombre')
+    search_fields = ('anio', 'escuela__nombre')
     inlines = [AsignaturaEnPlanInline]
-    ordering = ('escuela__codigo', 'nombre')
+    ordering = ('escuela__codigo', 'anio')
 
 @admin.register(Prerequisito)
 class PrerequisitoAdmin(admin.ModelAdmin):

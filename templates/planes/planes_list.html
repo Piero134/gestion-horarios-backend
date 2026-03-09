@@ -1,0 +1,394 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Planes de Estudio | SGH-FISI{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    :root {
+        --primary-color: #2563eb;
+        --secondary-bg: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+    }
+
+    body {
+        color: var(--text-main);
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .filter-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+
+    /* --- ESTILOS PARA ADAPTAR SELECT2 AL DISEÑO MINIMALISTA --- */
+    .select2-container--default .select2-selection--single {
+        background-color: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--text-main);
+        padding-left: 0.75rem;
+        font-size: 0.95rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+        right: 8px;
+    }
+    .select2-container--default.select2-container--disabled .select2-selection--single {
+        background-color: var(--secondary-bg);
+        cursor: not-allowed;
+    }
+    .select2-dropdown {
+        border-color: var(--border-color);
+        border-radius: 6px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .select2-results__option {
+        font-size: 0.95rem;
+        padding: 8px 12px;
+    }
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: var(--primary-color);
+    }
+
+    /* --- ESTILOS DE LA MALLA --- */
+    .ciclo-section { margin-bottom: 3rem; }
+    .ciclo-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border-color);
+        display: inline-block;
+    }
+    .custom-table th {
+        background-color: var(--secondary-bg);
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem;
+    }
+    .custom-table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.95rem;
+    }
+    .custom-table tr:last-child td { border-bottom: none; }
+    .curso-code {
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        background: var(--secondary-bg);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+    }
+    .tipo-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 0.3px;
+    }
+    .badge-O { background: #eff6ff; color: #1d4ed8; }
+    .badge-E { background: #fef2f2; color: #b91c1c; }
+
+    #loadingOverlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(2px);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="mb-1 fw-bold">Planes de Estudio</h2>
+        <p class="text-muted mb-0">Visualización de la malla curricular académica</p>
+    </div>
+    <div class="action-toolbar">
+        <button type="button" class="btn btn-primary shadow-sm fw-medium px-4 py-2">
+            <i class="bi bi-plus-lg me-2"></i> Nuevo Plan
+        </button>
+    </div>
+</div>
+
+<div class="filter-card">
+    <div class="row g-4 align-items-end">
+        <div class="col-md-4">
+            <label class="filter-label">Facultad</label>
+            <select id="selectFacultad" class="form-select select2-init" data-placeholder="Seleccione Facultad">
+                <option></option>
+                {% for f in facultades %}
+                <option value="{{ f.id }}" {% if facultad_preseleccionada and f.id == facultad_preseleccionada.id %}selected{% endif %}>
+                    {{ f.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="filter-label">Escuela</label>
+            <select id="selectEscuela" class="form-select select2-init" data-placeholder="Seleccione Escuela" disabled>
+                <option></option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="filter-label">Plan</label>
+            <select id="selectPlan" class="form-select select2-init" data-placeholder="Seleccione Plan" disabled>
+                <option></option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button onclick="window.location.reload()" class="btn btn-outline-secondary w-100 py-2" title="Limpiar filtros">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="mallaContainer">
+    <div id="emptyState" class="text-center py-5 mt-4">
+        <div class="mb-3">
+            <i class="bi bi-grid-3x3-gap display-3 text-light"></i>
+        </div>
+        <h4 class="text-muted fw-medium">Selecciona un Plan</h4>
+        <p class="text-muted">Utiliza los filtros superiores para cargar las asignaturas.</p>
+    </div>
+</div>
+
+<div id="loadingOverlay">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <span class="mt-3 fw-medium text-muted">Cargando malla curricular...</span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(async function() {
+    // 1. Inicializar Select2 en los elementos correspondientes
+    $('.select2-init').select2({
+        width: '100%',
+        language: {
+            noResults: function() { return "No se encontraron resultados"; }
+        }
+    });
+
+    // 2. Leer variables preseleccionadas enviadas por Django
+    const initialFacultadId = "{{ facultad_preseleccionada.id|default_if_none:'' }}";
+    const initialEscuelaId = "{{ escuela_preseleccionada.id|default_if_none:'' }}";
+
+    // Selectores cacheados de jQuery
+    const $selectFacultad = $('#selectFacultad');
+    const $selectEscuela = $('#selectEscuela');
+    const $selectPlan = $('#selectPlan');
+    const mallaContainer = document.getElementById('mallaContainer');
+    const loading = document.getElementById('loadingOverlay');
+
+    // --- FUNCIONES DE LLAMADAS API ---
+
+    async function cargarEscuelas(facuId) {
+        $selectEscuela.prop('disabled', true).html('<option></option>'); // Limpiar
+        try {
+            const response = await fetch(`/escuelas/api/escuelas/${facuId}/`);
+            const data = await response.json();
+
+            if (data.success) {
+                let options = '<option></option>'; // Requerido por Select2
+                data.escuelas.forEach(esc => {
+                    options += `<option value="${esc.id}">${esc.nombre}</option>`;
+                });
+                $selectEscuela.html(options).prop('disabled', false).trigger('change');
+            }
+        } catch (e) { console.error("Error cargando escuelas:", e); }
+    }
+
+    async function cargarPlanes(escuId) {
+        $selectPlan.prop('disabled', true).html('<option></option>'); // Limpiar
+        try {
+            const response = await fetch(`/planes/api/planes/escuela/${escuId}/`);
+            const data = await response.json();
+
+            if (data.success) {
+                let options = '<option></option>'; // Requerido por Select2
+                data.planes.forEach(p => {
+                    options += `<option value="${p.id}">Plan ${p.anio}</option>`;
+                });
+                $selectPlan.html(options).prop('disabled', false).trigger('change');
+            }
+        } catch (e) { console.error("Error cargando planes:", e); }
+    }
+
+    async function cargarMalla(planId) {
+        loading.style.display = 'flex';
+        try {
+            const response = await fetch(`/planes/api/plan/detalle/${planId}/`);
+            const data = await response.json();
+
+            if (data.asignaturas) {
+                renderizarMalla(data.asignaturas);
+            }
+        } catch (e) { console.error("Error cargando malla:", e); }
+        finally { loading.style.display = 'none'; }
+    }
+
+    // --- MANEJO DE EVENTOS (Usando select2:select) ---
+
+    $selectFacultad.on('select2:select', function(e) {
+        const val = e.params.data.id;
+        $selectPlan.prop('disabled', true).html('<option></option>');
+        mallaContainer.innerHTML = ''; // Limpiar tabla
+        if (val) cargarEscuelas(val);
+    });
+
+    $selectEscuela.on('select2:select', function(e) {
+        const val = e.params.data.id;
+        mallaContainer.innerHTML = ''; // Limpiar tabla
+        if (val) cargarPlanes(val);
+    });
+
+    $selectPlan.on('select2:select', function(e) {
+        const val = e.params.data.id;
+        if (val) cargarMalla(val);
+    });
+
+    // --- LÓGICA DE INICIALIZACIÓN (PRE-SELECCIÓN) ---
+
+    if (initialFacultadId) {
+        await cargarEscuelas(initialFacultadId);
+
+        if (initialEscuelaId) {
+            // Seleccionamos la escuela en Select2
+            $selectEscuela.val(initialEscuelaId).trigger('change');
+            await cargarPlanes(initialEscuelaId);
+
+            // Auto-seleccionar el primer plan disponible si existe
+            // options[1] porque options[0] es la opción vacía de placeholder
+            if ($selectPlan[0].options.length > 1) {
+                const primerPlanId = $selectPlan[0].options[1].value;
+                $selectPlan.val(primerPlanId).trigger('change');
+                await cargarMalla(primerPlanId);
+            }
+        }
+    }
+
+    // --- RENDERIZADO DE LA MALLA ---
+    function renderizarMalla(asignaturas) {
+        if (asignaturas.length === 0) {
+            mallaContainer.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <div>No hay asignaturas registradas para este plan de estudios.</div>
+                </div>`;
+            return;
+        }
+
+        const grupos = asignaturas.reduce((acc, curr) => {
+            const c = curr.ciclo || '0';
+            if (!acc[c]) acc[c] = [];
+            acc[c].push(curr);
+            return acc;
+        }, {});
+
+        let html = '';
+        Object.keys(grupos).sort((a,b) => a-b).forEach(ciclo => {
+            html += `
+                <div class="ciclo-section">
+                    <h4 class="ciclo-title">Ciclo ${ciclo}</h4>
+                    <div class="table-responsive bg-white rounded border border-light-subtle shadow-sm">
+                        <table class="table table-hover custom-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">Código</th>
+                                    <th style="width: 30%;">Asignatura</th>
+                                    <th class="text-center" style="width: 8%;">Créd.</th>
+                                    <th style="width: 12%;">Tipo</th>
+                                    <th style="width: 22%;">Prerrequisitos</th>
+                                    <th class="text-center" style="width: 6%;">HT</th>
+                                    <th class="text-center" style="width: 6%;">HP</th>
+                                    <th class="text-center" style="width: 6%;">HL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            grupos[ciclo].forEach(asig => {
+                const prereq = asig.prerequisitos.length > 0
+                    ? asig.prerequisitos.join(', ')
+                    : '<span class="text-muted">-</span>';
+
+                html += `
+                                <tr>
+                                    <td><span class="curso-code">${asig.codigo}</span></td>
+                                    <td class="fw-medium text-dark">${asig.nombre}</td>
+                                    <td class="text-center fw-bold">${asig.creditos}</td>
+                                    <td>
+                                        <span class="tipo-badge badge-${asig.tipo}">
+                                            ${asig.tipo_display}
+                                        </span>
+                                    </td>
+                                    <td class="small text-muted">${prereq}</td>
+                                    <td class="text-center text-muted">${asig.horas_teoria || 0}</td>
+                                    <td class="text-center text-muted">${asig.horas_practica || 0}</td>
+                                    <td class="text-center text-muted">${asig.horas_laboratorio || 0}</td>
+                                </tr>
+                `;
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+        });
+
+        mallaContainer.innerHTML = html;
+    }
+});
+</script>
+{% endblock %}

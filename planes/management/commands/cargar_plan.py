@@ -52,11 +52,11 @@ class Command(BaseCommand):
                 linea_2 = f.readline()
 
                 nombre_escuela = linea_1.split(';')[1].strip()
-                nombre_plan = linea_2.split(';')[1].strip()
+                anio_plan = linea_2.split(';')[1].replace('Plan', '').strip()
             except IndexError:
                 raise CommandError("Formato de cabecera inválido (Filas 1 y 2).")
 
-            self.stdout.write(f"\n--> Procesando: {nombre_escuela} | {nombre_plan}")
+            self.stdout.write(f"\n--> Procesando: {nombre_escuela} | {anio_plan}")
 
             try:
                 escuela_obj = Escuela.objects.get(nombre__iexact=nombre_escuela)
@@ -64,7 +64,7 @@ class Command(BaseCommand):
                 raise CommandError(f"La escuela '{nombre_escuela}' no existe en la Base de Datos.")
 
             plan_obj, _ = PlanEstudios.objects.get_or_create(
-                nombre=nombre_plan,
+                anio=anio_plan,
                 escuela=escuela_obj
             )
 
