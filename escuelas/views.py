@@ -43,3 +43,26 @@ def api_escuelas_por_facultad(request, facultad_id):
             'success': False,
             'error': str(e)
         }, status=400)
+
+def api_escuelas_fisi(request):
+    """API: Obtener escuelas de la Facultad de Ingeniería de Sistemas e Informática (FISI)"""
+    try:
+        fisi = Facultad.objects.get(siglas='FISI')
+        escuelas = Escuela.objects.filter(
+            facultad=fisi
+        ).values('id', 'nombre', 'codigo').order_by('codigo')
+
+        return JsonResponse({
+            'success': True,
+            'escuelas': list(escuelas)
+        })
+    except Facultad.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Facultad de Ingeniería de Sistemas e Informática no encontrada'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)

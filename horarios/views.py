@@ -1,123 +1,177 @@
-from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
+from django_filters.rest_framework import DjangoFilterBackend
 from horarios.models import Horario
-from .serializers import ClaseSerializer
+from horarios.serializers import HorarioDetalleSerializer
+from horarios.filters import HorarioFilter
+from escuelas.models import Escuela
+from periodos.models import PeriodoAcademico
+from rest_framework.views import APIView
 
-class api_horarios(generics.ListAPIView):
-    serializer_class = ClaseSerializer
-    permission_classes = [AllowAny]
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+class HorarioPorDiaListView(generics.ListAPIView):
+    queryset = Horario.objects.all()
+    serializer_class = HorarioDetalleSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = HorarioFilter
 
     def get_queryset(self):
-        # 1. Traemos todo optimizado de la BD
-        queryset = Horario.objects.select_related(
-            'grupo', 
-            'grupo__asignatura', 
-            'grupo__asignatura__plan__escuela', 
-            'aula', 
-            'docente'
-        )
+        qs = Horario.objects.para_usuario(self.request.user)
 
-        # 2. Capturamos todos los filtros de la URL
-        escuela_nombre = self.request.query_params.get('escuela_nombre', None)
-        escuela_codigo = self.request.query_params.get('escuela_codigo', None)
-        ciclo_req = self.request.query_params.get('ciclo', None)
-        grupo_req = self.request.query_params.get('grupo', None)
-        
-        # 3. Aplicamos los filtros condicionalmente
-        if escuela_nombre:
-            # Usamos 'icontains' para que busque coincidencias parciales sin importar mayúsculas/minúsculas
-            queryset = queryset.filter(grupo__asignatura__plan__escuela__nombre__icontains=escuela_nombre)
-            
-        if escuela_codigo:
-            queryset = queryset.filter(grupo__asignatura__plan__escuela__codigo=escuela_codigo)
-            
-        if ciclo_req:
-            queryset = queryset.filter(grupo__asignatura__ciclo=ciclo_req)
-            
-        if grupo_req:
-            queryset = queryset.filter(grupo__numero=grupo_req)
-
-        return queryset.order_by('dia', 'hora_inicio')
+        return qs.select_related(
+            'grupo__asignatura', 'docente', 'aula'
+        ).order_by('hora_inicio')
 
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        # Validacion de parametros obligatorios
+        ciclo_param = request.query_params.get('ciclo')
+        grupo_param = request.query_params.get('grupo')
+        escuela_param = request.query_params.get('escuela')
+        periodo_param = request.query_params.get('periodo')
 
-        # Diccionario maestro para agrupar por el bloque [Escuela + Ciclo]
-        agrupado = {}
+        if not ciclo_param or not grupo_param:
+            raise ValidationError({
+                "error": "Los parámetros 'ciclo' y 'grupo' son estrictamente obligatorios."
+            })
 
-        for h in queryset:
-            # Validaciones de seguridad
-            if not h.grupo or not h.grupo.asignatura or not hasattr(h.grupo.asignatura, 'plan') or not h.grupo.asignatura.plan or not h.grupo.asignatura.plan.escuela:
-                continue
+        # DRF filtra y serializa los datos automaticamente
+        qs = self.get_queryset()
 
-            # Extraemos los datos
-            escuela = h.grupo.asignatura.plan.escuela
-            esc_codigo = str(escuela.codigo)
-            esc_nombre = escuela.nombre.upper()
-            ciclo_num = str(h.grupo.asignatura.ciclo)
-            grupo_num = str(h.grupo.numero)
+        if not periodo_param:
+            periodo_activo = PeriodoAcademico.objects.get_activo()
+            if periodo_activo:
+                qs = qs.filter(grupo__periodo=periodo_activo)
+            else:
+                # Si no envían periodo y tampoco hay uno activo, devolvemos vacío
+                qs = qs.none()
 
-            # Llave única combinada (Ej: "20.1_1")
-            llave_bloque = f"{esc_codigo}_{ciclo_num}"
+        if not escuela_param:
+            escuelas_permitidas = Escuela.objects.para_usuario(request.user)
 
-            # Si el bloque Escuela-Ciclo no existe, lo creamos
-            if llave_bloque not in agrupado:
-                agrupado[llave_bloque] = {
-                    "escuela_nombre": esc_nombre,
-                    "escuela_codigo": esc_codigo,
-                    "ciclo": ciclo_num,
-                    "grupos": {}
-                }
-
-            # Si el Grupo no existe, le preparamos los 7 días
-            if grupo_num not in agrupado[llave_bloque]["grupos"]:
-                agrupado[llave_bloque]["grupos"][grupo_num] = {
-                    dia_id: [] for dia_id, _ in Horario.DIAS_CHOICES
-                }
-
-            # Damos formato y lo metemos en su día
-            clase_data = self.get_serializer(h).data
-            agrupado[llave_bloque]["grupos"][grupo_num][h.dia].append(clase_data)
-
-        # Convertimos el diccionario en listas para el JSON
-        dias_mapping = dict(Horario.DIAS_CHOICES)
-        lista_resultados_completos = []
-
-        for llave_bloque, data_bloque in agrupado.items():
-            lista_grupos = []
-            
-            for grupo_num, dias_dict in data_bloque["grupos"].items():
-                lista_dias = []
-                
-                # De Lunes a Domingo
-                for dia_id in range(1, 8):
-                    clases = dias_dict.get(dia_id, [])
-                    if clases:
-                        lista_dias.append({
-                            "dia": dias_mapping[dia_id],
-                            "clases": clases
-                        })
-                
-                if lista_dias:
-                    lista_grupos.append({
-                        "grupo": grupo_num,
-                        "horarios": [{"dias": lista_dias}]
-                    })
-            
-            # Ordenamos los grupos numéricamente (1, 2, 3...)
-            lista_grupos.sort(key=lambda x: int(x["grupo"]))
-            
-            if lista_grupos:
-                lista_resultados_completos.append({
-                    "escuela_nombre": data_bloque["escuela_nombre"],
-                    "escuela_codigo": data_bloque["escuela_codigo"],
-                    "ciclo": data_bloque["ciclo"],
-                    "grupos": lista_grupos
+            if escuelas_permitidas.count() == 1:
+                qs = qs.filter(grupo__asignatura__plan__escuela=escuelas_permitidas.first())
+            else:
+                raise ValidationError({
+                    "error": "El parámetro 'escuela' es obligatorio para tu rol, por favor especifícalo."
                 })
 
-        # Ordenamos todo alfabéticamente por escuela y numéricamente por ciclo
-        lista_resultados_completos.sort(key=lambda x: (x["escuela_nombre"], int(x["ciclo"])))
+        queryset = self.filter_queryset(qs)
+        serializer = self.get_serializer(queryset, many=True)
 
-        # Retornamos la lista completa.
-        return Response(lista_resultados_completos)
+        horario_semanal = {
+            "Lunes": [], "Martes": [], "Miércoles": [],
+            "Jueves": [], "Viernes": [], "Sábado": [], "Domingo": []
+        }
+
+        for item in serializer.data:
+            # Extraemos el dia
+            dia = item.pop('dia')
+
+            if dia in horario_semanal:
+                horario_semanal[dia].append(item)
+            else:
+                # En caso de que el día no esté en el diccionario (lo cual no debería pasar), lo agregamos
+                horario_semanal[dia] = [item]
+
+        # Limpiamos dias sin clases
+        horario_semanal = {dia: clases for dia, clases in horario_semanal.items() if clases}
+
+        for dia in horario_semanal:
+            horario_semanal[dia].sort(key=lambda x: x['hora_inicio'])
+
+        return Response(horario_semanal)
+
+
+@login_required
+def horario_asignaturas(request):
+    user = request.user
+
+    # Obtenemos las escuelas seguras para este usuario
+    escuelas = Escuela.objects.para_usuario(user).order_by('codigo')
+
+    # Por defecto, ciclos del 1 al 10
+    ciclos = range(1, 11)
+    rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
+
+    # Si es de EEGG, limitamos a ciclos 1 y 2
+    if rol_name in ["Coordinador de Estudios Generales", "Jefe de Estudios Generales"]:
+        ciclos = range(1, 3)
+
+    context = {
+        'escuelas': escuelas,
+        'ciclos': ciclos,
+        'periodos': PeriodoAcademico.objects.all().order_by('-anio', '-fecha_inicio'),
+        'periodo_activo': PeriodoAcademico.objects.get_activo(),
+    }
+
+    return render(request, 'horarios/horario_asignaturas.html', context)
+
+
+class VerificacionActualizacionHorarioView(APIView):
+    """
+    Endpoint ligero para que la app móvil de Flutter consulte 
+    la fecha de última modificación de un horario específico.
+    """
+
+    def get(self, request, *args, **kwargs):
+        # 1. Obtener parámetros (igual que en tu vista principal)
+        ciclo_param = request.query_params.get('ciclo')
+        grupo_param = request.query_params.get('grupo')
+        escuela_param = request.query_params.get('escuela')
+        periodo_param = request.query_params.get('periodo')
+
+        if not ciclo_param or not grupo_param:
+            return Response(
+                {"error": "Los parámetros 'ciclo' y 'grupo' son estrictamente obligatorios."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. Partimos de los horarios que el usuario tiene permiso de ver
+        qs = Horario.objects.para_usuario(request.user)
+
+        # 3. Filtramos por Periodo
+        if periodo_param:
+            qs = qs.filter(grupo__periodo_id=periodo_param)
+        else:
+            periodo_activo = PeriodoAcademico.objects.get_activo()
+            if periodo_activo:
+                qs = qs.filter(grupo__periodo=periodo_activo)
+            else:
+                return Response({"updated_at": None}, status=status.HTTP_200_OK)
+
+        # 4. Filtramos por Escuela (usando la misma lógica que ya tienes)
+        if escuela_param:
+             qs = qs.filter(grupo__asignatura__plan__escuela_id=escuela_param)
+        else:
+            escuelas_permitidas = Escuela.objects.para_usuario(request.user)
+            if escuelas_permitidas.count() == 1:
+                qs = qs.filter(grupo__asignatura__plan__escuela=escuelas_permitidas.first())
+            else:
+                return Response(
+                    {"error": "El parámetro 'escuela' es obligatorio para tu rol."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 5. Filtramos por Ciclo y Grupo (los parámetros obligatorios)
+        # Usamos los mismos nombres de campo que tienes en tu HorarioFilter
+        qs = qs.filter(
+            grupo__asignatura__ciclo=ciclo_param,
+            grupo__numero=grupo_param # O asumiendo que el ID viaja en grupo_param, usarías grupo_id
+        )
+
+        # 6. Traer SOLO el más reciente
+        # Ordenamos descendente por fecha y tomamos el primero
+        ultimo_cambio = qs.order_by('-updated_at').first()
+
+        # 7. Respuesta Final
+        if ultimo_cambio and ultimo_cambio.updated_at:
+            return Response({
+                # ISO 8601 es el estándar ideal para que Flutter lea la fecha
+                "updated_at": ultimo_cambio.updated_at.isoformat() 
+            }, status=status.HTTP_200_OK)
+        else:
+            # Si no hay clases o los registros antiguos tienen NULL
+            return Response({"updated_at": None}, status=status.HTTP_200_OK)

@@ -18,34 +18,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 2. Dark Mode Logic
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    const htmlElement = document.documentElement;
-    const icon = darkModeToggle.querySelector('i');
-
-    // Revisar preferencia guardada o del sistema
-    const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    // Aplicar tema inicial
-    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-        htmlElement.setAttribute('data-theme', 'dark');
-        icon.classList.replace('bi-moon-stars', 'bi-sun');
+    const btnExportar = document.getElementById('btnExportarExcel');
+    if (btnExportar) {
+        btnExportar.addEventListener('click', function(e) {
+            e.preventDefault();
+            exportarExcel();
+        });
     }
 
-    // Toggle click event
-    darkModeToggle.addEventListener('click', () => {
-        const currentTheme = htmlElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    function exportarExcel() {
+        // Obtener parámetros de búsqueda actuales para filtrar el Excel igual que la tabla
+        const params = new URLSearchParams(window.location.search);
+        const exportUrl = `/grupos/api/grupos/exportar_excel/?${params.toString()}`;
 
-        htmlElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        fetch(exportUrl)
+            .then(async response => {
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || "Error al generar el reporte");
+                }
 
-        // Cambiar icono
-        if (newTheme === 'dark') {
-            icon.classList.replace('bi-moon-stars', 'bi-sun');
-        } else {
-            icon.classList.replace('bi-sun', 'bi-moon-stars');
-        }
-    });
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = "reporte_grupos.xlsx";
+
+                if (contentDisposition && contentDisposition.includes('filename=')) {
+                    filename = contentDisposition.split('filename=')[1].replace(/['"]/g, '');
+                }
+
+                return response.blob().then(blob => ({ blob, filename }));
+            })
+            .then(({ blob, filename }) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+                if (typeof mostrarToast === "function") {
+                    mostrarToast('Reporte descargado exitosamente', 'success');
+                }
+            })
+            .catch(error => {
+                console.error("Error en la exportación:", error);
+                if (typeof mostrarToast === "function") {
+                    mostrarToast(error.message, 'danger');
+                }
+            });
+    }
 });

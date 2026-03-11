@@ -2,7 +2,7 @@ from django.db import models
 from escuelas.models import Escuela
 
 class PlanEstudios(models.Model):
-    nombre = models.CharField(max_length=50)  # Plan 2018, Plan 2023
+    nombre = models.CharField(max_length=150)  # Plan 2018, Plan 2023
     escuela = models.ForeignKey(
         Escuela, on_delete=models.CASCADE, related_name='planes'
     )

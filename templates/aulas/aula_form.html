@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Ajuste para que Select2 combine con Bootstrap 5 */
+    .select2-container--default .select2-selection--single {
+        height: 38px !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 0.375rem !important;
+        padding: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">
+                        <i class="bi bi-door-open me-2"></i>{% if object %}Editar Aula{% else %}Registrar Nueva Aula{% endif %}
+                    </h5>
+
+                    <form method="post" id="aulaForm">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre del Aula / Laboratorio</label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}<div class="text-danger small">{{ form.nombre.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">Pabellón</label>
+                                {{ form.pabellon }}
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">Aforo (Vacantes)</label>
+                                {{ form.vacantes }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Tipo de Uso</label>
+                            {{ form.tipo_sesion }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Facultad Responsable</label>
+                            {{ form.facultad }}
+                            <div class="form-text">
+                                {% if request.user.is_superuser %}
+                                    Seleccione la facultad a la que pertenece este espacio.
+                                {% else %}
+                                    Asignado automáticamente a su facultad.
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            {{ form.activo }}
+                            <label class="form-check-label small fw-bold">Disponible para horarios</label>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary fw-bold">Confirmar Guardado</button>
+                            <a href="{% url 'aula_list' %}" class="btn btn-light border">Volver al listado</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Inicializar Select2 solo en el campo facultad
+        $('.select2-facultad').select2({
+            placeholder: "Escriba el nombre de la facultad...",
+            allowClear: true,
+            language: {
+                noResults: function() { return "No se encontró la facultad"; }
+            }
+        });
+
+        // IMPORTANTE: Si el campo está disabled, Select2 se bloquea solo.
+        // Pero si el usuario es superuser y está habilitado, funcionará como buscador.
+    });
+</script>
+{% endblock %}

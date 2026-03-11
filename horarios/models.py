@@ -1,9 +1,33 @@
 from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from datetime import datetime
-from grupos.models import Grupo
+from escuelas.models import Escuela
+
+class HorarioQuerySet(models.QuerySet):
+    def para_usuario(self, user):
+        escuelas_permitidas = Escuela.objects.para_usuario(user)
+
+        if not escuelas_permitidas.exists():
+            return self.none()
+
+        qs = self.filter(grupo__asignatura__plan__escuela__in=escuelas_permitidas)
+
+        rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
+
+        if rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']:
+            qs = qs.filter(grupo__asignatura__ciclo__in=[1, 2])
+
+        return qs
+
+class HorarioManager(models.Manager):
+    def get_queryset(self):
+        return HorarioQuerySet(self.model, using=self._db)
+
+    def para_usuario(self, user):
+        return self.get_queryset().para_usuario(user)
 
 class Horario(models.Model):
+    # Dias de la semana
     DIAS_CHOICES = [
         (1, 'Lunes'),
         (2, 'Martes'),
@@ -52,8 +76,11 @@ class Horario(models.Model):
         related_name='horarios_asignados' # Cambiamos el related_name
     )
 
+    update_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    objects = HorarioManager()
+
     class Meta:
-        unique_together = ('grupo', 'dia', 'hora_inicio')
         verbose_name = "Horario"
         verbose_name_plural = "Horarios"
         ordering = ['dia', 'hora_inicio']
@@ -80,11 +107,6 @@ class Horario(models.Model):
             return
 
         qs_periodo = Horario.objects.filter(grupo__periodo=self.grupo.periodo)
-
-        cruce_grupo = self.obtener_cruce(Horario.objects.filter(grupo=self.grupo))
-
-        if cruce_grupo:
-            raise ValidationError(f"El grupo ya tiene clase de {cruce_grupo.hora_inicio} a {cruce_grupo.hora_fin}.")
 
         if self.aula:
             cruce_aula = self.obtener_cruce(qs_periodo.filter(aula=self.aula))

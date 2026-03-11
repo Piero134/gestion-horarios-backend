@@ -23,14 +23,28 @@ from .excel_forms import UploadExcelForm
 def grupos_list(request):
     """Lista de grupos con filtros"""
 
+    user = request.user
     filter_data = request.GET.copy()
+
+    escuelas = Escuela.objects.para_usuario(user).order_by('codigo')
+
+    if escuelas.exists():
+        escuela_id = filter_data.get('escuela')
+        if not (escuela_id and str(escuela_id).isdigit() and escuelas.filter(id=escuela_id).exists()):
+            filter_data['escuela'] = str(escuelas.first().id)
+            escuela_id = filter_data['escuela']
+    else:
+        escuela_id = None
 
     if not filter_data.get('periodo'):
         periodo_activo = PeriodoAcademico.objects.get_activo()
         if periodo_activo:
             filter_data['periodo'] = periodo_activo.id
 
-    qs = Grupo.objects.para_usuario(request.user)
+    qs = Grupo.objects.para_usuario(user)
+
+    if not escuelas.exists():
+        qs = qs.none()
 
     filtro = GrupoFilter(filter_data, queryset=qs)
 
@@ -46,25 +60,15 @@ def grupos_list(request):
     paginator = Paginator(grupos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
-    user = request.user
-    escuelas = Escuela.objects.none()
-    planes = PlanEstudios.objects.none()
+    planes = PlanEstudios.objects.filter(escuela__in=escuelas)
 
-    if hasattr(user, 'rol') and user.rol.name == 'Vicedecano Académico':
-        escuelas = Escuela.objects.filter(facultad=user.facultad).order_by('codigo')
-
-    escuela_id = filter_data.get('escuela')
-    if escuela_id and str(escuela_id).isdigit():
-        planes = PlanEstudios.objects.filter(escuela_id=escuela_id)
-    elif hasattr(user, 'escuela') and user.escuela:
-        planes = PlanEstudios.objects.filter(escuela=user.escuela)
+    if escuela_id:
+        planes = planes.filter(escuela_id=escuela_id)
 
     ciclos = range(1, 11)
+    rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
 
-    if hasattr(user, 'rol') and user.rol.name in [
-        "Coordinador de Estudios Generales",
-        "Jefe de Estudios Generales"
-    ]:
+    if rol_name in ["Coordinador de Estudios Generales", "Jefe de Estudios Generales"]:
         ciclos = range(1, 3)
 
     context = {
@@ -112,15 +116,19 @@ def grupo_create(request):
                     else:
                          raise ValueError("Error en horarios")
 
-                messages.success(request, f"Grupo {grupo} creado exitosamente en {periodo_activo}.")
-                return redirect('grupo_detail', pk=grupo.pk)
+                if '_save_and_new' in request.POST:
+                    messages.success(request, f"✅ Grupo {grupo} creado. Complete el siguiente.")
+                    return redirect('grupo_create')
+                else:
+                    messages.success(request, f"Grupo {grupo} creado exitosamente en {periodo_activo}.")
+                    return redirect('grupo_detail', pk=grupo.pk)
 
             except ValueError as e:
                 messages.error(request, f"Por favor corrija los errores: {str(e)}")
 
         else:
-            print("🔴 ERRORES DEL FORM:", form.errors)
-            print("🔴 DATA RECIBIDA:", request.POST)
+            # print("🔴 ERRORES DEL FORM:", form.errors)
+            # print("🔴 DATA RECIBIDA:", request.POST)
             messages.error(request, "Error en el formulario principal.")
 
     else:
@@ -243,28 +251,26 @@ def grupo_detail(request, pk):
 @login_required
 def importar_grupos_view(request):
     if request.method == 'POST':
-        form = UploadExcelForm(request.POST, request.FILES)
+        form = UploadExcelForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             archivo = request.FILES['archivo']
+            periodo = form.cleaned_data['periodo']
+            escuela = form.cleaned_data['escuela']
 
             try:
-                resultado = importar_programacion(archivo, request.user)
-
-                # Feedback al usuario
-                creados = resultado['creados']
-                errores = resultado['errores']
+                # Pasamos el periodo a la función
+                resultado = importar_programacion(archivo, request.user, periodo, escuela)
 
                 return render(request, 'grupos/importar_resultado.html', {
-                    'creados': creados,
-                    'errores': errores
+                    'creados': resultado['creados'],
+                    'errores': resultado['errores']
                 })
 
             except ExcelImportError as e:
-                form.add_error(None, f"Error en el formato del Excel: {str(e)}")
+                form.add_error(None, str(e))
             except Exception as e:
-                form.add_error(None, f"Error interno: {str(e)}")
-
+                form.add_error(None, f"Error crítico: {str(e)}")
     else:
-        form = UploadExcelForm()
+        form = UploadExcelForm(user=request.user)
 
     return render(request, 'grupos/importar_form.html', {'form': form})

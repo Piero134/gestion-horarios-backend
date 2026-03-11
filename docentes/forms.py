@@ -81,3 +81,12 @@ class DocenteForm(forms.ModelForm):
             cleaned_data['dedicacion'] = None
 
         return cleaned_data
+
+    def clean_apellido_paterno(self):
+        return self.cleaned_data.get('apellido_paterno', '').strip().upper()
+
+    def clean_apellido_materno(self):
+        return self.cleaned_data.get('apellido_materno', '').strip().upper()
+
+    def clean_nombres(self):
+        return self.cleaned_data.get('nombres', '').strip().upper()

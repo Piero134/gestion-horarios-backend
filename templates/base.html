@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>{% block title %}Sistema de Gestión de Horarios{% endblock %} | UNMSM</title>
 
-    <link rel="icon" type="image/png" href="{% static 'img/unmsm-logo.png' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -30,7 +30,7 @@
 
             <a href="#" class="topbar-brand">
                 <div class="brand-logo">
-                    <img src="{% static 'img/unmsm-logo.png' %}" alt="UNMSM">
+                    <img src="{% static 'img/logo.png' %}" alt="SGH-FISI">
                 </div>
                 <div class="brand-text">
                     <h1>SGH-FISI</h1>
@@ -140,10 +140,6 @@
                 <span>Planes de Estudio</span>
             </a>
 
-            <a href="" class="menu-item {% if 'asignaturas' in request.path %}active{% endif %}">
-                <i class="bi bi-book"></i>
-                <span>Asignaturas</span>
-            </a>
         </div>
 
         <div class="menu-section">
@@ -157,22 +153,29 @@
                 {% endif %}
             </a>
 
-            <a href="" class="menu-item {% if 'horarios' in request.path and 'generar' not in request.path %}active{% endif %}">
+            <a href="{% url 'horarios:horario_asignaturas' %}" class="menu-item {% if 'horarios' in request.path and 'generar' not in request.path %}active{% endif %}">
                 <i class="bi bi-calendar-week"></i>
                 <span>Horarios</span>
             </a>
 
             {% if user.rol.name == 'Secretaria de Escuela' or user.rol.name == 'Director de Escuela' or user.rol.name == 'Vicedecano Académico' or user.is_staff %}
-            <a href="" class="menu-item {% if 'generar' in request.path %}active{% endif %}">
+            <a href="{% url 'importar_grupos' %}" class="menu-item {% if 'importar' in request.path %}active{% endif %}">
                 <i class="bi bi-file-earmark-excel"></i>
                 <span>Importar Excel</span>
             </a>
             {% endif %}
 
-            <a href="" class="menu-item {% if 'vacantes' in request.path %}active{% endif %}">
-                <i class="bi bi-person-plus"></i>
-                <span>Gestión de Vacantes</span>
+        </div>
+
+        <div class="menu-section">
+            <div class="menu-section-title">Reportes</div>
+
+            <a href="javascript:void(0);"
+            id="btnExportarExcel"
+            class="menu-item {% if 'reportes' in request.path %}active{% endif %}">
+                <i class="bi bi-file-earmark-excel"></i> <span>Generar Reporte</span>
             </a>
+
         </div>
 
         <div class="menu-section">
@@ -183,27 +186,11 @@
                 <span>Docentes</span>
             </a>
 
-            <a href="" class="menu-item {% if 'aulas' in request.path %}active{% endif %}">
+            <a href="{% url 'aula_list' %}" class="menu-item {% if 'aulas' in request.path %}active{% endif %}">
                 <i class="bi bi-door-open"></i>
                 <span>Aulas</span>
             </a>
         </div>
-
-        {% if user.rol.name == 'Secretaria de Escuela' or user.rol.name == 'Director de Escuela' or user.rol.name == 'Vicedecano Académico' or user.is_staff %}
-        <div class="menu-section">
-            <div class="menu-section-title">Reportes</div>
-
-            <a href="" class="menu-item {% if 'reportes' in request.path %}active{% endif %}">
-                <i class="bi bi-file-earmark-pdf"></i>
-                <span>Generar Reporte</span>
-            </a>
-
-            <a href="" class="menu-item">
-                <i class="bi bi-exclamation-triangle"></i>
-                <span>Conflictos</span>
-            </a>
-        </div>
-        {% endif %}
 
         {% if user.is_staff %}
         <div class="menu-section">
@@ -246,4 +233,5 @@
 
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

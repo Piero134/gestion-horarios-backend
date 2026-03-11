@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --hour-h: 64px;   /* px por hora — coincide con HOUR_H=64 en JS */
+    --hdr-h:  42px;
+    --time-w: 52px;
+  }
+
+  /* ─── Filtros ─── */
+  .filtros-card {
+    background: var(--bg-surface); border: 1px solid var(--border-color);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    padding: 1.1rem 1.4rem; margin-bottom: 1rem;
+  }
+  .filtros-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 0.8fr 0.5fr auto;
+    gap: 12px; align-items: end;
+  }
+  @media (max-width: 860px) { .filtros-grid { grid-template-columns: 1fr 1fr; } .f-btn { grid-column: 1/-1; } }
+  @media (max-width: 480px) { .filtros-grid { grid-template-columns: 1fr; } }
+
+  .f-group label {
+    display: block; font-size: .67rem; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 5px;
+  }
+  .f-group select,
+  .f-group input[type=number] {
+    width: 100%; height: 40px; padding: 0 10px;
+    border: 1px solid var(--border-color); border-radius: 10px;
+    font-size: .875rem; color: var(--text-primary);
+    background: var(--bg-body); outline: none;
+    transition: border-color 140ms, box-shadow 140ms;
+    -webkit-appearance: none; appearance: none;
+  }
+  .f-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+  }
+  .f-group select:focus, .f-group input:focus {
+    border-color: var(--unmsm-red); box-shadow: 0 0 0 3px rgba(193,39,45,.1);
+  }
+  .f-group select:disabled { background-color: var(--bg-hover); color: var(--text-muted); cursor: not-allowed; }
+
+  .btn-buscar {
+    height: 40px; padding: 0 18px; width: 100%;
+    background: linear-gradient(135deg, var(--unmsm-red) 0%, var(--unmsm-red-dark) 100%);
+    color: #fff; border: none; border-radius: 10px;
+    font-size: .875rem; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: all .15s; box-shadow: 0 2px 8px rgba(193,39,45,.25); white-space: nowrap;
+  }
+  .btn-buscar:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(193,39,45,.35); }
+  .btn-buscar:active:not(:disabled) { transform: scale(.98); }
+  .btn-buscar:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; transform:none; }
+
+  /* ─── Toolbar resultado ─── */
+  .result-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 9px;
+  }
+  .result-label { font-size: .82rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .result-chip {
+    background: rgba(193,39,45,.07); color: var(--unmsm-red);
+    font-size: .72rem; font-weight: 700; padding: 2px 10px;
+    border-radius: 20px; border: 1px solid rgba(193,39,45,.15);
+  }
+  .view-switch {
+    display: flex; background: var(--bg-surface);
+    border: 1px solid var(--border-color); border-radius: 10px;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .view-switch button {
+    padding: 6px 14px; border: none; background: transparent;
+    font-size: .8rem; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; display: flex; align-items: center; gap: 5px;
+    transition: background .14s, color .14s;
+  }
+  .view-switch button.active {
+    background: linear-gradient(135deg, var(--unmsm-red) 0%, var(--unmsm-red-dark) 100%);
+    color: #fff;
+  }
+  .view-switch button:not(.active):hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  /* ─── Alertas ─── */
+  .alerta {
+    padding: 11px 14px; border-radius: 10px; font-size: .85rem; font-weight: 500;
+    margin-bottom: 12px; display: flex; align-items: flex-start; gap: 8px; line-height: 1.45;
+  }
+  .alerta i { margin-top: 1px; flex-shrink: 0; }
+  .alerta.info    { background: rgba(37,99,235,.07);  color: #1e40af; border: 1px solid rgba(37,99,235,.15); }
+  .alerta.warning { background: var(--warning-bg);    color: var(--warning-text); }
+  .alerta.danger  { background: var(--danger-bg);     color: var(--danger-text); }
+  .alerta.d-none  { display: none !important; }
+
+  /* ─── Loading ─── */
+  .loading { display: none; padding: 48px 0; text-align: center; color: var(--text-muted); font-size: .875rem; }
+  .loading.show { display: block; }
+  .mini-spinner {
+    width: 30px; height: 30px; margin: 0 auto 10px;
+    border: 3px solid var(--border-color); border-top-color: var(--unmsm-red);
+    border-radius: 50%; animation: spin .65s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn-spinner {
+    width: 13px; height: 13px; display: inline-block;
+    border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+    border-radius: 50%; animation: spin .65s linear infinite;
+  }
+
+  /* ════════════════════════════════════════════
+     VISTA CALENDARIO  08:00 → 22:00
+     Colores por CURSO (no por tipo).
+  ════════════════════════════════════════════ */
+  .cal-card {
+    background: var(--bg-surface); border: 1px solid var(--border-color);
+    border-radius: 16px; box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    /* Evita que el card desborde el contenedor padre */
+    max-width: 100%;
+  }
+  /* El scroll horizontal solo cuando realmente no cabe (móvil) */
+  .cal-scroll { overflow-x: auto; overflow-y: hidden; }
+  .cal-grid { display: flex; width: 100%; }
+  /* En pantallas pequeñas forzar mínimo para que sea usable */
+  @media (max-width: 700px) { .cal-grid { min-width: 520px; } }
+
+  .cal-time-col { flex-shrink: 0; width: var(--time-w); border-right: 1px solid var(--border-color); }
+  .cal-time-header { height: var(--hdr-h); border-bottom: 1px solid var(--border-color); background: var(--bg-hover); }
+  .cal-time-body   { position: relative; } /* height set inline dynamically */
+  .cal-hour-label  {
+    position: absolute; left: 0; right: 0;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 3px; font-size: .61rem; font-weight: 600; color: var(--text-muted); line-height: 1;
+  }
+
+  .cal-days { display: flex; flex: 1; min-width: 0; overflow: hidden; }
+  .cal-day {
+    flex: 1; min-width: 0; border-right: 1px solid var(--border-color);
+    display: flex; flex-direction: column;
+  }
+  .cal-day:last-child { border-right: none; }
+
+  .cal-day-header {
+    height: var(--hdr-h); background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-color);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 1px; padding: 0 4px;
+  }
+  .cal-day.active .cal-day-header { background: rgba(193,39,45,.05); border-bottom: 2px solid var(--unmsm-red); }
+  .cal-day-name { font-size: .67rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  .cal-day.active .cal-day-name { color: var(--unmsm-red); }
+  .cal-day-count { font-size: .58rem; color: var(--text-muted); font-weight: 500; }
+
+  .cal-day-body {
+    position: relative; /* height set inline dynamically */
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent calc(var(--hour-h) - 1px),
+      var(--border-color) calc(var(--hour-h) - 1px), var(--border-color) var(--hour-h)
+    );
+  }
+  .cal-day-body::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent calc(var(--hour-h) / 2 - 1px),
+      var(--bg-hover) calc(var(--hour-h) / 2 - 1px), var(--bg-hover) calc(var(--hour-h) / 2),
+      transparent calc(var(--hour-h) / 2), transparent var(--hour-h)
+    );
+  }
+
+  /* El color del evento se aplica inline via JS (--ev-color) */
+  .cal-event {
+    position: absolute; left: 3px; right: 3px; border-radius: 6px;
+    padding: 4px 6px; overflow: hidden; cursor: default;
+    font-size: .67rem; line-height: 1.3;
+    transition: transform 150ms, box-shadow 150ms;
+    z-index: 5; display: flex; flex-direction: column; gap: 1px;
+    background: var(--ev-bg);
+    color:      var(--ev-text);
+    border-left: 3px solid var(--ev-border);
+  }
+  .cal-event:hover { transform: scale(1.03) translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.14); z-index: 20; }
+  .cal-event-title { font-weight: 700; font-size: .67rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-event-sub   { font-size: .59rem; opacity: .82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Pill de tipo dentro del evento (pequeño) */
+  .ev-tipo-pill {
+    display: inline-block; font-size: .55rem; font-weight: 700;
+    padding: 1px 5px; border-radius: 10px;
+    background: rgba(0,0,0,.12); color: inherit;
+    margin-top: 1px; align-self: flex-start;
+  }
+
+  /* ════════════════════════════════════════════
+     VISTA LISTA — tablas por día (estilo imagen)
+  ════════════════════════════════════════════ */
+  .list-view { display: flex; flex-direction: column; gap: 28px; }
+
+  .list-day-section {}
+
+  .list-day-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.05rem; font-weight: 800;
+    color: var(--unmsm-red); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .list-day-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border-color);
+  }
+
+  .list-table-wrap {
+    background: var(--bg-surface); border: 1px solid var(--border-color);
+    border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm);
+  }
+  .list-table {
+    width: 100%; border-collapse: collapse; table-layout: fixed;
+  }
+  .list-table thead tr { background: var(--bg-hover); }
+  .list-table thead th {
+    padding: 10px 16px; text-align: left;
+    font-size: .68rem; font-weight: 800; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .7px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .list-table tbody tr { border-bottom: 1px solid var(--border-color); transition: background .12s; }
+  .list-table tbody tr:last-child { border-bottom: none; }
+  .list-table tbody tr:hover { background: var(--bg-hover); }
+  .list-table tbody td { padding: 12px 16px; vertical-align: middle; font-size: .875rem; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Columnas específicas — anchos fijos para consistencia entre días */
+  .col-hora    { width: 130px; min-width: 130px; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+  .col-asig    { width: 160px; font-weight: 600; color: var(--text-primary); }
+  .col-docente { width: 380px; color: var(--text-secondary); font-size: .82rem; }
+  .col-aula    { width: 110px; min-width: 90px; color: var(--text-secondary); font-size: .82rem; white-space: nowrap; }
+  .col-tipo    { width: 120px; min-width: 110px; }
+
+  /* Indicador de color de curso en lista */
+  .curso-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 8px; flex-shrink: 0; vertical-align: middle;
+  }
+
+  /* Badge de tipo — colores fijos por tipo */
+  .tipo-badge {
+    display: inline-block; font-size: .71rem; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  .tipo-Teoria      { background: #dbeafe; color: #1e40af; }
+  .tipo-Practica    { background: #d1fae5; color: #065f46; }
+  .tipo-Laboratorio { background: #fef3c7; color: #92400e; }
+  .tipo-default     { background: var(--bg-hover); color: var(--text-secondary); border: 1px solid var(--border-color); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div>
+
+  <div class="d-flex align-items-start justify-content-between mb-3">
+    <div>
+      <h2 class="fw-bold mb-0" style="font-family:'Sora',sans-serif;font-size:1.2rem;color:var(--text-primary);">
+        <i class="fas fa-calendar-alt me-2" style="color:var(--unmsm-red);"></i>Visor de Horarios
+      </h2>
+      <p class="mb-0 mt-1" style="font-size:.8rem;color:var(--text-secondary);">
+        Programación académica por escuela, ciclo y grupo
+      </p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filtros-card">
+    <div class="filtros-grid">
+      <div class="f-group">
+        <label for="select-periodo">Periodo académico</label>
+        <select id="select-periodo">
+          <option value="">— Periodo actual —</option>
+          {% for p in periodos %}
+            <option value="{{ p.id }}"
+              {% if periodo_activo and p.id == periodo_activo.id %}selected{% endif %}>
+              {{ p.nombre|default:p.id }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="f-group">
+        <label for="select-escuela">Escuela académica</label>
+        <select id="select-escuela" {% if escuelas.count == 1 %}disabled{% endif %}>
+          {% if escuelas.count > 1 %}<option value="">— Seleccione escuela —</option>{% endif %}
+          {% for esc in escuelas %}
+            <option value="{{ esc.id }}" {% if escuelas.count == 1 %}selected{% endif %}>
+              {{ esc.codigo }} – {{ esc.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="f-group">
+        <label for="select-ciclo">Ciclo</label>
+        <select id="select-ciclo">
+          <option value="">— Seleccionar —</option>
+          {% for c in ciclos %}<option value="{{ c }}">Ciclo {{ c }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="f-group">
+        <label for="input-grupo">Grupo</label>
+        <input type="number" id="input-grupo" min="1" placeholder="Ej. 1">
+      </div>
+      <div class="f-group f-btn">
+        <label style="visibility:hidden">b</label>
+        <button class="btn-buscar" id="btn-buscar">
+          <i class="fas fa-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alerta -->
+  <div id="alerta" class="alerta d-none">
+    <i class="fas fa-info-circle"></i>
+    <span id="alerta-msg"></span>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="mini-spinner"></div>
+    Cargando programación…
+  </div>
+
+  <!-- Resultado -->
+  <div id="result-area" style="display:none;">
+    <div class="result-toolbar">
+      <div class="result-label">
+        Horario para <span class="result-chip" id="label-ciclo-grupo"></span>
+      </div>
+      <div class="view-switch">
+        <button id="btn-cal"  class="active"><i class="fas fa-calendar-week"></i> Calendario</button>
+        <button id="btn-list"><i class="fas fa-list-ul"></i> Lista</button>
+      </div>
+    </div>
+    <div id="content-area"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const selEscuela  = document.getElementById('select-escuela');
+  const selPeriodo  = document.getElementById('select-periodo');
+  const selCiclo    = document.getElementById('select-ciclo');
+  const inputGrupo  = document.getElementById('input-grupo');
+  const btnBuscar   = document.getElementById('btn-buscar');
+  const loading     = document.getElementById('loading');
+  const alerta      = document.getElementById('alerta');
+  const alertaMsg   = document.getElementById('alerta-msg');
+  const resultArea  = document.getElementById('result-area');
+  const contentArea = document.getElementById('content-area');
+  const labelCG     = document.getElementById('label-ciclo-grupo');
+  const btnCal      = document.getElementById('btn-cal');
+  const btnList     = document.getElementById('btn-list');
+
+  let currentData = null;
+  let currentView = 'cal';
+
+  const DIAS_ORDER = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const CAL_START  = 8;
+  const CAL_END    = 22;
+  const HOUR_H     = 64; // px por hora — coincide con --hour-h CSS
+
+  /* ══════════════════════════════════════════════════
+     PALETA DE 10 COLORES por curso
+     Cada color tiene: bg (fondo suave), text (oscuro),
+     border (saturado), badge-bg y badge-text para lista.
+  ══════════════════════════════════════════════════ */
+  const COURSE_PALETTE = [
+    { bg:'#eff6ff', text:'#1e3a8a', border:'#3b82f6', badgeBg:'#dbeafe', badgeText:'#1e40af' }, // azul
+    { bg:'#ecfdf5', text:'#064e3b', border:'#10b981', badgeBg:'#d1fae5', badgeText:'#065f46' }, // verde
+    { bg:'#fff7ed', text:'#7c2d12', border:'#f97316', badgeBg:'#fed7aa', badgeText:'#9a3412' }, // naranja
+    { bg:'#fdf4ff', text:'#581c87', border:'#a855f7', badgeBg:'#f3e8ff', badgeText:'#6b21a8' }, // violeta
+    { bg:'#fff1f2', text:'#881337', border:'#f43f5e', badgeBg:'#ffe4e6', badgeText:'#9f1239' }, // rosa-rojo
+    { bg:'#f0fdfa', text:'#134e4a', border:'#14b8a6', badgeBg:'#ccfbf1', badgeText:'#0f766e' }, // teal
+    { bg:'#fffbeb', text:'#78350f', border:'#f59e0b', badgeBg:'#fef3c7', badgeText:'#92400e' }, // ámbar
+    { bg:'#f0f9ff', text:'#0c4a6e', border:'#0ea5e9', badgeBg:'#e0f2fe', badgeText:'#075985' }, // celeste
+    { bg:'#fef2f2', text:'#7f1d1d', border:'#ef4444', badgeBg:'#fee2e2', badgeText:'#991b1b' }, // rojo
+    { bg:'#f5f3ff', text:'#3730a3', border:'#6366f1', badgeBg:'#e0e7ff', badgeText:'#3730a3' }, // índigo
+  ];
+
+  /* Mapa curso → índice de paleta (consistente durante la sesión) */
+  const courseColorMap = {};
+  let colorCounter = 0;
+
+  function getCourseColor(curso) {
+    if (courseColorMap[curso] === undefined) {
+      courseColorMap[curso] = colorCounter % COURSE_PALETTE.length;
+      colorCounter++;
+    }
+    return COURSE_PALETTE[courseColorMap[curso]];
+  }
+
+  /* ─── Normalizar tipo para CSS ─── */
+  function normTipo(tipo) {
+    return (tipo||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'');
+  }
+
+  /* ── Persistencia URL ── */
+  function leerParamsURL() {
+    const p = new URLSearchParams(window.location.search);
+    if (selPeriodo && p.get('periodo')) selPeriodo.value = p.get('periodo');
+    if (selEscuela && p.get('escuela')) selEscuela.value = p.get('escuela');
+    if (p.get('ciclo'))  selCiclo.value   = p.get('ciclo');
+    if (p.get('grupo'))  inputGrupo.value = p.get('grupo');
+    if (p.get('vista') === 'list') currentView = 'list';
+    syncViewBtns();
+  }
+  function guardarParamsURL() {
+    const p = new URLSearchParams();
+    if (selPeriodo && selPeriodo.value) p.set('periodo', selPeriodo.value);
+    if (selEscuela && selEscuela.value) p.set('escuela', selEscuela.value);
+    if (selCiclo.value)   p.set('ciclo',  selCiclo.value);
+    if (inputGrupo.value) p.set('grupo',  inputGrupo.value);
+    p.set('vista', currentView);
+    history.replaceState(null,'', window.location.pathname+'?'+p.toString());
+  }
+
+  /* ── Alertas ── */
+  const ICONOS = { info:'fa-info-circle', warning:'fa-exclamation-triangle', danger:'fa-times-circle' };
+  function mostrarAlerta(msg, tipo='info') {
+    alertaMsg.textContent = msg;
+    alerta.className = `alerta ${tipo}`;
+    alerta.querySelector('i').className = `fas ${ICONOS[tipo]||'fa-info-circle'}`;
+  }
+  function ocultarAlerta() { alerta.classList.add('d-none'); }
+
+  /* ── Fetch ── */
+  async function fetchData() {
+    const escuela = selEscuela ? selEscuela.value : '';
+    const ciclo   = selCiclo.value;
+    const grupo   = inputGrupo.value.trim();
+
+    if (!ciclo || !grupo) {
+      mostrarAlerta('Selecciona el ciclo e indica el número de grupo.', 'warning');
+      return;
+    }
+
+    ocultarAlerta();
+    resultArea.style.display = 'none';
+    loading.classList.add('show');
+    btnBuscar.disabled = true;
+    btnBuscar.innerHTML = '<span class="btn-spinner"></span> Buscando…';
+
+    try {
+      const baseUrl = "{% url 'horarios:api_horarios' %}";
+      let url = `${baseUrl}?ciclo=${encodeURIComponent(ciclo)}&grupo=${encodeURIComponent(grupo)}`;
+      if (escuela) url += `&escuela=${encodeURIComponent(escuela)}`;
+      if (selPeriodo && selPeriodo.value) url += `&periodo=${encodeURIComponent(selPeriodo.value)}`;
+
+      const res  = await fetch(url);
+      const data = await res.json();
+
+      if (!res.ok) {
+        mostrarAlerta(data.error || 'Error al consultar el horario.', 'danger');
+        currentData = null; return;
+      }
+      if (!data || Object.keys(data).length === 0) {
+        mostrarAlerta('No hay clases programadas para esta selección.', 'info');
+        currentData = null; return;
+      }
+
+      // Reiniciar mapa de colores en cada búsqueda nueva
+      Object.keys(courseColorMap).forEach(k => delete courseColorMap[k]);
+      colorCounter = 0;
+
+      // Asignar colores en orden de aparición (recorremos todos los días)
+      DIAS_ORDER.forEach(dia => {
+        (data[dia] || []).forEach(c => getCourseColor(c.curso));
+      });
+
+      currentData = data;
+      labelCG.textContent = `Ciclo ${ciclo}  ·  Grupo ${grupo}`;
+      resultArea.style.display = 'block';
+      guardarParamsURL();
+      render();
+
+    } catch (e) {
+      mostrarAlerta('Error de conexión con el servidor.', 'danger');
+      currentData = null;
+    } finally {
+      loading.classList.remove('show');
+      btnBuscar.disabled = false;
+      btnBuscar.innerHTML = '<i class="fas fa-search"></i> Buscar';
+    }
+  }
+
+  function render() {
+    if (!currentData) return;
+    contentArea.innerHTML = '';
+    currentView === 'cal' ? renderCalendar() : renderList();
+  }
+
+  /* ══════════════════════════════════════════
+     VISTA CALENDARIO  08:00–22:00
+     Colores por curso.
+  ══════════════════════════════════════════ */
+  function t2m(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+  function renderCalendar() {
+    const tieneSab    = (currentData['Sábado']||[]).length > 0;
+    const diasMostrar = tieneSab ? DIAS_ORDER : DIAS_ORDER.slice(0,5);
+
+    // Límite inferior dinámico: hora_fin máxima + 1h, mínimo 9, máximo 22
+    let maxEndMin = 0;
+    DIAS_ORDER.forEach(d => (currentData[d]||[]).forEach(c => {
+      maxEndMin = Math.max(maxEndMin, t2m(c.hora_fin));
+    }));
+    const calEnd = Math.min(22, Math.max(9, Math.ceil(maxEndMin / 60) + 1));
+    const calHours = calEnd - CAL_START;
+
+    // Etiquetas de hora dinámicas
+    let labelsHtml = '';
+    for (let h = CAL_START; h < calEnd; h++) {
+      labelsHtml += `<div class="cal-hour-label" style="top:${(h-CAL_START)*HOUR_H}px">${String(h).padStart(2,'0')}:00</div>`;
+    }
+    const bodyH = calHours * HOUR_H;
+
+    let diasHtml = '';
+    for (const dia of diasMostrar) {
+      const clases = currentData[dia] || [];
+      const activo = clases.length > 0 ? 'active' : '';
+
+      let eventosHtml = '';
+      for (const c of clases) {
+        const startMin = t2m(c.hora_inicio);
+        const endMin   = t2m(c.hora_fin);
+        if (endMin <= CAL_START*60 || startMin >= calEnd*60) continue;
+
+        const topPx    = (startMin - CAL_START*60) / 60 * HOUR_H;
+        const heightPx = Math.max((endMin - startMin) / 60 * HOUR_H - 4, 28);
+        const col      = getCourseColor(c.curso);
+        const tooltip  = `${c.curso}\n${c.tipo} · ${c.hora_inicio}–${c.hora_fin}\nDocente: ${c.docente}\nAula: ${c.aula}`;
+
+        eventosHtml += `
+          <div class="cal-event"
+               style="top:${topPx}px;height:${heightPx}px;
+                      --ev-bg:${col.bg};--ev-text:${col.text};--ev-border:${col.border};"
+               title="${escHtml(tooltip)}">
+            <div class="cal-event-title">${escHtml(c.curso)}</div>
+            ${heightPx > 30 ? `<div class="cal-event-sub">${escHtml(c.hora_inicio)}–${escHtml(c.hora_fin)}</div>` : ''}
+            ${heightPx > 50 ? `<div class="cal-event-sub"><i class="fas fa-door-open" style="font-size:.52rem;margin-right:2px;"></i>${escHtml(c.aula)}</div>` : ''}
+            ${heightPx > 74 ? `<div class="cal-event-sub"><i class="fas fa-user-tie" style="font-size:.52rem;margin-right:2px;opacity:.7"></i>${escHtml(c.docente)}</div>` : ''}
+            ${heightPx > 42 ? `<span class="ev-tipo-pill">${escHtml(c.tipo)}</span>` : ''}
+          </div>`;
+      }
+
+      diasHtml += `
+        <div class="cal-day ${activo}">
+          <div class="cal-day-header">
+            <span class="cal-day-name">${dia.slice(0,3).toUpperCase()}</span>
+            ${clases.length ? `<span class="cal-day-count">${clases.length} clase${clases.length>1?'s':''}</span>` : ''}
+          </div>
+          <div class="cal-day-body" style="height:${bodyH}px">${eventosHtml}</div>
+        </div>`;
+    }
+
+    contentArea.innerHTML = `
+      <div class="cal-card">
+        <div class="cal-scroll">
+          <div class="cal-grid">
+            <div class="cal-time-col">
+              <div class="cal-time-header"></div>
+              <div class="cal-time-body" style="height:${bodyH}px">${labelsHtml}</div>
+            </div>
+            <div class="cal-days">${diasHtml}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /* ══════════════════════════════════════════
+     VISTA LISTA
+     Una sección por día con título grande en rojo
+     y tabla con columnas: HORA | ASIGNATURA | DOCENTE | AULA | TIPO
+     igual que en la imagen de referencia.
+  ══════════════════════════════════════════ */
+  function renderList() {
+    const diasConClases = DIAS_ORDER.filter(d => (currentData[d]||[]).length > 0);
+    let html = '<div class="list-view">';
+
+    for (const dia of diasConClases) {
+      const sorted = [...currentData[dia]].sort((a,b) => a.hora_inicio.localeCompare(b.hora_inicio));
+
+      let filas = '';
+      for (const c of sorted) {
+        const col = getCourseColor(c.curso);
+        // Badge tipo: color fijo por tipo (Teoría=azul, Práctica=verde, Laboratorio=ámbar)
+        const tn = normTipo(c.tipo);
+        const tipoCls = ['Teoria','Practica','Laboratorio'].includes(tn) ? `tipo-${tn}` : 'tipo-default';
+        const tipoHtml = `<span class="tipo-badge ${tipoCls}">${escHtml(c.tipo)}</span>`;
+        const docenteShow = c.docente && c.docente !== 'SIN ASIGNAR' ? escHtml(c.docente) : '<span style="color:var(--text-muted);font-style:italic">Sin asignar</span>';
+        const aulaShow    = c.aula    && c.aula    !== '-'           ? escHtml(c.aula)    : '<span style="color:var(--text-muted)">—</span>';
+
+        filas += `
+          <tr>
+            <td class="col-hora">${escHtml(c.hora_inicio)} - ${escHtml(c.hora_fin)}</td>
+            <td class="col-asig">
+              <span class="curso-dot" style="background:${col.border};"></span>${escHtml(c.curso)}
+            </td>
+            <td class="col-docente">${docenteShow}</td>
+            <td class="col-aula">${aulaShow}</td>
+            <td class="col-tipo">${tipoHtml}</td>
+          </tr>`;
+      }
+
+      html += `
+        <div class="list-day-section">
+          <div class="list-day-title">${dia}</div>
+          <div class="list-table-wrap">
+            <table class="list-table">
+              <colgroup>
+                <col style="width:130px">
+                <col style="width:160px">
+                <col style="width:380px">
+                <col style="width:110px">
+                <col style="width:120px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Asignatura</th>
+                  <th>Docente</th>
+                  <th>Aula</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody>${filas}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    contentArea.innerHTML = html + '</div>';
+  }
+
+  /* ── Helpers ── */
+  function escHtml(s) {
+    return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function syncViewBtns() {
+    btnCal.classList.toggle('active',  currentView === 'cal');
+    btnList.classList.toggle('active', currentView === 'list');
+  }
+
+  /* ── Eventos UI ── */
+  btnBuscar.addEventListener('click', fetchData);
+  inputGrupo.addEventListener('keydown', e => { if (e.key==='Enter') fetchData(); });
+  btnCal.addEventListener('click',  () => { currentView='cal';  syncViewBtns(); guardarParamsURL(); render(); });
+  btnList.addEventListener('click', () => { currentView='list'; syncViewBtns(); guardarParamsURL(); render(); });
+
+  /* ── Inicialización ── */
+  leerParamsURL();
+  const init = new URLSearchParams(window.location.search);
+  if (init.get('ciclo') && init.get('grupo')) setTimeout(fetchData, 80);
+});
+</script>
+{% endblock %}
