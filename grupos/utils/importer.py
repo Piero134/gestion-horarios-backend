@@ -68,6 +68,7 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
 
     errores = []
     registros_creados = 0
+    grupos_limpiados = set()
 
     with transaction.atomic(): # Si falla algo grave, no guarda nada
         for row_idx, row in enumerate(ws.iter_rows(min_row=header_row_idx + 1, values_only=True), header_row_idx + 1):
@@ -103,6 +104,10 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                     periodo=periodo,
                 )
 
+                if grupo.pk not in grupos_limpiados:
+                    grupo.horarios.all().delete()
+                    grupos_limpiados.add(grupo.pk)
+
                 for col_idx, sigla_escuela in vacantes_cols.items():
                     val_v = row[col_idx]
                     if val_v and str(val_v).isdigit() and int(val_v) > 0:
@@ -137,7 +142,7 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                         a_nom_base = aula_raw
                         p_code = 'NP'
 
-                    a_nom = a_nom_base.replace('LABORATORIO', '').replace('LAB', '').replace('AULA', '').strip()
+                    a_nom = re.sub(r'(LABORATORIO|LAB|AULA)', '', a_nom_base).strip()
 
                     aula_obj, created = Aula.objects.get_or_create(
                         nombre=a_nom,
@@ -164,20 +169,10 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                 dia_norm = _normalizar_dia(dia_raw)
 
                 if dia_norm and h_ini_raw and h_fin_raw:
-                    horario, created = Horario.objects.get_or_create(
-                        grupo=grupo, dia=dia_norm, hora_inicio=h_ini_raw,
-                        defaults={
-                            'hora_fin': h_fin_raw, 'tipo': tipo_raw[0].upper(),
-                            'docente': docente, 'aula': aula_obj
-                        }
+                    Horario.objects.create(
+                        grupo=grupo, dia=dia_norm, hora_inicio=h_ini_raw, tipo=tipo_raw,
+                        hora_fin=h_fin_raw, docente=docente, aula=aula_obj
                     )
-
-                    if not created:
-                        horario.hora_fin = h_fin_raw
-                        horario.docente = docente
-                        horario.aula = aula_obj
-                        horario.save()
-
                     registros_creados += 1
 
                 else:
@@ -250,10 +245,17 @@ def _get_or_create_docente(nombre_completo_raw, user):
         elif len(partes) == 1:
             paterno = partes[0]
 
-    docente = Docente.objects.filter(
+    qs = Docente.objects.filter(
         apellido_paterno__iexact=paterno,
         nombres__iexact=nombres
-    ).first()
+    )
+
+    if materno:
+        qs = qs.filter(apellido_materno__iexact=materno)
+    else:
+        qs = qs.filter(apellido_materno__in=['', None])
+
+    docente = qs.first()
 
     if not docente:
         facultad = getattr(user, 'facultad', None)
