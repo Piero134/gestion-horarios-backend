@@ -294,10 +294,8 @@ def _normalizar_tipo(tipo_raw):
 
     tipo = str(tipo_raw).strip().upper()
 
-    match = re.search(r'[TPL]$', tipo)
-
-    if match:
-        return tipo
+    if tipo[-1] in ('T', 'P', 'L'):
+        return tipo[-1]
 
     return 'T'
 
