@@ -3,7 +3,7 @@ from datetime import date, timedelta, time
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
-from asignaturas.models import Asignatura
+from asignaturas.models import Asignatura, Equivalencia
 from aulas.models import Aula
 from docentes.models import Docente
 from escuelas.models import Escuela
@@ -89,6 +89,18 @@ class BaseDataMixin:
             horas_practica=0,
             horas_laboratorio=0,
         )
+        cls.asignatura_otra_escuela = Asignatura.objects.create(
+            plan=cls.otro_plan,
+            ciclo=3,
+            codigo="SW301",
+            nombre="Arquitectura de Software",
+            creditos=4,
+            horas_teoria=2,
+            horas_practica=2,
+            horas_laboratorio=0,
+        )
+        cls.equivalencia = Equivalencia.objects.create(nombre="Arquitectura equivalente")
+        cls.equivalencia.asignaturas.add(cls.asignatura, cls.asignatura_otra_escuela)
         cls.grupo = Grupo.objects.create(
             numero=1,
             asignatura=cls.asignatura,
