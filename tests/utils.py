@@ -159,6 +159,13 @@ class BaseDataMixin:
             escuela=None,
             facultad=cls.facultad,
         )
+        cls.superuser = cls.User.objects.create_user(
+            email="admin@example.com",
+            password=cls.password,
+            facultad=cls.facultad,
+            is_superuser=True,
+            is_staff=True,
+        )
 
     @classmethod
     def create_user(cls, email, rol, facultad, escuela=None, **extra_fields):
