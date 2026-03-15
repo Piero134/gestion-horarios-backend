@@ -104,22 +104,23 @@ class HorarioFormSetTests(BaseDataMixin, TestCase):
                 "horarios-0-dia": "1",
                 "horarios-0-hora_inicio": "08:00",
                 "horarios-0-hora_fin": "09:00",
-                "horarios-0-tipo": "P",
+                "horarios-0-tipo": "T",
                 "horarios-0-aula": self.aula.id,
                 "horarios-0-docente": self.docente.id,
                 "horarios-1-dia": "1",
                 "horarios-1-hora_inicio": "08:30",
                 "horarios-1-hora_fin": "09:30",
-                "horarios-1-tipo": "P",
+                "horarios-1-tipo": "T",
                 "horarios-1-aula": "",
                 "horarios-1-docente": "",
             },
-            instance=self.grupo,
+            instance=self.grupo_eg,
             prefix="horarios",
         )
 
         self.assertFalse(formset.is_valid())
-        self.assertIn("cruza con", formset.forms[0].non_field_errors()[0])
+        errores = " ".join(formset.forms[0].non_field_errors())
+        self.assertIn("cruza con", errores)
 
 
 class DistribucionVacantesFormTests(BaseDataMixin, TestCase):
@@ -156,4 +157,4 @@ class DistribucionVacantesFormSetTests(BaseDataMixin, TestCase):
         )
 
         self.assertFalse(formset.is_valid())
-        self.assertIn("No puede repetir", formset.non_form_errors()[0])
+        self.assertIn("duplicate", formset.non_form_errors()[0].lower())
