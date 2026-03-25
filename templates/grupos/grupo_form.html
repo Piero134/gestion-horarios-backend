@@ -17,6 +17,7 @@
 .form-error-banner i{flex-shrink:0;font-size:1rem;margin-top:1px}
 .form-error-banner ul{margin:0;padding-left:1rem}
 .is-invalid-field{border-color:#dc2626!important;box-shadow:0 0 0 2px rgba(220,38,38,.15)!important}
+/* Horarios */
 .horario-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:.75rem;position:relative;transition:border-color .15s}
 .horario-row:hover{border-color:#94a3b8}
 .horario-row.to-delete{opacity:.35;pointer-events:none;background:#fef2f2;border-color:#fca5a5}
@@ -29,7 +30,6 @@
 .tipo-btn.active-T{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd}
 .tipo-btn.active-P{background:#dcfce7;color:#166534;border-color:#86efac}
 .tipo-btn.active-L{background:#fef3c7;color:#92400e;border-color:#fde68a}
-/* Completado: grisado, con tilde, no interactivo */
 .tipo-btn.completed{opacity:.4;cursor:not-allowed;pointer-events:none;background:#f1f5f9!important;border-color:#cbd5e1!important;color:#94a3b8!important}
 .tipo-btn.completed::after{content:'✓';position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.65rem;color:#22c55e}
 .tipo-btn.d-none{display:none!important}
@@ -59,6 +59,7 @@
 .add-horario-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-light)}
 .btn-copy-horario{font-size:.72rem;border:1px dashed var(--border);color:var(--muted);background:transparent;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
 .btn-copy-horario:hover{border-color:#3b82f6;color:#3b82f6;background:#eff6ff}
+/* Vacantes */
 .table-vacantes{width:100%;border-collapse:separate;border-spacing:0}
 .table-vacantes thead th{background:#f8f9fa;color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;padding:.65rem 1rem;border-bottom:2px solid var(--border)}
 .table-vacantes tbody td{padding:.65rem 1rem;vertical-align:middle;border-bottom:1px solid #f1f5f9}
@@ -70,7 +71,7 @@
 .vacantes-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);outline:none}
 .equivalencia-select-wrap{max-width:380px}
 .equivalencia-select-wrap .select2-container{width:100%!important}
-.real-info .edit-link{font-size:.7rem;color:#3b82f6;cursor:pointer;text-decoration:underline;margin-left:8px}
+.edit-link{font-size:.7rem;color:#3b82f6;cursor:pointer;text-decoration:underline;margin-left:8px}
 .horas-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe}
 .horas-badge.ok{background:#dcfce7;color:#166534;border-color:#bbf7d0}
 .horas-badge.warn{background:#fef3c7;color:#92400e;border-color:#fde68a}
@@ -81,6 +82,10 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
 .horario-errors{margin-top:.5rem;padding:.4rem .6rem;background:#fef2f2;border-radius:6px;border:1px solid #fecaca}
 .horario-errors .error-item{color:#991b1b;font-size:.73rem;font-weight:600;display:flex;align-items:flex-start;gap:.3rem;margin-bottom:.2rem}
 .horario-errors .error-item:last-child{margin-bottom:0}
+/* Fila base de vacante — no se puede eliminar */
+.vacante-row.is-base td:last-child{opacity:.3;pointer-events:none}
+/* Info banner edición */
+.edit-info-banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:#1d4ed8;font-size:.82rem;font-weight:600}
 </style>
 {% endblock %}
 
@@ -101,6 +106,14 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
     </div>
 </div>
 
+{% if action == 'Crear' %}
+<div class="edit-info-banner mb-3">
+    <i class="bi bi-info-circle-fill"></i>
+    Paso 1 de 2 — Cree el grupo con sus horarios. Luego podrá agregar equivalencias y vacantes.
+</div>
+{% endif %}
+
+{# ── Banner de errores globales ── #}
 {% if form.errors or horario_formset.non_form_errors or vacantes_formset.non_form_errors %}
 <div class="form-error-banner">
     <i class="bi bi-exclamation-octagon-fill"></i>
@@ -110,14 +123,14 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
             {% for field in form %}{% for e in field.errors %}<li><strong>{{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
             {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
             {% for e in horario_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}
-            {% for e in vacantes_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}
+            {% if vacantes_formset %}{% for e in vacantes_formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}{% endif %}
             {% for hf in horario_formset %}{% if hf.errors %}
                 {% for field in hf %}{% for e in field.errors %}<li><strong>Horario – {{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
                 {% for e in hf.non_field_errors %}<li><strong>Horario:</strong> {{ e }}</li>{% endfor %}
             {% endif %}{% endfor %}
-            {% for vf in vacantes_formset %}{% if vf.errors %}
+            {% if vacantes_formset %}{% for vf in vacantes_formset %}{% if vf.errors %}
                 {% for field in vf %}{% for e in field.errors %}<li><strong>Vacante – {{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
-            {% endif %}{% endfor %}
+            {% endif %}{% endfor %}{% endif %}
         </ul>
     </div>
 </div>
@@ -126,18 +139,24 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
 <form method="post" id="grupoForm" autocomplete="off">
 {% csrf_token %}
 
-{# ── Info del Grupo ── #}
 <div class="card mb-3 border-0 shadow-sm"><div class="card-body p-4">
     <div class="section-header"><i class="bi bi-info-circle-fill fs-5"></i><h5>Información del Grupo</h5></div>
+
     <div class="row g-3">
         <div class="col-md-4">
-            <label class="form-label small fw-bold text-muted"><i class="bi bi-calendar3 me-1"></i>Periodo Académico</label>
+            <label class="form-label small fw-bold text-muted">
+                <i class="bi bi-calendar3 me-1"></i>Periodo Académico
+            </label>
             {{ form.periodo_display }}
         </div>
         <div class="col-md-2">
-            <label class="form-label small fw-bold text-muted">Número <span class="text-danger">*</span></label>
+            <label class="form-label small fw-bold text-muted">
+                Número <span class="text-danger">*</span>
+            </label>
             {{ form.numero }}
-            {% for e in form.numero.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            {% for e in form.numero.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+            {% endfor %}
         </div>
     </div>
 
@@ -149,7 +168,9 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
             <div class="col-md-6">
                 <label class="form-label small fw-semibold">{{ form.escuela_filtro.label }}</label>
                 {{ form.escuela_filtro }}
-                {% for e in form.escuela_filtro.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+                {% for e in form.escuela_filtro.errors %}
+                    <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+                {% endfor %}
             </div>
             {% endif %}
             <div class="{% if form.escuela_filtro %}col-md-6{% else %}col-12{% endif %}">
@@ -162,19 +183,35 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
 
     <div class="row g-3 mt-0">
         <div class="col-12">
-            <label class="form-label small fw-bold text-muted"><i class="bi bi-book me-1"></i>Asignatura <span class="text-danger">*</span></label>
-            {{ form.asignatura }}
-            {% for e in form.asignatura.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
+            <label class="form-label small fw-bold text-muted">
+                <i class="bi bi-book me-1"></i>Asignatura <span class="text-danger">*</span>
+            </label>
+            {{ form.asignatura_base }}
+            {% for e in form.asignatura_base.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+            {% endfor %}
         </div>
     </div>
-    {% for e in form.non_field_errors %}<div class="form-error-banner mt-3"><i class="bi bi-exclamation-octagon-fill"></i>{{ e }}</div>{% endfor %}
+
+    {% for e in form.non_field_errors %}
+        <div class="form-error-banner mt-3"><i class="bi bi-exclamation-octagon-fill"></i>{{ e }}</div>
+    {% endfor %}
 </div></div>
 
-{# ── Distribución de Vacantes ── #}
+{% if mostrar_vacantes and vacantes_formset %}
 <div class="card mb-3 border-0 shadow-sm"><div class="card-body p-0">
-    <div class="p-3 pb-2"><div class="section-header mb-0"><i class="bi bi-people-fill fs-5"></i><h5>Distribución de Vacantes</h5></div></div>
+    <div class="p-3 pb-2">
+        <div class="section-header mb-0">
+            <i class="bi bi-people-fill fs-5"></i><h5>Distribución de Vacantes</h5>
+        </div>
+    </div>
+
     {{ vacantes_formset.management_form }}
-    {% for e in vacantes_formset.non_form_errors %}<div class="mx-3 mb-2 form-error-banner"><i class="bi bi-exclamation-octagon-fill"></i>{{ e }}</div>{% endfor %}
+
+    {% for e in vacantes_formset.non_form_errors %}
+        <div class="mx-3 mb-2 form-error-banner"><i class="bi bi-exclamation-octagon-fill"></i>{{ e }}</div>
+    {% endfor %}
+
     <div class="table-responsive">
     <table class="table table-vacantes mb-0">
         <thead><tr>
@@ -184,63 +221,101 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
             <th style="width:8%;"></th>
         </tr></thead>
         <tbody id="vacantes-container">
-        {% for vf in vacantes_formset %}
-        <tr class="vacante-row{% if vf.instance.pk and vf.DELETE.value %} d-none{% endif %}{% if vf.errors %} table-danger{% endif %}">
-            <td style="padding-left:1.25rem;">
-                {{ vf.id }}
-                {% if vf.instance.pk %}<div class="d-none">{{ vf.DELETE }}</div>{% endif %}
-                <div class="d-none">{{ vf.asignatura }}</div>
-                <div class="course-info-display">
-                    {% if vf.instance.pk and vf.instance.asignatura %}
-                        <div>
-                            <span class="course-code">{{ vf.instance.asignatura.codigo }}</span>
-                            <span class="course-name">{{ vf.instance.asignatura.nombre }}</span>
-                        </div>
-                        <span class="plan-name">{{ vf.instance.asignatura.plan.nombre }}</span>
-                        <a class="edit-link cambiar-equivalencia">cambiar</a>
-                    {% else %}
-                        <div class="placeholder-info text-muted small fst-italic py-1">
-                            {% if forloop.first %}<i class="bi bi-arrow-up-circle me-1"></i>Se completará al seleccionar la asignatura…{% endif %}
-                        </div>
-                        <div class="real-info d-none">
-                            <div><span class="course-code"></span><span class="course-name"></span></div>
-                            <span class="plan-name"></span>
-                            <a class="edit-link cambiar-equivalencia">cambiar</a>
-                        </div>
-                        {% if not forloop.first %}
-                        <div class="equivalencia-select-wrap">
-                            <select class="form-select form-select-sm select2-equivalencia"><option value=""></option></select>
-                        </div>
-                        {% endif %}
-                    {% endif %}
+{% for vf in vacantes_formset %}
+{% with es_base=vf.instance.es_base %}
+<tr class="vacante-row{% if es_base %} is-base{% endif %}{% if vf.errors %} table-danger{% endif %}"
+    data-es-base="{{ es_base|yesno:'true,false' }}">
+    <td style="padding-left:1.25rem;">
+        {# Campos ocultos de Django #}
+        {{ vf.id }}
+        {% if vf.instance.pk %}
+            <div class="d-none">{{ vf.DELETE }}</div>
+        {% endif %}
+        <div class="d-none">{{ vf.asignatura }}</div>
+
+        <div class="course-info-display">
+            {% if vf.instance.pk and vf.instance.asignatura %}
+                <div>
+                    <span class="course-code">{{ vf.instance.asignatura.codigo }}</span>
+                    <span class="course-name">{{ vf.instance.asignatura.nombre }}</span>
                 </div>
-                {% for e in vf.asignatura.errors %}<div class="field-error mt-1"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
-            </td>
-            <td><span class="school-name{% if not vf.instance.pk %} text-muted{% endif %}">
-                {% if vf.instance.pk and vf.instance.asignatura %}{{ vf.instance.asignatura.plan.escuela.nombre }}{% else %}-{% endif %}
-            </span></td>
-            <td class="text-center">
-                {{ vf.cantidad }}
-                {% for e in vf.cantidad.errors %}<div class="field-error mt-1" style="text-align:left"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
-            </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante{% if forloop.first %} d-none{% endif %}">
-                    <i class="bi bi-trash3-fill"></i>
-                </button>
-            </td>
-        </tr>
+                <span class="plan-name">{{ vf.instance.asignatura.plan.nombre }}</span>
+                {% if not es_base %}
+                    <a class="edit-link cambiar-equivalencia">cambiar</a>
+                    <div class="equivalencia-select-wrap d-none">
+                        <select class="form-select form-select-sm select2-equivalencia">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                {% else %}
+                    <span class="badge bg-secondary ms-1" style="font-size:.65rem;">Base</span>
+                {% endif %}
+            {% else %}
+                {# Fila nueva (desde POST con error) #}
+                <div class="real-info d-none">
+                    <div><span class="course-code"></span><span class="course-name"></span></div>
+                    <span class="plan-name"></span>
+                    <a class="edit-link cambiar-equivalencia">cambiar</a>
+                </div>
+                <div class="equivalencia-select-wrap">
+                    <select class="form-select form-select-sm select2-equivalencia">
+                        <option value=""></option>
+                    </select>
+                </div>
+            {% endif %}
+        </div>
+
+        {% for e in vf.asignatura.errors %}
+            <div class="field-error mt-1"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
         {% endfor %}
+    </td>
+
+    <td>
+        <span class="school-name">
+            {% if vf.instance.pk and vf.instance.asignatura %}
+                {{ vf.instance.asignatura.plan.escuela.nombre }}
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </span>
+    </td>
+
+    <td class="text-center">
+        {{ vf.vacantes }}
+        {% for e in vf.vacantes.errors %}
+            <div class="field-error mt-1" style="text-align:left">
+                <i class="bi bi-exclamation-circle-fill"></i>{{ e }}
+            </div>
+        {% endfor %}
+    </td>
+
+    <td class="text-center">
+        {% if es_base %}
+            {# La fila base no se puede eliminar #}
+            <span title="Asignatura base — no eliminable" style="color:#cbd5e1;font-size:.85rem;">
+                <i class="bi bi-lock-fill"></i>
+            </span>
+        {% else %}
+            <button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante">
+                <i class="bi bi-trash3-fill"></i>
+            </button>
+        {% endif %}
+    </td>
+</tr>
+{% endwith %}
+{% endfor %}
         </tbody>
     </table>
     </div>
+
     <div class="p-3 border-top bg-light text-center" style="border-radius:0 0 12px 12px;">
         <button type="button" class="btn btn-outline-primary btn-sm px-4 fw-semibold" id="add-vacante">
             <i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia
         </button>
     </div>
-\</div></div>
+</div></div>
+{% endif %}
 
-{# ── Programación de Horarios ── #}
 <div class="card mb-0 border-0 shadow-sm"><div class="card-body p-4">
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <div class="section-header mb-0" style="flex:1;min-width:240px;">
@@ -259,15 +334,20 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
     </div>
 
     {{ horario_formset.management_form }}
+
     {% if horario_formset.non_form_errors %}
-    <div class="form-error-banner mb-3"><i class="bi bi-exclamation-octagon-fill"></i>{{ horario_formset.non_form_errors.0 }}</div>
+    <div class="form-error-banner mb-3">
+        <i class="bi bi-exclamation-octagon-fill"></i>{{ horario_formset.non_form_errors.0 }}
+    </div>
     {% endif %}
 
     <div id="horarios-container">
     {% for hf in horario_formset %}
     <div class="horario-row{% if hf.errors %} has-error{% endif %}">
         {{ hf.id }}
-        {% if hf.instance.pk %}{{ hf.DELETE }}{% endif %}
+        <div class="d-none">
+            {% if hf.instance.pk %}{{ hf.DELETE }}{% endif %}
+        </div>
         <div class="horario-grid">
             <div>
                 <label>Día</label>{{ hf.dia }}
@@ -308,10 +388,16 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
                 <label>Docente</label>{{ hf.docente }}
                 {% for e in hf.docente.errors %}<div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>{% endfor %}
             </div>
-            <button type="button" class="btn-del-horario delete-horario"><i class="bi bi-trash3-fill" style="font-size:.75rem;"></i></button>
+            <button type="button" class="btn-del-horario delete-horario">
+                <i class="bi bi-trash3-fill" style="font-size:.75rem;"></i>
+            </button>
         </div>
         {% if hf.non_field_errors %}
-        <div class="horario-errors mt-2">{% for e in hf.non_field_errors %}<div class="error-item"><i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i><span>{{ e }}</span></div>{% endfor %}</div>
+        <div class="horario-errors mt-2">
+            {% for e in hf.non_field_errors %}
+                <div class="error-item"><i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i><span>{{ e }}</span></div>
+            {% endfor %}
+        </div>
         {% endif %}
     </div>
     {% endfor %}
@@ -327,8 +413,11 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
     </div>
 </div></div>
 
+{# ── Acciones ── #}
 <div class="sticky-actions">
-    <a href="{% url 'grupos_list' %}" class="btn btn-light border fw-semibold"><i class="bi bi-arrow-left me-1"></i>Cancelar</a>
+    <a href="{% url 'grupos_list' %}" class="btn btn-light border fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i>Cancelar
+    </a>
     <div class="d-flex gap-2">
         {% if action != 'Editar' %}
         <button type="submit" name="_save_and_new" value="1" class="btn btn-outline-primary fw-semibold px-4">
@@ -336,17 +425,23 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
         </button>
         {% endif %}
         <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
-            <i class="bi bi-check2-circle me-1 fs-5"></i>Guardar
+            <i class="bi bi-check2-circle me-1 fs-5"></i>
+            {% if action == 'Editar' %}Guardar cambios{% else %}Crear grupo{% endif %}
         </button>
     </div>
 </div>
 </form>
 
+{% if mostrar_vacantes and vacantes_formset %}
 <script type="text/template" id="vacantes-template">
-<tr class="vacante-row">
+<tr class="vacante-row" data-es-base="false">
     <td style="padding-left:1.25rem;">
         <input type="hidden" name="vacantes-__prefix__-id" id="id_vacantes-__prefix__-id">
-        <div class="d-none">{{ vacantes_formset.empty_form.asignatura }}</div>
+        <div class="d-none">
+            <select name="vacantes-__prefix__-asignatura" id="id_vacantes-__prefix__-asignatura">
+                <option value=""></option>
+            </select>
+        </div>
         <div class="course-info-display">
             <div class="real-info d-none">
                 <div><span class="course-code"></span><span class="course-name"></span></div>
@@ -354,15 +449,25 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
                 <a class="edit-link cambiar-equivalencia">cambiar</a>
             </div>
             <div class="equivalencia-select-wrap">
-                <select class="form-select form-select-sm select2-equivalencia"><option value=""></option></select>
+                <select class="form-select form-select-sm select2-equivalencia">
+                    <option value=""></option>
+                </select>
             </div>
         </div>
     </td>
     <td><span class="school-name text-muted">-</span></td>
-    <td class="text-center">{{ vacantes_formset.empty_form.cantidad }}</td>
-    <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante"><i class="bi bi-trash3-fill"></i></button></td>
+    <td class="text-center">
+        <input type="number" name="vacantes-__prefix__-vacantes" id="id_vacantes-__prefix__-vacantes"
+               class="form-control vacantes-input" min="0" value="0">
+    </td>
+    <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante">
+            <i class="bi bi-trash3-fill"></i>
+        </button>
+    </td>
 </tr>
 </script>
+{% endif %}
 
 <script type="text/template" id="horarios-template">
 <div class="horario-row">
@@ -391,7 +496,9 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
         </div>
         <div><label>Aula</label>{{ horario_formset.empty_form.aula }}</div>
         <div><label>Docente</label>{{ horario_formset.empty_form.docente }}</div>
-        <button type="button" class="btn-del-horario delete-horario"><i class="bi bi-trash3-fill" style="font-size:.75rem;"></i></button>
+        <button type="button" class="btn-del-horario delete-horario">
+            <i class="bi bi-trash3-fill" style="font-size:.75rem;"></i>
+        </button>
     </div>
 </div>
 </script>
@@ -404,123 +511,145 @@ kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;
 $(function(){
     const URL_DETALLE = "{% url 'api_asignatura_equivalencias' %}";
     const URL_ASIG    = "{% url 'ajax_cargar_asignaturas' %}";
-    const ES_EDICION = "{{ action }}" === "Editar";
+    const ES_EDICION  = "{{ action }}" === "Editar";
+    const MOSTRAR_VACANTES = "{{ mostrar_vacantes|yesno:'true,false' }}" === "true";
 
-    // Slots 08:00–22:00 cada 30 min
-    const SLOTS=[];
-    for(let h=8;h<=22;h++){ SLOTS.push(p(h)+':00'); if(h<22) SLOTS.push(p(h)+':30'); }
-    function p(n){ return String(n).padStart(2,'0'); }
+    // ── Slots 08:00–22:00 cada 30 min ────────────────────────────
+    const SLOTS = [];
+    for(let h = 8; h <= 22; h++){
+        SLOTS.push(p(h) + ':00');
+        if(h < 22) SLOTS.push(p(h) + ':30');
+    }
+    function p(n){ return String(n).padStart(2, '0'); }
 
-    let eqData=[], horasReq={T:0,P:0,L:0};
-    const eqMap={};
+    let eqData = [], horasReq = {T:0, P:0, L:0};
+    const eqMap = {};
 
     // ── Tiempo ────────────────────────────────────────────────────
-    const toMin=v=>{ if(!v) return -1; const [h,m]=v.split(':').map(Number); return h*60+m; };
-    const fromMin=t=>`${p(Math.floor(t/60))}:${p(t%60)}`;
-    const snapSlot=m=>fromMin(Math.min(Math.max(Math.round(m/30)*30,480),1320));
-    const normHora=v=>{ if(!v) return ''; const[h,m]=v.split(':').map(Number); if(h<8||h>22) return ''; return `${p(h)}:${p(m>=15&&m<45?30:0)}`; };
+    const toMin  = v => { if(!v) return -1; const [h,m] = v.split(':').map(Number); return h*60+m; };
+    const fromMin = t => `${p(Math.floor(t/60))}:${p(t%60)}`;
+    const snapSlot = m => fromMin(Math.min(Math.max(Math.round(m/30)*30, 480), 1320));
+    const normHora = v => {
+        if(!v) return '';
+        const [h,m] = v.split(':').map(Number);
+        if(h < 8 || h > 22) return '';
+        return `${p(h)}:${p(m >= 15 && m < 45 ? 30 : 0)}`;
+    };
 
-    // ── Cálculo horas ─────────────────────────────────────────────
+    // ── Cálculo de horas ──────────────────────────────────────────
     function calcHoras(){
-        const a={T:0,P:0,L:0};
+        const a = {T:0, P:0, L:0};
         $('#horarios-container .horario-row:not(.to-delete)').each(function(){
-            const t=$(this).find('select[name$="-tipo"]').val();
-            const i=$(this).find('input[name$="-hora_inicio"]').val();
-            const f=$(this).find('input[name$="-hora_fin"]').val();
-            if(t in a&&i&&f){ const d=(toMin(f)-toMin(i))/60; if(d>0) a[t]+=d; }
+            const t = $(this).find('select[name$="-tipo"]').val();
+            const i = $(this).find('input[name$="-hora_inicio"]').val();
+            const f = $(this).find('input[name$="-hora_fin"]').val();
+            if(t in a && i && f){ const d = (toMin(f) - toMin(i)) / 60; if(d > 0) a[t] += d; }
         });
         return a;
     }
 
-    function horasRestantes(tipo,$exc){
-        const req=horasReq[tipo]||0; if(!req) return 0;
-        let ac=0;
+    function horasRestantes(tipo, $exc){
+        const req = horasReq[tipo] || 0; if(!req) return 0;
+        let ac = 0;
         $('#horarios-container .horario-row:not(.to-delete)').each(function(){
-            if($exc&&$(this).is($exc)) return;
-            const t=$(this).find('select[name$="-tipo"]').val();
-            const i=$(this).find('input[name$="-hora_inicio"]').val();
-            const f=$(this).find('input[name$="-hora_fin"]').val();
-            if(t===tipo&&i&&f){ const d=(toMin(f)-toMin(i))/60; if(d>0) ac+=d; }
+            if($exc && $(this).is($exc)) return;
+            const t = $(this).find('select[name$="-tipo"]').val();
+            const i = $(this).find('input[name$="-hora_inicio"]').val();
+            const f = $(this).find('input[name$="-hora_fin"]').val();
+            if(t === tipo && i && f){ const d = (toMin(f) - toMin(i)) / 60; if(d > 0) ac += d; }
         });
-        return Math.max(0,req-ac);
+        return Math.max(0, req - ac);
     }
 
     // ── Ajuste de rango ───────────────────────────────────────────
-    // Ajusta hora_fin si supera lo permitido; muestra aviso si hay mensajes
-    function ajustarRango($row,silencioso){
-        const tipo=$row.find('select[name$="-tipo"]').val(); if(!tipo) return;
-        const req=horasReq[tipo]||0; if(!req) return;
-        const $i=$row.find('input[name$="-hora_inicio"]'), $f=$row.find('input[name$="-hora_fin"]');
-        const iv=$i.val(), fv=$f.val(); if(!iv||!fv) return;
-        const rest=horasRestantes(tipo,$row), diff=(toMin(fv)-toMin(iv))/60;
-        if(diff<=0) return;
-        const lbl=tipo==='T'?'Teoría':tipo==='P'?'Práctica':'Lab';
-        if(rest<=0){
-            $i.val(''); $f.val(''); pintarBarra($row.find('.hora-bar'),'','');
-            if(!silencioso) errHora($i,`Las horas de ${lbl} ya están completas`,'warn');
-        } else if(diff>rest){
-            const fc=snapSlot(toMin(iv)+Math.round(rest*60));
-            $f.val(fc); pintarBarra($row.find('.hora-bar'),iv,fc);
-            if(!silencioso) errHora($f,`Ajustado a ${fc} — solo quedan ${rest}h de ${lbl}`,'warn');
+    function ajustarRango($row, silencioso){
+        const tipo = $row.find('select[name$="-tipo"]').val(); if(!tipo) return;
+        const req = horasReq[tipo] || 0; if(!req) return;
+        const $i = $row.find('input[name$="-hora_inicio"]');
+        const $f = $row.find('input[name$="-hora_fin"]');
+        const iv = $i.val(), fv = $f.val(); if(!iv || !fv) return;
+        const rest = horasRestantes(tipo, $row);
+        const diff = (toMin(fv) - toMin(iv)) / 60;
+        if(diff <= 0) return;
+        const lbl = tipo === 'T' ? 'Teoría' : tipo === 'P' ? 'Práctica' : 'Lab';
+        if(rest <= 0){
+            $i.val(''); $f.val(''); pintarBarra($row.find('.hora-bar'), '', '');
+            if(!silencioso) errHora($i, `Las horas de ${lbl} ya están completas`, 'warn');
+        } else if(diff > rest){
+            const fc = snapSlot(toMin(iv) + Math.round(rest * 60));
+            $f.val(fc); pintarBarra($row.find('.hora-bar'), iv, fc);
+            if(!silencioso) errHora($f, `Ajustado a ${fc} — solo quedan ${rest}h de ${lbl}`, 'warn');
         }
     }
 
     // ── Errores de hora ───────────────────────────────────────────
-    function errHora($inp,msg,niv){
+    function errHora($inp, msg, niv){
         clearErrHora($inp);
-        const key=($inp.attr('name')||'').endsWith('-hora_inicio')?'ini':'fin';
-        const $wrap=$inp.closest('.hora-range-wrapper');
+        const key = ($inp.attr('name') || '').endsWith('-hora_inicio') ? 'ini' : 'fin';
+        const $wrap = $inp.closest('.hora-range-wrapper');
         $inp.addClass('is-invalid-field');
-        let $box=$wrap.find('.hora-errors-box');
-        if(!$box.length) $box=$('<div class="hora-errors-box"></div>').appendTo($wrap);
-        const ico=niv==='warn'?'bi-exclamation-triangle-fill':'bi-exclamation-circle-fill';
-        const $t=$(`<div class="hora-inline-error hora-err-${key}${niv==='warn'?' warn-type':''}"><i class="bi ${ico}"></i>${msg}</div>`);
+        let $box = $wrap.find('.hora-errors-box');
+        if(!$box.length) $box = $('<div class="hora-errors-box"></div>').appendTo($wrap);
+        const ico = niv === 'warn' ? 'bi-exclamation-triangle-fill' : 'bi-exclamation-circle-fill';
+        const $t = $(`<div class="hora-inline-error hora-err-${key}${niv === 'warn' ? ' warn-type' : ''}"><i class="bi ${ico}"></i>${msg}</div>`);
         $box.append($t);
-        setTimeout(()=>$t.fadeOut(250,()=>{ $t.remove(); $inp.removeClass('is-invalid-field'); if(!$box.children().length) $box.remove(); }),4500);
+        setTimeout(() => $t.fadeOut(250, () => {
+            $t.remove();
+            $inp.removeClass('is-invalid-field');
+            if(!$box.children().length) $box.remove();
+        }), 4500);
     }
     function clearErrHora($inp){
         $inp.removeClass('is-invalid-field');
-        const key=($inp.attr('name')||'').endsWith('-hora_inicio')?'ini':'fin';
-        const $wrap=$inp.closest('.hora-range-wrapper');
+        const key = ($inp.attr('name') || '').endsWith('-hora_inicio') ? 'ini' : 'fin';
+        const $wrap = $inp.closest('.hora-range-wrapper');
         $wrap.find(`.hora-err-${key}:not(.server-error)`).remove();
-        if(!$wrap.find('.hora-errors-box').children().length) $wrap.find('.hora-errors-box:not(:has(.server-error))').remove();
+        if(!$wrap.find('.hora-errors-box').children().length)
+            $wrap.find('.hora-errors-box:not(:has(.server-error))').remove();
     }
     function validarHora($inp){
-        const v=$inp.val(); if(!v) return;
-        const m=toMin(v);
-        if(m<480){ $inp.val('08:00'); errHora($inp,'Mínimo 08:00','err'); }
-        else if(m>1320){ $inp.val('22:00'); errHora($inp,'Máximo 22:00','err'); }
+        const v = $inp.val(); if(!v) return;
+        const m = toMin(v);
+        if(m < 480){ $inp.val('08:00'); errHora($inp, 'Mínimo 08:00', 'err'); }
+        else if(m > 1320){ $inp.val('22:00'); errHora($inp, 'Máximo 22:00', 'err'); }
         else clearErrHora($inp);
-        const $row=$inp.closest('.horario-row');
-        const $i=$row.find('input[name$="-hora_inicio"]'), $f=$row.find('input[name$="-hora_fin"]');
-        if($i.val()&&$f.val()&&toMin($f.val())<=toMin($i.val())){
-            $f.val(''); pintarBarra($row.find('.hora-bar'),$i.val(),'');
-            errHora($f,'La hora fin debe ser posterior al inicio','err');
+        const $row = $inp.closest('.horario-row');
+        const $i = $row.find('input[name$="-hora_inicio"]');
+        const $f = $row.find('input[name$="-hora_fin"]');
+        if($i.val() && $f.val() && toMin($f.val()) <= toMin($i.val())){
+            $f.val(''); pintarBarra($row.find('.hora-bar'), $i.val(), '');
+            errHora($f, 'La hora fin debe ser posterior al inicio', 'err');
         }
     }
-    $(document).on('change','input[name$="-hora_inicio"],input[name$="-hora_fin"]',function(){
+    $(document).on('change', 'input[name$="-hora_inicio"],input[name$="-hora_fin"]', function(){
         validarHora($(this));
-        const $row=$(this).closest('.horario-row');
-        if($row.length){ ajustarRango($row,false); actualizarHoras(); }
+        const $row = $(this).closest('.horario-row');
+        if($row.length){ ajustarRango($row, false); actualizarHoras(); }
     });
 
     // ── Resumen de horas ──────────────────────────────────────────
-    const TIPO_STYLE={T:'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;',P:'background:#dcfce7;color:#166534;border-color:#86efac;',L:'background:#fef3c7;color:#92400e;border-color:#fde68a;'};
-    const TIPO_LABEL={T:'Teoría',P:'Práctica',L:'Lab'};
+    const TIPO_STYLE = {
+        T: 'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;',
+        P: 'background:#dcfce7;color:#166534;border-color:#86efac;',
+        L: 'background:#fef3c7;color:#92400e;border-color:#fde68a;'
+    };
+    const TIPO_LABEL = {T: 'Teoría', P: 'Práctica', L: 'Lab'};
 
     function actualizarHoras(){
-        const a=calcHoras();
-        const $sr=$('#horas-requerido').empty(), $sa=$('#horas-summary').empty();
-        let hayReq=false, hayAsig=false;
-        ['T','P','L'].forEach(t=>{
-            const req=horasReq[t]||0, got=Math.round(a[t]*100)/100;
-            if(req>0){ hayReq=true; $sr.append(`<span class="horas-badge" style="${TIPO_STYLE[t]}"><i class="bi bi-clock"></i>${TIPO_LABEL[t]}: ${req}h</span>`); }
-            if(!req&&!got) return;
-            hayAsig=true;
-            let cls='horas-badge';
-            if(req>0&&Math.abs(req-got)<.01) cls+=' ok';
-            else if(req>0&&got>0&&got<req)   cls+=' warn';
-            else if(req>0&&got>req)           cls+=' err';
+        const a = calcHoras();
+        const $sr = $('#horas-requerido').empty();
+        const $sa = $('#horas-summary').empty();
+        let hayReq = false, hayAsig = false;
+        ['T','P','L'].forEach(t => {
+            const req = horasReq[t] || 0;
+            const got = Math.round(a[t] * 100) / 100;
+            if(req > 0){ hayReq = true; $sr.append(`<span class="horas-badge" style="${TIPO_STYLE[t]}"><i class="bi bi-clock"></i>${TIPO_LABEL[t]}: ${req}h</span>`); }
+            if(!req && !got) return;
+            hayAsig = true;
+            let cls = 'horas-badge';
+            if(req > 0 && Math.abs(req - got) < .01)  cls += ' ok';
+            else if(req > 0 && got > 0 && got < req)  cls += ' warn';
+            else if(req > 0 && got > req)              cls += ' err';
             $sa.append(`<span class="${cls}"><i class="bi bi-clock-fill"></i>${TIPO_LABEL[t]}: ${got}h</span>`);
         });
         if(!hayReq) $sr.html('<span class="text-muted small fst-italic">—</span>');
@@ -531,382 +660,446 @@ $(function(){
     // ── Botones Tipo ──────────────────────────────────────────────
     function setVisibilidad($row){
         $row.find('.tipo-btn').each(function(){
-            const t=$(this).data('tipo');
-            horasReq[t]>0?$(this).removeClass('d-none'):$(this).addClass('d-none');
+            const t = $(this).data('tipo');
+            horasReq[t] > 0 ? $(this).removeClass('d-none') : $(this).addClass('d-none');
         });
     }
 
-    /**
-     * Dos pasadas:
-     * 1) Marca completed los botones cuyo tipo está cubierto por OTRAS filas.
-     *    El tipo activo de la fila NUNCA se marca como completed (siempre clickeable).
-     * 2) Reasigna automáticamente si el tipo activo de una fila quedó cubierto.
-     */
     function actualizarBotonesTipo(){
-        const a=calcHoras();
-
-        // Pasada 1: marcar botones
+        const a = calcHoras();
         $('#horarios-container .horario-row:not(.to-delete)').each(function(){
-            const $row=$(this), tipoAct=$row.find('select[name$="-tipo"]').val();
+            const $row = $(this);
+            const tipoAct = $row.find('select[name$="-tipo"]').val();
             $row.find('.tipo-btn').each(function(){
-                const t=$(this).data('tipo'), req=horasReq[t]||0;
+                const t = $(this).data('tipo');
+                const req = horasReq[t] || 0;
                 if(!req){ $(this).addClass('d-none'); return; }
                 $(this).removeClass('d-none');
-                // Horas de este tipo en OTRAS filas
-                let otras=a[t];
-                if(t===tipoAct){
-                    const iv=$row.find('input[name$="-hora_inicio"]').val();
-                    const fv=$row.find('input[name$="-hora_fin"]').val();
-                    if(iv&&fv){ const d=(toMin(fv)-toMin(iv))/60; if(d>0) otras-=d; }
+                let otras = a[t];
+                if(t === tipoAct){
+                    const iv = $row.find('input[name$="-hora_inicio"]').val();
+                    const fv = $row.find('input[name$="-hora_fin"]').val();
+                    if(iv && fv){ const d = (toMin(fv) - toMin(iv)) / 60; if(d > 0) otras -= d; }
                 }
-                // Completado solo si está cubierto POR OTRAS filas y NO es el tipo activo
-                const cubierto=Math.round(otras*100)/100>=req;
-                if(cubierto&&t!==tipoAct) $(this).addClass('completed').prop('disabled',true);
-                else                      $(this).removeClass('completed').prop('disabled',false);
+                const cubierto = Math.round(otras * 100) / 100 >= req;
+                if(cubierto && t !== tipoAct) $(this).addClass('completed').prop('disabled', true);
+                else                          $(this).removeClass('completed').prop('disabled', false);
             });
         });
 
-        // Pasada 2: reasignar si el tipo activo quedó cubierto por otras filas
+        // Reasignar si el tipo activo ya fue cubierto por otras filas
         $('#horarios-container .horario-row:not(.to-delete)').each(function(){
-            const $row=$(this), $sel=$row.find('select[name$="-tipo"]');
-            const tipoAct=$sel.val(); if(!tipoAct) return;
-            const req=horasReq[tipoAct]||0; if(!req) return;
-            // Horas de tipoAct solo en OTRAS filas
-            let otras=0;
+            const $row = $(this);
+            const $sel = $row.find('select[name$="-tipo"]');
+            const tipoAct = $sel.val(); if(!tipoAct) return;
+            const req = horasReq[tipoAct] || 0; if(!req) return;
+            let otras = 0;
             $('#horarios-container .horario-row:not(.to-delete)').each(function(){
                 if($(this).is($row)) return;
-                const t=$(this).find('select[name$="-tipo"]').val();
-                const iv=$(this).find('input[name$="-hora_inicio"]').val();
-                const fv=$(this).find('input[name$="-hora_fin"]').val();
-                if(t===tipoAct&&iv&&fv){ const d=(toMin(fv)-toMin(iv))/60; if(d>0) otras+=d; }
+                const t  = $(this).find('select[name$="-tipo"]').val();
+                const iv = $(this).find('input[name$="-hora_inicio"]').val();
+                const fv = $(this).find('input[name$="-hora_fin"]').val();
+                if(t === tipoAct && iv && fv){ const d = (toMin(fv) - toMin(iv)) / 60; if(d > 0) otras += d; }
             });
-            if(Math.round(otras*100)/100<req) return; // aún hay espacio → no reasignar
-            // Siguiente tipo libre ignorando esta fila
-            const sig=proximoLibre($row);
+            if(Math.round(otras * 100) / 100 < req) return;
+            const sig = proximoLibre($row);
             if(sig){
                 $sel.val(sig);
                 $row.find('.tipo-btn').removeClass('active-T active-P active-L');
-                $row.find(`.tipo-btn[data-tipo="${sig}"]`).addClass(`active-${sig}`).removeClass('completed').prop('disabled',false);
-                ajustarRango($row,true);
-                notif($row,`Tipo cambiado a ${TIPO_LABEL[sig]}`,'info');
+                $row.find(`.tipo-btn[data-tipo="${sig}"]`).addClass(`active-${sig}`).removeClass('completed').prop('disabled', false);
+                ajustarRango($row, true);
+                notif($row, `Tipo cambiado a ${TIPO_LABEL[sig]}`, 'info');
             } else {
                 $row.find('input[name$="-hora_inicio"],input[name$="-hora_fin"]').val('');
-                pintarBarra($row.find('.hora-bar'),'','');
-                notif($row,'Todos los tipos ya están cubiertos','warn');
+                pintarBarra($row.find('.hora-bar'), '', '');
+                notif($row, 'Todos los tipos ya están cubiertos', 'warn');
             }
         });
     }
 
-    // Primer tipo con horas pendientes, excluyendo completamente $excRow
     function proximoLibre($excRow){
         for(const t of ['T','P','L']){
-            const req=horasReq[t]||0; if(!req) continue;
-            let ac=0;
+            const req = horasReq[t] || 0; if(!req) continue;
+            let ac = 0;
             $('#horarios-container .horario-row:not(.to-delete)').each(function(){
                 if($(this).is($excRow)) return;
-                const ti=$(this).find('select[name$="-tipo"]').val();
-                const iv=$(this).find('input[name$="-hora_inicio"]').val();
-                const fv=$(this).find('input[name$="-hora_fin"]').val();
-                if(ti===t&&iv&&fv){ const d=(toMin(fv)-toMin(iv))/60; if(d>0) ac+=d; }
+                const ti = $(this).find('select[name$="-tipo"]').val();
+                const iv = $(this).find('input[name$="-hora_inicio"]').val();
+                const fv = $(this).find('input[name$="-hora_fin"]').val();
+                if(ti === t && iv && fv){ const d = (toMin(fv) - toMin(iv)) / 60; if(d > 0) ac += d; }
             });
-            if(Math.round(ac*100)/100<req) return t;
+            if(Math.round(ac * 100) / 100 < req) return t;
         }
         return null;
     }
 
-    // Primer tipo pendiente (para fila nueva, sin excluir ninguna)
     function proximoPendiente(){
-        const a=calcHoras();
+        const a = calcHoras();
         for(const t of ['T','P','L']){
-            const req=horasReq[t]||0; if(!req) continue;
-            if(Math.round(a[t]*100)/100<req) return t;
+            const req = horasReq[t] || 0; if(!req) continue;
+            if(Math.round(a[t] * 100) / 100 < req) return t;
         }
         return null;
     }
 
-    function notif($row,msg,tipo){
-        const C={info:{bg:'#eff6ff',bd:'#93c5fd',cl:'#1d4ed8',ic:'bi-info-circle-fill'},warn:{bg:'#fef3c7',bd:'#fde68a',cl:'#92400e',ic:'bi-exclamation-triangle-fill'}}[tipo]||{bg:'#eff6ff',bd:'#93c5fd',cl:'#1d4ed8',ic:'bi-info-circle-fill'};
+    function notif($row, msg, tipo){
+        const C = {
+            info: {bg:'#eff6ff', bd:'#93c5fd', cl:'#1d4ed8', ic:'bi-info-circle-fill'},
+            warn: {bg:'#fef3c7', bd:'#fde68a', cl:'#92400e', ic:'bi-exclamation-triangle-fill'}
+        }[tipo] || {bg:'#eff6ff', bd:'#93c5fd', cl:'#1d4ed8', ic:'bi-info-circle-fill'};
         $row.find('.horario-notif').remove();
-        const $n=$(`<div class="horario-notif" style="background:${C.bg};border:1px solid ${C.bd};color:${C.cl};"><i class="bi ${C.ic}" style="flex-shrink:0;"></i>${msg}</div>`);
+        const $n = $(`<div class="horario-notif" style="background:${C.bg};border:1px solid ${C.bd};color:${C.cl};"><i class="bi ${C.ic}" style="flex-shrink:0;"></i>${msg}</div>`);
         $row.append($n);
-        setTimeout(()=>$n.fadeOut(300,()=>$n.remove()),4000);
+        setTimeout(() => $n.fadeOut(300, () => $n.remove()), 4000);
     }
 
     // ── Barra de hora ─────────────────────────────────────────────
-    function pintarBarra($bar,ini,fin){
-        const iN=normHora(ini), fN=normHora(fin), iM=toMin(iN), fM=toMin(fN);
+    function pintarBarra($bar, ini, fin){
+        const iN = normHora(ini), fN = normHora(fin);
+        const iM = toMin(iN), fM = toMin(fN);
         $bar.find('.hora-slot').each(function(){
-            const s=$(this).data('slot'), m=toMin(s);
+            const s = $(this).data('slot'), m = toMin(s);
             $(this).removeClass('sel-ini sel-fin sel-mid');
             if(!iN) return;
-            if(s===iN&&(!fN||s===fN)) $(this).addClass('sel-ini sel-fin');
-            else if(s===iN)           $(this).addClass('sel-ini');
-            else if(fN&&s===fN)       $(this).addClass('sel-fin');
-            else if(fN&&m>iM&&m<fM)  $(this).addClass('sel-mid');
+            if(s === iN && (!fN || s === fN)) $(this).addClass('sel-ini sel-fin');
+            else if(s === iN)                 $(this).addClass('sel-ini');
+            else if(fN && s === fN)           $(this).addClass('sel-fin');
+            else if(fN && m > iM && m < fM)   $(this).addClass('sel-mid');
         });
     }
 
     function buildHoraBar($row){
-        const $bar=$row.find('.hora-bar').empty();
-        const $i=$row.find('input[name$="-hora_inicio"]'), $f=$row.find('input[name$="-hora_fin"]');
-        $i.attr({min:'08:00',max:'22:00'}); $f.attr({min:'08:00',max:'22:00'});
-        SLOTS.forEach(s=>{ const[h,m]=s.split(':').map(Number); $bar.append(`<div class="hora-slot" data-slot="${s}">${m===0?s:''}</div>`); });
-        pintarBarra($bar,$i.val(),$f.val());
-        let wait=false, tmp=null;
-        $bar.on('mouseenter','.hora-slot',function(){
-            if(!wait) return;
-            let[a,b]=[tmp,$(this).data('slot')];
-            if(toMin(b)<=toMin(a))[a,b]=[b,a];
-            pintarBarra($bar,a,b); $i.val(a); $f.val(b);
+        const $bar = $row.find('.hora-bar').empty();
+        const $i = $row.find('input[name$="-hora_inicio"]');
+        const $f = $row.find('input[name$="-hora_fin"]');
+        $i.attr({min:'08:00', max:'22:00'}); $f.attr({min:'08:00', max:'22:00'});
+        SLOTS.forEach(s => {
+            const [h, m] = s.split(':').map(Number);
+            $bar.append(`<div class="hora-slot" data-slot="${s}">${m === 0 ? s : ''}</div>`);
         });
-        $bar.on('click','.hora-slot',function(){
-            const s=$(this).data('slot');
+        pintarBarra($bar, $i.val(), $f.val());
+
+        let wait = false, tmp = null;
+        $bar.on('mouseenter', '.hora-slot', function(){
+            if(!wait) return;
+            let [a, b] = [tmp, $(this).data('slot')];
+            if(toMin(b) <= toMin(a)) [a, b] = [b, a];
+            pintarBarra($bar, a, b); $i.val(a); $f.val(b);
+        });
+        $bar.on('click', '.hora-slot', function(){
+            const s = $(this).data('slot');
             if(!wait){
-                tmp=s; wait=true; $bar.css('cursor','e-resize');
-                pintarBarra($bar,s,null); $i.val(s).trigger('change'); $f.val('').trigger('change');
+                tmp = s; wait = true; $bar.css('cursor', 'e-resize');
+                pintarBarra($bar, s, null); $i.val(s).trigger('change'); $f.val('').trigger('change');
             } else {
-                let[a,b]=[tmp,s]; if(toMin(b)<=toMin(a))[a,b]=[b,a];
+                let [a, b] = [tmp, s]; if(toMin(b) <= toMin(a)) [a, b] = [b, a];
                 $i.val(a).trigger('change'); $f.val(b).trigger('change');
-                pintarBarra($bar,a,b); wait=false; tmp=null; $bar.css('cursor','pointer');
-                ajustarRango($row,false); actualizarHoras();
+                pintarBarra($bar, a, b); wait = false; tmp = null; $bar.css('cursor', 'pointer');
+                ajustarRango($row, false); actualizarHoras();
             }
         });
-        $(document).on('keydown.hb',e=>{ if(e.key==='Escape'&&wait){ wait=false; tmp=null; $bar.css('cursor','pointer'); pintarBarra($bar,$i.val(),$f.val()); } });
-        $i.on('change',()=>{ if(!wait){ pintarBarra($bar,normHora($i.val()),normHora($f.val())); actualizarHoras(); } });
-        $f.on('change input',()=>{ if(!wait){ pintarBarra($bar,normHora($i.val()),normHora($f.val())); actualizarHoras(); } });
+        $(document).on('keydown.hb', e => {
+            if(e.key === 'Escape' && wait){
+                wait = false; tmp = null; $bar.css('cursor', 'pointer');
+                pintarBarra($bar, $i.val(), $f.val());
+            }
+        });
+        $i.on('change', () => { if(!wait){ pintarBarra($bar, normHora($i.val()), normHora($f.val())); actualizarHoras(); } });
+        $f.on('change input', () => { if(!wait){ pintarBarra($bar, normHora($i.val()), normHora($f.val())); actualizarHoras(); } });
     }
 
     // ── Init fila horario ─────────────────────────────────────────
-    function initHorarioRow($row,autoTipo){
-        const $sel=$row.find('.tipo-hidden-select select'), $btns=$row.find('.tipo-btn');
-        const ti=$sel.val()||autoTipo;
+    function initHorarioRow($row, autoTipo){
+        const $sel  = $row.find('.tipo-hidden-select select');
+        const $btns = $row.find('.tipo-btn');
+        const ti = $sel.val() || autoTipo;
         setVisibilidad($row);
-        if(ti){ $sel.val(ti); $btns.removeClass('active-T active-P active-L'); $btns.filter(`[data-tipo="${ti}"]`).addClass(`active-${ti}`); }
-        $btns.on('click',function(){
-            if($(this).hasClass('completed')||$(this).prop('disabled')) return;
-            const t=$(this).data('tipo');
-            $sel.val(t); $btns.removeClass('active-T active-P active-L'); $(this).addClass(`active-${t}`);
-            ajustarRango($row,true);
-            pintarBarra($row.find('.hora-bar'),$row.find('input[name$="-hora_inicio"]').val(),$row.find('input[name$="-hora_fin"]').val());
+        if(ti){
+            $sel.val(ti);
+            $btns.removeClass('active-T active-P active-L');
+            $btns.filter(`[data-tipo="${ti}"]`).addClass(`active-${ti}`);
+        }
+        $btns.on('click', function(){
+            if($(this).hasClass('completed') || $(this).prop('disabled')) return;
+            const t = $(this).data('tipo');
+            $sel.val(t);
+            $btns.removeClass('active-T active-P active-L');
+            $(this).addClass(`active-${t}`);
+            ajustarRango($row, true);
+            pintarBarra($row.find('.hora-bar'),
+                $row.find('input[name$="-hora_inicio"]').val(),
+                $row.find('input[name$="-hora_fin"]').val()
+            );
             actualizarHoras();
         });
         buildHoraBar($row);
-        $row.find('.select2-docente').select2({theme:'bootstrap-5',width:'100%',placeholder:'Docente…',allowClear:true,dropdownParent:$row});
-        $row.find('.select2-aula').select2({theme:'bootstrap-5',width:'100%',placeholder:'Aula…',allowClear:true,dropdownParent:$row});
+        $row.find('.select2-docente').select2({theme:'bootstrap-5', width:'100%', placeholder:'Docente…', allowClear:true, dropdownParent:$row});
+        $row.find('.select2-aula').select2({theme:'bootstrap-5', width:'100%', placeholder:'Aula…', allowClear:true, dropdownParent:$row});
     }
-    $('#horarios-container .horario-row').each(function(){ initHorarioRow($(this),null); });
-    $(document).on('change','#horarios-container select[name$="-tipo"]',actualizarHoras);
+
+    $('#horarios-container .horario-row').each(function(){ initHorarioRow($(this), null); });
+    $(document).on('change', '#horarios-container select[name$="-tipo"]', actualizarHoras);
 
     // ── Agregar / duplicar horario ────────────────────────────────
     function agregarHorario(clonar){
-        const $total=$('#id_horarios-TOTAL_FORMS'), idx=parseInt($total.val());
-        const $row=$(($('#horarios-template').html()).replace(/__prefix__/g,idx));
+        const $total = $('#id_horarios-TOTAL_FORMS');
+        const idx = parseInt($total.val());
+        const $row = $($('#horarios-template').html().replace(/__prefix__/g, idx));
         $('#horarios-container').append($row);
-        initHorarioRow($row,proximoPendiente());
-        $total.val(idx+1);
+        initHorarioRow($row, proximoPendiente());
+        $total.val(idx + 1);
         if(clonar){
-            const $p=$('#horarios-container .horario-row').eq(-2);
+            const $p = $('#horarios-container .horario-row').eq(-2);
             if($p.length){
                 $row.find('select[name$="-dia"]').val($p.find('select[name$="-dia"]').val());
-                const tf=proximoPendiente()||$p.find('.tipo-hidden-select select').val();
-                if(tf){ $row.find('.tipo-hidden-select select').val(tf); $row.find('.tipo-btn').removeClass('active-T active-P active-L'); $row.find(`.tipo-btn[data-tipo="${tf}"]`).addClass(`active-${tf}`); }
-                const iv=normHora($p.find('input[name$="-hora_inicio"]').val()), fv=normHora($p.find('input[name$="-hora_fin"]').val());
-                $row.find('input[name$="-hora_inicio"]').val(iv); $row.find('input[name$="-hora_fin"]').val(fv);
-                pintarBarra($row.find('.hora-bar'),iv,fv); ajustarRango($row,false);
+                const tf = proximoPendiente() || $p.find('.tipo-hidden-select select').val();
+                if(tf){
+                    $row.find('.tipo-hidden-select select').val(tf);
+                    $row.find('.tipo-btn').removeClass('active-T active-P active-L');
+                    $row.find(`.tipo-btn[data-tipo="${tf}"]`).addClass(`active-${tf}`);
+                }
+                const iv = normHora($p.find('input[name$="-hora_inicio"]').val());
+                const fv = normHora($p.find('input[name$="-hora_fin"]').val());
+                $row.find('input[name$="-hora_inicio"]').val(iv);
+                $row.find('input[name$="-hora_fin"]').val(fv);
+                pintarBarra($row.find('.hora-bar'), iv, fv);
+                ajustarRango($row, false);
             }
         }
-        $row[0].scrollIntoView({behavior:'smooth',block:'center'}); actualizarHoras();
+        $row[0].scrollIntoView({behavior:'smooth', block:'center'});
+        actualizarHoras();
     }
-    $('#add-horario').on('click',()=>agregarHorario(false));
-    $('#copy-last-horario').on('click',()=>agregarHorario(true));
-    $(document).on('click','.delete-horario',function(){
-        const $row=$(this).closest('.horario-row'), $del=$row.find('input[name$="-DELETE"]');
-        if($del.length){ $del.prop('checked',true); $row.addClass('to-delete'); }
+    $('#add-horario').on('click', () => agregarHorario(false));
+    $('#copy-last-horario').on('click', () => agregarHorario(true));
+    $(document).on('click', '.delete-horario', function(){
+        const $row = $(this).closest('.horario-row');
+        const $del = $row.find('input[name$="-DELETE"]');
+        if($del.length){ $del.prop('checked', true); $row.addClass('to-delete'); }
         else { $row.remove(); renum('horarios'); }
         actualizarHoras();
     });
 
-    // ── Select2 base ──────────────────────────────────────────────
-    $('body').find('.select2-asignatura').select2({theme:'bootstrap-5',width:'100%',placeholder:'Buscar asignatura…',allowClear:true});
-    $('body').find('.select2-escuela').select2({theme:'bootstrap-5',width:'100%',placeholder:'Escuela…',allowClear:true});
+    // ── Select2 asignatura y escuela ──────────────────────────────
+    $('body').find('.select2-asignatura').select2({
+        theme:'bootstrap-5', width:'100%', placeholder:'Buscar asignatura…', allowClear:true
+    });
+    $('body').find('.select2-escuela').select2({
+        theme:'bootstrap-5', width:'100%', placeholder:'Escuela…', allowClear:true
+    });
 
     // ── Select2 equivalencias ─────────────────────────────────────
     function initEq($sel){
         if($sel.data('select2')) $sel.select2('destroy');
         $sel.empty().append('<option value=""></option>');
-        eqData.forEach(eq=>$sel.append($('<option>').val(eq.id).text(`[${eq.escuela}] ${eq.codigo} — ${eq.nombre}`)));
-        const sin=!eqData.length;
-        $sel.prop('disabled',sin).select2({
-            theme:'bootstrap-5', width:'100%',
-            placeholder:{id:'',text:sin?'Sin equivalencias disponibles':'Buscar por escuela, código o nombre…'},
-            allowClear:!sin,
-            language:{noResults:()=>'Sin coincidencias',searching:()=>'Buscando…'}
+        eqData.forEach(eq => $sel.append($('<option>').val(eq.id).text(`[${eq.escuela}] ${eq.codigo} — ${eq.nombre}`)));
+        const sin = !eqData.length;
+        $sel.prop('disabled', sin).select2({
+            theme: 'bootstrap-5', width: '100%',
+            placeholder: {id:'', text: sin ? 'Sin equivalencias disponibles' : 'Buscar por escuela, código o nombre…'},
+            allowClear: !sin,
+            language: {noResults: () => 'Sin coincidencias', searching: () => 'Buscando…'}
         });
-        $sel.next('.select2-container').css('opacity',sin?'.55':'').attr('title',sin?'No hay equivalencias registradas':'');
+        $sel.next('.select2-container').css('opacity', sin ? '.55' : '').attr('title', sin ? 'No hay equivalencias registradas' : '');
         $sel.off('select2:select.eq select2:clear.eq');
-        $sel.on('select2:select.eq',function(e){
-            const eq=eqMap[String(e.params.data.id)]; if(!eq) return;
-            const $row=$(this).closest('.vacante-row'), $real=$row.find('select[name$="-asignatura"]');
-            if(!$real.find(`option[value="${eq.id}"]`).length) $real.append(new Option(eq.nombre,eq.id,true,true));
-            $real.val(eq.id); renderCell($row,eq);
+        $sel.on('select2:select.eq', function(e){
+            const eq = eqMap[String(e.params.data.id)]; if(!eq) return;
+            const $row = $(this).closest('.vacante-row');
+            const $real = $row.find('select[name$="-asignatura"]');
+            if(!$real.find(`option[value="${eq.id}"]`).length)
+                $real.append(new Option(eq.nombre, eq.id, true, true));
+            $real.val(eq.id);
+            renderCell($row, eq);
         });
-        $sel.on('select2:clear.eq',function(){
-            const $row=$(this).closest('.vacante-row');
+        $sel.on('select2:clear.eq', function(){
+            const $row = $(this).closest('.vacante-row');
             $row.find('select[name$="-asignatura"]').val('');
             $row.find('.real-info').addClass('d-none');
             $row.find('.school-name').text('-').addClass('text-muted');
             $row.find('.equivalencia-select-wrap').removeClass('d-none');
         });
     }
+
     function reinitEqs(){
-        Object.keys(eqMap).forEach(k=>delete eqMap[k]);
-        eqData.forEach(eq=>{ eqMap[String(eq.id)]=eq; });
-        $('#vacantes-container .select2-equivalencia').each(function(){ initEq($(this)); });
+        Object.keys(eqMap).forEach(k => delete eqMap[k]);
+        eqData.forEach(eq => { eqMap[String(eq.id)] = eq; });
+        if(MOSTRAR_VACANTES){
+            $('#vacantes-container .select2-equivalencia').each(function(){ initEq($(this)); });
+        }
     }
-    function renderCell($row,d){
+
+    function renderCell($row, d){
         $row.find('.placeholder-info').addClass('d-none');
         $row.find('.equivalencia-select-wrap').addClass('d-none');
-        const $ri=$row.find('.real-info').removeClass('d-none');
-        $ri.find('.course-code').text(d.codigo||'');
-        $ri.find('.course-name').text(' '+(d.nombre||''));
-        $ri.find('.plan-name').text(d.plan||'');
-        $row.find('.school-name').text(d.escuela||'-').removeClass('text-muted');
+        const $ri = $row.find('.real-info').removeClass('d-none');
+        $ri.find('.course-code').text(d.codigo || '');
+        $ri.find('.course-name').text(' ' + (d.nombre || ''));
+        $ri.find('.plan-name').text(d.plan || '');
+        $row.find('.school-name').text(d.escuela || '-').removeClass('text-muted');
     }
-    $(document).on('click','.cambiar-equivalencia',function(){
-        const $row=$(this).closest('.vacante-row');
+
+    $(document).on('click', '.cambiar-equivalencia', function(){
+        const $row = $(this).closest('.vacante-row');
         $row.find('.real-info').addClass('d-none');
-        $row.find('.equivalencia-select-wrap').removeClass('d-none');
+        const $wrap = $row.find('.equivalencia-select-wrap');
+        $wrap.removeClass('d-none');
         $row.find('.school-name').text('-').addClass('text-muted');
-        $row.find('select[name$="-asignatura"]').val('');
-        initEq($row.find('.select2-equivalencia'));
+        $row.find('select[name$="-asignatura"]').val('').trigger('change');
+        const $sel = $wrap.find('.select2-equivalencia');
+        if($sel.data('select2')) $sel.select2('destroy');
+        $sel.empty().append('<option value=""></option>');
+        initEq($sel);
+        setTimeout(() => { try{ $sel.select2('open'); } catch(e){} }, 50);
     });
 
     // ── Cargar datos de asignatura ────────────────────────────────
-    function cargarAsignatura(id,cb){
-        $.get(URL_DETALLE,{id},r=>{
-            eqData=r.equivalencias||[];
-            Object.keys(eqMap).forEach(k=>delete eqMap[k]);
-            eqData.forEach(eq=>{ eqMap[String(eq.id)]=eq; });
-            horasReq={T:parseFloat(r.horas_teoria||0),P:parseFloat(r.horas_practica||0),L:parseFloat(r.horas_laboratorio||0)};
+    function cargarAsignatura(id, cb){
+        $.get(URL_DETALLE, {id}, r => {
+            eqData = r.equivalencias || [];
+            Object.keys(eqMap).forEach(k => delete eqMap[k]);
+            eqData.forEach(eq => { eqMap[String(eq.id)] = eq; });
+            horasReq = {
+                T: parseFloat(r.horas_teoria || 0),
+                P: parseFloat(r.horas_practica || 0),
+                L: parseFloat(r.horas_laboratorio || 0)
+            };
             if(cb) cb(r);
         });
     }
 
     // ── Filtros asignatura ────────────────────────────────────────
-    $('#id_escuela_filtro,#id_ciclo_filtro').on('change',function(){
-        const esc=$('#id_escuela_filtro').val(), cic=$('#id_ciclo_filtro').val();
-        if(!esc&&!cic) return;
-        const $s=$('#id_asignatura').empty().prop('disabled',true);
-        $.get(URL_ASIG,{escuela_id:esc,ciclo:cic},d=>{
-            $s.append(new Option('Seleccione…','',true,true));
-            d.forEach(i=>$s.append(new Option(i.text,i.id)));
-            $s.trigger('change').prop('disabled',false);
+    $('#id_escuela_filtro, #id_ciclo_filtro').on('change', function(){
+        const esc = $('#id_escuela_filtro').val();
+        const cic = $('#id_ciclo_filtro').val();
+        if(!esc && !cic) return;
+        const $s = $('#id_asignatura_base').empty().prop('disabled', true);
+        $.get(URL_ASIG, {escuela_id: esc, ciclo: cic}, d => {
+            $s.append(new Option('Seleccione…', '', true, true));
+            d.forEach(i => $s.append(new Option(i.text, i.id)));
+            $s.trigger('change').prop('disabled', false);
         });
     });
 
-    // ── Al seleccionar asignatura ─────────────────────────────────
-    $('.select2-asignatura').on('select2:select',function(e){
-        const id=e.params.data.id; if(!id) return;
-        cargarAsignatura(id,r=>{
-            if(!ES_EDICION) actualizarFilaPrincipal(r);
-            actualizarHoras(); reinitEqs();
+    // ── Al seleccionar asignatura base ────────────────────────────
+    $('.select2-asignatura').on('select2:select', function(e){
+        const id = e.params.data.id; if(!id) return;
+        cargarAsignatura(id, r => {
+            actualizarHoras();
+            reinitEqs();
         });
     });
-    $('.select2-asignatura').on('select2:unselect',function(){
-        horasReq={T:0,P:0,L:0}; eqData=[];
-        Object.keys(eqMap).forEach(k=>delete eqMap[k]);
+    $('.select2-asignatura').on('select2:unselect', function(){
+        horasReq = {T:0, P:0, L:0}; eqData = [];
+        Object.keys(eqMap).forEach(k => delete eqMap[k]);
         $('#horas-requerido').html('<span class="text-muted small fst-italic">—</span>');
         actualizarHoras(); reinitEqs();
     });
 
-    function actualizarFilaPrincipal(r){
-        const $row=$('#vacantes-container .vacante-row').first(), p=r.principal;
-        const $s=$row.find('select[name$="-asignatura"]');
-        if(!$s.find(`option[value='${r.id}']`).length) $s.append(new Option(p.nombre,r.id,true,true));
-        $s.val(r.id);
-        renderCell($row,{codigo:p.codigo,nombre:p.nombre,plan:p.plan,escuela:p.escuela});
-    }
+    // ── Vacantes (solo en edición) ────────────────────────────────
+    if(MOSTRAR_VACANTES){
+        $('#add-vacante').on('click', function(){
+            const asigId = $('#id_asignatura_base').val();
+            if(!asigId){
+                // Resaltar el campo de asignatura
+                $('#id_asignatura_base').closest('.col-12')
+                    .find('.select2-container .select2-selection')
+                    .css({'border-color':'#dc2626', 'box-shadow':'0 0 0 2px rgba(220,38,38,.15)'});
+                setTimeout(() => {
+                    $('#id_asignatura_base').closest('.col-12')
+                        .find('.select2-container .select2-selection')
+                        .css({'border-color':'', 'box-shadow':''});
+                }, 2500);
+                return;
+            }
+            if(!eqData.length){
+                const $btn = $(this).prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm me-1"></span>Cargando…');
+                cargarAsignatura(asigId, () => {
+                    actualizarHoras(); agregarVacante();
+                    $btn.prop('disabled', false).html('<i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia');
+                });
+                return;
+            }
+            agregarVacante();
+        });
 
-    // ── Vacantes ──────────────────────────────────
-    $('#add-vacante').on('click',function(){
-        const asigId=$('#id_asignatura').val();
-        if(!asigId){
-            $('#id_asignatura').closest('.col-12').find('.select2-container .select2-selection')
-                .css({'border-color':'#dc2626','box-shadow':'0 0 0 2px rgba(220,38,38,.15)'});
-            setTimeout(()=>$('#id_asignatura').closest('.col-12').find('.select2-container .select2-selection').css({'border-color':'','box-shadow':''}),2500);
-            return;
+        function agregarVacante(){
+            const $total = $('#id_vacantes-TOTAL_FORMS');
+            const idx = parseInt($total.val());
+            const html = $('#vacantes-template').html().replace(/__prefix__/g, idx);
+            const $row = $(html);
+            $('#vacantes-container').append($row);
+            $total.val(idx + 1);
+            $row.find('.vacantes-input').addClass('form-control');
+            const $sel = $row.find('.select2-equivalencia');
+            initEq($sel);
+            if(eqData.length) setTimeout(() => { try{ $sel.select2('open'); } catch(e){} }, 50);
         }
-        if(!eqData.length){
-            const $btn=$(this).prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Cargando…');
-            cargarAsignatura(asigId,()=>{ actualizarHoras(); agregarVacante(); $btn.prop('disabled',false).html('<i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia'); });
-            return;
-        }
-        agregarVacante();
-    });
 
-    function agregarVacante(){
-        const $total=$('#id_vacantes-TOTAL_FORMS'), idx=parseInt($total.val());
-        const $row=$(($('#vacantes-template').html()).replace(/__prefix__/g,idx));
-        $('#vacantes-container').append($row);
-        $total.val(idx+1);
-        $row.find('.vacantes-input').addClass('form-control');
-        const $sel=$row.find('.select2-equivalencia');
-        initEq($sel);
-        if(eqData.length) setTimeout(()=>{ try{ $sel.select2('open'); }catch(e){} },50);
+        $(document).on('click', '.delete-vacante', function(){
+            const $row = $(this).closest('.vacante-row');
+            // No eliminar la fila base
+            if($row.data('es-base') === true || $row.data('es-base') === 'true') return;
+            const $del = $row.find('input[name$="-DELETE"]');
+            if($del.length){ $del.prop('checked', true); $row.addClass('d-none to-delete'); }
+            else { $row.remove(); renum('vacantes'); }
+        });
     }
-
-    $(document).on('click','.delete-vacante',function(){
-        const $row=$(this).closest('.vacante-row'), $del=$row.find('input[name$="-DELETE"]');
-        if($del.length){ $del.prop('checked',true); $row.addClass('d-none to-delete'); }
-        else { $row.remove(); renum('vacantes'); }
-    });
 
     // ── Renumeración ──────────────────────────────────────────────
     function renum(prefix){
-        const sel=prefix==='horarios'?'#horarios-container .horario-row:not(.to-delete)':'#vacantes-container .vacante-row:not(.to-delete)';
-        let n=0;
-        $(sel).each(function(){
+        const todas  = prefix === 'horarios' ? '#horarios-container .horario-row'        : '#vacantes-container .vacante-row';
+        let n = 0;
+        $(todas).each(function(){
             $(this).find('input,select,textarea').each(function(){
-                ['name','id'].forEach(a=>{ const v=$(this).attr(a); if(v) $(this).attr(a,v.replace(new RegExp(`(${prefix}-)(\\d+)(-)`),`$1${n}$3`)); });
-            }); n++;
+                ['name','id'].forEach(a => {
+                    const v = $(this).attr(a);
+                    if(v) $(this).attr(a, v.replace(new RegExp(`(${prefix}-)(\\d+)(-)`), `$1${n}$3`));
+                });
+            });
+            n++;
         });
         $(`#id_${prefix}-TOTAL_FORMS`).val(n);
     }
 
     // ── Validación número ─────────────────────────────────────────
-    $('#id_numero').attr('min','1')
-        .on('input change',function(){ const v=parseInt($(this).val()); if(!isNaN(v)&&v<1) $(this).val(1); })
-        .on('keydown',function(e){ if(e.key==='0'&&!$(this).val()) e.preventDefault(); });
+    $('#id_numero').attr('min', '1')
+        .on('input change', function(){
+            const v = parseInt($(this).val());
+            if(!isNaN(v) && v < 1) $(this).val(1);
+        })
+        .on('keydown', function(e){
+            if(e.key === '0' && !$(this).val()) e.preventDefault();
+        });
 
-    // ── Atajos ────────────────────────────────────────────────────
-    $(document).on('keydown',function(e){
-        if(e.ctrlKey&&e.key==='h'){ e.preventDefault(); agregarHorario(false); }
-        if(e.ctrlKey&&e.key==='Enter'){ e.preventDefault(); $('#grupoForm').submit(); }
+    // ── Atajos de teclado ─────────────────────────────────────────
+    $(document).on('keydown', function(e){
+        if(e.ctrlKey && e.key === 'h'){ e.preventDefault(); agregarHorario(false); }
+        if(e.ctrlKey && e.key === 'Enter'){ e.preventDefault(); $('#grupoForm').submit(); }
     });
 
     // ── Marcar errores server-side ────────────────────────────────
-    $('.horario-row .server-error').each(function(){ $(this).closest('.horario-row').find('input[name$="-hora_inicio"],input[name$="-hora_fin"]').addClass('is-invalid-field'); });
-    $('.field-error').each(function(){ const $p=$(this).prev(); if($p.is('input,select,textarea')) $p.addClass('is-invalid-field'); });
+    $('.horario-row .server-error').each(function(){
+        $(this).closest('.horario-row')
+            .find('input[name$="-hora_inicio"],input[name$="-hora_fin"]')
+            .addClass('is-invalid-field');
+    });
+    $('.field-error').each(function(){
+        const $p = $(this).prev();
+        if($p.is('input,select,textarea')) $p.addClass('is-invalid-field');
+    });
 
-    // ── Carga inicial ─────────────────────────────────────────────
-    const asigIni=(()=>{
-        const opt=$('#id_asignatura option').filter(function(){ return $(this).attr('selected')!==undefined; }).val();
-        return opt||$('#id_asignatura').val()||'';
-    })();
+    // ── Carga inicial: datos de la asignatura ya seleccionada ─────
+    const asigIni = $('#id_asignatura_base').val() || '';
     if(asigIni){
-        cargarAsignatura(asigIni,r=>{
+        cargarAsignatura(asigIni, r => {
             actualizarHoras();
-            // En creación con POST fallido, completar fila principal si está vacía
-            if(!ES_EDICION&&r.principal){
-                const $p=$('#vacantes-container .vacante-row').first();
-                if(!$p.find('select[name$="-asignatura"]').val()) actualizarFilaPrincipal(r);
-            }
             reinitEqs();
         });
     } else {
         actualizarHoras();
     }
 
+    // Asegurar clase form-control en inputs de vacantes existentes
     $('.vacantes-input').addClass('form-control');
 });
 </script>

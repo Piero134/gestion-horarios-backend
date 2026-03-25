@@ -6,7 +6,9 @@
 <div class="mb-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}">Grupos</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'grupos_list' %}" class="text-decoration-none text-muted">Grupos</a>
+            </li>
             <li class="breadcrumb-item active">Eliminar Grupo</li>
         </ol>
     </nav>
@@ -14,54 +16,63 @@
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white">
-                <i class="bi bi-exclamation-triangle me-2"></i>
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-5"></i>
                 <strong>Confirmar Eliminación</strong>
             </div>
             <div class="card-body">
-                <div class="alert alert-warning">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>¿Está seguro que desea eliminar este grupo?</strong>
-                    <p class="mb-0 mt-2 small">Esta acción no se puede deshacer y eliminará:</p>
-                    <ul class="small mb-0 mt-1">
-                        <li>Todos los horarios asociados</li>
-                        <li>Toda la distribución de vacantes</li>
-                        <li>Información de matrículas (si existen)</li>
-                    </ul>
+                <div class="alert alert-warning d-flex gap-2">
+                    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        <strong>¿Está seguro que desea eliminar este grupo?</strong>
+                        <p class="mb-0 mt-2 small">Esta acción no se puede deshacer y eliminará:</p>
+                        <ul class="small mb-0 mt-1">
+                            <li>Todos los horarios asociados</li>
+                            <li>Toda la distribución de vacantes y equivalencias</li>
+                        </ul>
+                    </div>
                 </div>
 
-                <div class="p-3 mb-3" style="background: var(--bg-hover); border-radius: 8px;">
-                    <h5 class="mb-3" style="font-family: 'Sora', sans-serif;">
+                {# Datos del grupo #}
+                <div class="p-3 mb-3 rounded-3" style="background:#f8f9fa;border:1px solid #e2e8f0;">
+                    <h5 class="mb-3 fw-bold" style="font-family:'Sora',sans-serif;">
                         Grupo {{ grupo.numero }}
+                        <span class="badge bg-secondary ms-1" style="font-size:.65rem;">
+                            {{ grupo.periodo }}
+                        </span>
                     </h5>
 
-                    <div class="mb-2">
-                        <small class="text-muted">Asignatura:</small><br>
-                        <strong class="text-danger">[{{ grupo.asignatura.codigo }}]</strong> {{ grupo.asignatura.nombre }}
-                    </div>
+                    <dl class="row mb-0" style="font-size:.9rem;">
+                        <dt class="col-sm-4 text-muted fw-semibold">Asignatura</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-info text-dark me-1" style="font-family:monospace;font-size:.8rem;">
+                                {{ grupo.asignatura_base.codigo }}
+                            </span>
+                            {{ grupo.asignatura_base.nombre }}
+                        </dd>
 
-                    <div class="mb-2">
-                        <small class="text-muted">Período:</small><br>
-                        {{ grupo.periodo.nombre }}
-                    </div>
+                        <dt class="col-sm-4 text-muted fw-semibold">Escuela</dt>
+                        <dd class="col-sm-8">{{ grupo.asignatura_base.plan.escuela.nombre }}</dd>
 
-                    <div class="mb-2">
-                        <small class="text-muted">Escuela:</small><br>
-                        {{ grupo.asignatura.plan.escuela.nombre }}
-                    </div>
+                        <dt class="col-sm-4 text-muted fw-semibold">Vacantes totales</dt>
+                        <dd class="col-sm-8">
+                            <strong>{{ grupo.total_vacantes }}</strong>
+                        </dd>
 
-                    {% if grupo.docente %}
-                    <div class="mb-2">
-                        <small class="text-muted">Docente:</small><br>
-                        {{ grupo.docente }}
-                    </div>
-                    {% endif %}
-
-                    <div>
-                        <small class="text-muted">Vacantes totales:</small><br>
-                        <strong>{{ grupo.total_vacantes }}</strong>
-                    </div>
+                        {% with horarios=grupo.horarios.all %}
+                        {% if horarios %}
+                        <dt class="col-sm-4 text-muted fw-semibold">Horarios</dt>
+                        <dd class="col-sm-8">
+                            {% for h in horarios %}
+                                <span class="badge bg-light text-dark border me-1 mb-1" style="font-size:.75rem;">
+                                    {{ h.get_dia_display }} {{ h.hora_inicio|time:"H:i" }}–{{ h.hora_fin|time:"H:i" }}
+                                </span>
+                            {% endfor %}
+                        </dd>
+                        {% endif %}
+                        {% endwith %}
+                    </dl>
                 </div>
 
                 <form method="post">
@@ -70,8 +81,8 @@
                         <a href="{% url 'grupos_list' %}" class="btn btn-outline-secondary flex-fill">
                             <i class="bi bi-x-circle me-2"></i>Cancelar
                         </a>
-                        <button type="submit" class="btn btn-danger flex-fill">
-                            <i class="bi bi-trash me-2"></i>Sí, Eliminar
+                        <button type="submit" class="btn btn-danger flex-fill fw-bold">
+                            <i class="bi bi-trash3-fill me-2"></i>Sí, eliminar grupo
                         </button>
                     </div>
                 </form>
@@ -79,5 +90,4 @@
         </div>
     </div>
 </div>
-
 {% endblock %}

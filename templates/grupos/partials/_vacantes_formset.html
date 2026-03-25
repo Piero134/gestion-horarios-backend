@@ -1,0 +1,163 @@
+{#
+  grupos/partials/_vacantes_formset.html
+  Renderizado por:
+    - grupo_edit (carga inicial GET)
+    - grupo_edit (HTMX: _save_vacantes, add_vacante)
+  Variables de contexto:
+    - vacantes_formset
+    - grupo
+    - exito  (opcional)
+    - error  (opcional)
+#}
+
+{% if exito %}
+<div class="alert alert-success alert-dismissible d-flex align-items-center gap-2 py-2 px-3 mb-2" role="alert"
+     style="font-size:.82rem;font-weight:600;border-radius:8px;">
+    <i class="bi bi-check-circle-fill flex-shrink-0"></i>{{ exito }}
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{% if error %}
+<div class="form-error-banner mb-2">
+    <i class="bi bi-exclamation-octagon-fill"></i>{{ error }}
+</div>
+{% endif %}
+
+{% if vacantes_formset.non_form_errors %}
+<div class="form-error-banner mb-2">
+    <i class="bi bi-exclamation-octagon-fill"></i>{{ vacantes_formset.non_form_errors.0 }}
+</div>
+{% endif %}
+
+{{ vacantes_formset.management_form }}
+
+<div class="table-responsive">
+<table class="table table-vacantes mb-0">
+    <thead><tr>
+        <th style="width:52%;padding-left:1.25rem;">Asignatura / Plan</th>
+        <th style="width:28%;">Escuela</th>
+        <th style="width:12%;text-align:center;">Vacantes</th>
+        <th style="width:8%;"></th>
+    </tr></thead>
+    <tbody id="vacantes-container">
+{% for vf in vacantes_formset %}
+{% with es_base=vf.instance.es_base %}
+<tr class="vacante-row{% if es_base %} is-base{% endif %}{% if vf.errors %} table-danger{% endif %}"
+    data-es-base="{{ es_base|yesno:'true,false' }}">
+    <td style="padding-left:1.25rem;">
+        {{ vf.id }}
+        {% if vf.instance.pk %}<div class="d-none">{{ vf.DELETE }}</div>{% endif %}
+        <div class="d-none">{{ vf.asignatura }}</div>
+
+        <div class="course-info-display">
+            {% if vf.instance.pk and vf.instance.asignatura %}
+                <div>
+                    <span class="course-code">{{ vf.instance.asignatura.codigo }}</span>
+                    <span class="course-name">{{ vf.instance.asignatura.nombre }}</span>
+                </div>
+                <span class="plan-name">{{ vf.instance.asignatura.plan.nombre }}</span>
+                {% if not es_base %}
+                    <a class="edit-link cambiar-equivalencia">cambiar</a>
+                    <div class="equivalencia-select-wrap d-none">
+                        <select class="form-select form-select-sm select2-equivalencia">
+                            <option value=""></option>
+                        </select>
+                    </div>
+                {% else %}
+                    <span class="badge bg-secondary ms-1" style="font-size:.65rem;">Base</span>
+                {% endif %}
+            {% else %}
+                <div class="real-info d-none">
+                    <div><span class="course-code"></span><span class="course-name"></span></div>
+                    <span class="plan-name"></span>
+                    <a class="edit-link cambiar-equivalencia">cambiar</a>
+                </div>
+                <div class="equivalencia-select-wrap">
+                    <select class="form-select form-select-sm select2-equivalencia">
+                        <option value=""></option>
+                    </select>
+                </div>
+            {% endif %}
+        </div>
+
+        {% for e in vf.asignatura.errors %}
+            <div class="field-error mt-1"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+        {% endfor %}
+    </td>
+    <td>
+        <span class="school-name">
+            {% if vf.instance.pk and vf.instance.asignatura %}
+                {{ vf.instance.asignatura.plan.escuela.nombre }}
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </span>
+    </td>
+    <td class="text-center">
+        {{ vf.vacantes }}
+        {% for e in vf.vacantes.errors %}
+            <div class="field-error mt-1" style="text-align:left">
+                <i class="bi bi-exclamation-circle-fill"></i>{{ e }}
+            </div>
+        {% endfor %}
+    </td>
+    <td class="text-center">
+        {% if es_base %}
+            <span title="Asignatura base — no eliminable" style="color:#cbd5e1;font-size:.85rem;">
+                <i class="bi bi-lock-fill"></i>
+            </span>
+        {% else %}
+            <button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante">
+                <i class="bi bi-trash3-fill"></i>
+            </button>
+        {% endif %}
+    </td>
+</tr>
+{% endwith %}
+{% endfor %}
+    </tbody>
+</table>
+</div>
+
+<div class="p-3 border-top bg-light text-center" style="border-radius:0 0 12px 12px;">
+    <button type="button" class="btn btn-outline-primary btn-sm px-4 fw-semibold" id="add-vacante">
+        <i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia
+    </button>
+</div>
+
+{# Template para nuevas filas JS ─ solo se interpreta en cliente #}
+<script type="text/template" id="vacantes-template">
+<tr class="vacante-row" data-es-base="false">
+    <td style="padding-left:1.25rem;">
+        <input type="hidden" name="vacantes-__prefix__-id" id="id_vacantes-__prefix__-id">
+        <div class="d-none">
+            <select name="vacantes-__prefix__-asignatura" id="id_vacantes-__prefix__-asignatura">
+                <option value=""></option>
+            </select>
+        </div>
+        <div class="course-info-display">
+            <div class="real-info d-none">
+                <div><span class="course-code"></span><span class="course-name"></span></div>
+                <span class="plan-name"></span>
+                <a class="edit-link cambiar-equivalencia">cambiar</a>
+            </div>
+            <div class="equivalencia-select-wrap">
+                <select class="form-select form-select-sm select2-equivalencia">
+                    <option value=""></option>
+                </select>
+            </div>
+        </div>
+    </td>
+    <td><span class="school-name text-muted">-</span></td>
+    <td class="text-center">
+        <input type="number" name="vacantes-__prefix__-vacantes" id="id_vacantes-__prefix__-vacantes"
+               class="form-control vacantes-input" min="0" value="0">
+    </td>
+    <td class="text-center">
+        <button type="button" class="btn btn-sm btn-outline-danger border-0 delete-vacante">
+            <i class="bi bi-trash3-fill"></i>
+        </button>
+    </td>
+</tr>
+</script>

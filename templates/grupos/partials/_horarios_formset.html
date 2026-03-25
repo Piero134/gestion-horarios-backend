@@ -1,0 +1,157 @@
+{#
+  grupos/partials/_horarios_formset.html
+  Renderizado por:
+    - grupo_edit (carga inicial GET)
+    - grupo_edit (HTMX: _save_horarios, add_horario)
+  Variables de contexto:
+    - horario_formset
+    - grupo
+    - exito  (opcional)
+    - error  (opcional)
+#}
+
+{% if exito %}
+<div class="alert alert-success alert-dismissible d-flex align-items-center gap-2 py-2 px-3 mb-3" role="alert"
+     style="font-size:.82rem;font-weight:600;border-radius:8px;">
+    <i class="bi bi-check-circle-fill flex-shrink-0"></i>{{ exito }}
+    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{% if error %}
+<div class="form-error-banner mb-3">
+    <i class="bi bi-exclamation-octagon-fill"></i>{{ error }}
+</div>
+{% endif %}
+
+{% if horario_formset.non_form_errors %}
+<div class="form-error-banner mb-3">
+    <i class="bi bi-exclamation-octagon-fill"></i>{{ horario_formset.non_form_errors.0 }}
+</div>
+{% endif %}
+
+{{ horario_formset.management_form }}
+
+<div id="horarios-container">
+{% for hf in horario_formset %}
+<div class="horario-row{% if hf.errors %} has-error{% endif %}">
+    {{ hf.id }}
+    <div class="d-none">
+        {% if hf.instance.pk %}{{ hf.DELETE }}{% endif %}
+    </div>
+    <div class="horario-grid">
+        <div>
+            <label>Día</label>{{ hf.dia }}
+            {% for e in hf.dia.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+            {% endfor %}
+        </div>
+        <div>
+            <label>Tipo</label>
+            <div class="d-none tipo-hidden-select">{{ hf.tipo }}</div>
+            <div class="tipo-selector">
+                <button type="button" class="tipo-btn" data-tipo="T">Teoría</button>
+                <button type="button" class="tipo-btn" data-tipo="P">Práctica</button>
+                <button type="button" class="tipo-btn" data-tipo="L">Lab</button>
+            </div>
+            {% for e in hf.tipo.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+            {% endfor %}
+        </div>
+        <div>
+            <label>Horario</label>
+            <div class="hora-range-wrapper">
+                <div class="hora-display">
+                    <div><div class="hora-display-label">INICIO</div>{{ hf.hora_inicio }}</div>
+                    <span style="margin-top:18px;">→</span>
+                    <div><div class="hora-display-label">FIN</div>{{ hf.hora_fin }}</div>
+                </div>
+                <div class="hora-bar"></div>
+                {% if hf.hora_inicio.errors or hf.hora_fin.errors %}
+                <div class="hora-errors-box">
+                    {% for e in hf.hora_inicio.errors %}
+                        <div class="hora-inline-error server-error">
+                            <i class="bi bi-exclamation-circle-fill"></i>Inicio: {{ e }}
+                        </div>
+                    {% endfor %}
+                    {% for e in hf.hora_fin.errors %}
+                        <div class="hora-inline-error server-error">
+                            <i class="bi bi-exclamation-circle-fill"></i>Fin: {{ e }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <label>Aula</label>{{ hf.aula }}
+            {% for e in hf.aula.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+            {% endfor %}
+        </div>
+        <div>
+            <label>Docente</label>{{ hf.docente }}
+            {% for e in hf.docente.errors %}
+                <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+            {% endfor %}
+        </div>
+        <button type="button" class="btn-del-horario delete-horario">
+            <i class="bi bi-trash3-fill" style="font-size:.75rem;"></i>
+        </button>
+    </div>
+    {% if hf.non_field_errors %}
+    <div class="horario-errors mt-2">
+        {% for e in hf.non_field_errors %}
+            <div class="error-item">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i><span>{{ e }}</span>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+
+<div class="d-flex align-items-center gap-2 mt-2">
+    <button type="button" class="add-horario-btn" id="add-horario" title="Ctrl+H">
+        <i class="bi bi-plus-circle-fill me-2"></i>Añadir horario
+    </button>
+    <button type="button" class="btn-copy-horario" id="copy-last-horario">
+        <i class="bi bi-copy me-1"></i>Duplicar último
+    </button>
+</div>
+
+{# Template para nuevas filas JS ─ se usa en grupo_edit vía JS inline #}
+<script type="text/template" id="horarios-template">
+<div class="horario-row">
+    <input type="hidden" name="horarios-__prefix__-id" id="id_horarios-__prefix__-id">
+    <div class="horario-grid">
+        <div><label>Día</label>{{ horario_formset.empty_form.dia }}</div>
+        <div>
+            <label>Tipo</label>
+            <div class="d-none tipo-hidden-select">{{ horario_formset.empty_form.tipo }}</div>
+            <div class="tipo-selector">
+                <button type="button" class="tipo-btn" data-tipo="T">Teoría</button>
+                <button type="button" class="tipo-btn" data-tipo="P">Práctica</button>
+                <button type="button" class="tipo-btn" data-tipo="L">Lab</button>
+            </div>
+        </div>
+        <div>
+            <label>Horario</label>
+            <div class="hora-range-wrapper">
+                <div class="hora-display">
+                    <div><div class="hora-display-label">INICIO</div>{{ horario_formset.empty_form.hora_inicio }}</div>
+                    <span style="margin-top:18px;">→</span>
+                    <div><div class="hora-display-label">FIN</div>{{ horario_formset.empty_form.hora_fin }}</div>
+                </div>
+                <div class="hora-bar"></div>
+            </div>
+        </div>
+        <div><label>Aula</label>{{ horario_formset.empty_form.aula }}</div>
+        <div><label>Docente</label>{{ horario_formset.empty_form.docente }}</div>
+        <button type="button" class="btn-del-horario delete-horario">
+            <i class="bi bi-trash3-fill" style="font-size:.75rem;"></i>
+        </button>
+    </div>
+</div>
+</script>

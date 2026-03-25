@@ -78,7 +78,7 @@
                 Grupo {{ grupo.numero }}
             </h2>
             <p class="text-muted mb-0">
-                <strong class="text-danger">[{{ grupo.asignatura.codigo }}]</strong> {{ grupo.asignatura.nombre }}
+                <strong class="text-danger">[{{ asignatura_display.codigo }}]</strong> {{ asignatura_display.nombre }}
             </p>
         </div>
 
@@ -107,32 +107,32 @@
 
                 <div class="mb-3">
                     <div class="info-label">Escuela</div>
-                    <div class="info-value">{{ grupo.asignatura.plan.escuela.nombre }}</div>
+                    <div class="info-value">{{ asignatura_display.plan.escuela.nombre }}</div>
                 </div>
 
                 <div class="mb-3">
                     <div class="info-label">Plan de Estudios</div>
-                    <div class="info-value">{{ grupo.asignatura.plan.nombre }}</div>
+                    <div class="info-value">{{ asignatura_display.plan.nombre }}</div>
                 </div>
 
                 <div class="mb-3">
                     <div class="info-label">Tipo de Asignatura</div>
                     <div class="info-value">
-                        <span class="badge bg-secondary">{{ grupo.asignatura.get_tipo_display }}</span>
+                        <span class="badge bg-secondary">{{ asignatura_display.get_tipo_display }}</span>
                     </div>
                 </div>
 
                 <div>
                     <div class="info-label">Carga Horaria</div>
                     <div class="info-value">
-                        {% if grupo.asignatura.horas_teoria %}
-                            <i class="bi bi-book me-1"></i>{{ grupo.asignatura.horas_teoria }}h Teoría<br>
+                        {% if asignatura_display.horas_teoria %}
+                            <i class="bi bi-book me-1"></i>{{ asignatura_display.horas_teoria }}h Teoría<br>
                         {% endif %}
-                        {% if grupo.asignatura.horas_practica %}
-                            <i class="bi bi-tools me-1"></i>{{ grupo.asignatura.horas_practica }}h Práctica<br>
+                        {% if asignatura_display.horas_practica %}
+                            <i class="bi bi-tools me-1"></i>{{ asignatura_display.horas_practica }}h Práctica<br>
                         {% endif %}
-                        {% if grupo.asignatura.horas_laboratorio %}
-                            <i class="bi bi-cpu me-1"></i>{{ grupo.asignatura.horas_laboratorio }}h Laboratorio
+                        {% if asignatura_display.horas_laboratorio %}
+                            <i class="bi bi-cpu me-1"></i>{{ asignatura_display.horas_laboratorio }}h Laboratorio
                         {% endif %}
                     </div>
                 </div>
@@ -218,43 +218,35 @@
         <i class="bi bi-person-plus me-2"></i>Distribución de Vacantes
     </div>
     <div class="card-body">
-        {% if grupo.vacantes.exists %}
+        {% if asignaturas_cubiertas %}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
                         <th>Asignatura / Plan</th>
+                        {% if vista_multiple %}
                         <th>Escuela</th>
+                        {% endif %}
                         <th class="text-center">Vacantes</th>
-                        <th class="text-center">Matriculados</th>
-                        <th class="text-center">Disponibles</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for vacante in grupo.vacantes.all %}
+                    {% for ga in asignaturas_cubiertas %}
                     <tr>
                         <td>
-                            <strong>[{{ vacante.asignatura.codigo }}]</strong> {{ vacante.asignatura.nombre }}
+                            <strong>[{{ ga.asignatura.codigo }}]</strong> {{ ga.asignatura.nombre }}
                             <br>
-                            <small class="text-muted">{{ vacante.asignatura.plan.nombre }}</small>
+                            <small class="text-muted">{{ ga.asignatura.plan.nombre }}</small>
                         </td>
-                        <td>{{ vacante.asignatura.plan.escuela.nombre }}</td>
-                        <td class="text-center"><strong>{{ vacante.cantidad }}</strong></td>
-                        <td class="text-center">
-                            <span class="badge bg-info">{{ vacante.matriculados }}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-success">{{ vacante.cantidad|add:"-vacante.matriculados" }}</span>
-                        </td>
+                        {% if vista_multiple %}
+                        <td>{{ ga.asignatura.plan.escuela.nombre }}</td>
+                        {% endif %}
+                        <td class="text-center"><strong>{{ ga.vacantes }}</strong></td>
                     </tr>
                     {% endfor %}
                     <tr class="table-secondary">
-                        <td colspan="2"><strong>TOTAL</strong></td>
+                        <td {% if vista_multiple %}colspan="2"{% endif %}><strong>TOTAL</strong></td>
                         <td class="text-center"><strong>{{ grupo.total_vacantes }}</strong></td>
-                        <td class="text-center">
-                            <strong>{{ grupo.vacantes_totales_matriculados|default:"-" }}</strong>
-                        </td>
-                        <td class="text-center">-</td>
                     </tr>
                 </tbody>
             </table>

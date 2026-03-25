@@ -297,7 +297,7 @@
 </div>
 
 {% if grupos %}
-    {% regroup grupos by asignatura.ciclo as grupos_por_ciclo %}
+    {% regroup grupos by asignatura_en_escuela.0.asignatura.ciclo as grupos_por_ciclo %}
 
     {% for ciclo_group in grupos_por_ciclo %}
 
@@ -307,19 +307,25 @@
             <small class="text-muted ms-2">{{ ciclo_group.list|length }} grupos</small>
         </div>
 
-        {% regroup ciclo_group.list by asignatura as grupos_por_curso %}
+        {% regroup ciclo_group.list by asignatura_en_escuela.0.asignatura.codigo as grupos_por_curso %}
 
         {% for curso_group in grupos_por_curso %}
         <div class="curso-block">
-            <div class="curso-header">
-                <div>
-                    <span class="curso-code">{{ curso_group.grouper.codigo }}</span>
-                    <span class="curso-title">{{ curso_group.grouper.nombre }}</span>
-                </div>
-                <div>
-                    <span class="badge bg-light text-dark border">{{ curso_group.grouper.plan.nombre }}</span>
-                </div>
-            </div>
+<div class="curso-header">
+    <div>
+        <span class="curso-code">{{ curso_group.grouper }}</span>
+        {% with ctx=curso_group.list.0.asignatura_en_escuela %}
+            <span class="curso-title">{{ ctx.0.asignatura.nombre }}</span>
+        {% endwith %}
+    </div>
+    <div>
+        {% with ctx=curso_group.list.0.asignatura_en_escuela %}
+            <span class="badge bg-light text-dark border">
+                Plan {{ ctx.0.asignatura.plan.anio }}
+            </span>
+        {% endwith %}
+    </div>
+</div>
 
             <div class="table-responsive">
                 <table class="tabla-grupos">
@@ -376,9 +382,11 @@
                                 </td>
 
                                 {% if forloop.first %}
-                                <td rowspan="{{ grupo.horarios.count }}" class="text-center">
-                                    <strong>{{ grupo.total_vacantes }}</strong>
-                                </td>
+<td rowspan="{{ grupo.horarios.count }}" class="text-center">
+    {% with ctx=grupo.asignatura_en_escuela %}
+        <strong>{{ ctx.0.vacantes|default:grupo.total_vacantes }}</strong>
+    {% endwith %}
+</td>
 
                                 <td rowspan="{{ grupo.horarios.count }}" class="text-center">
                                     <div class="dropdown">

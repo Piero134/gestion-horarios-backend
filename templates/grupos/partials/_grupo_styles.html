@@ -1,0 +1,81 @@
+{# _grupo_styles.html — incluir con {% include %} desde grupo_create y grupo_edit #}
+<style>
+:root{--red:#c1272d;--red-light:rgba(193,39,45,.08);--surface:#fff;--hover:#f8f9fa;--border:#e2e8f0;--text:#1e293b;--muted:#64748b}
+.section-header{background:var(--red-light);border-left:4px solid var(--red);padding:.7rem 1rem;border-radius:8px;margin-bottom:1.25rem;display:flex;align-items:center;gap:.6rem}
+.section-header h5{margin:0;font-family:'Sora',sans-serif;font-weight:700;color:var(--red);font-size:1rem}
+.filter-row{background:var(--hover);border:1px dashed #cbd5e1;border-radius:8px;padding:.85rem 1rem;margin-bottom:1.25rem}
+.filter-label{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem;text-transform:uppercase;letter-spacing:.5px}
+.field-error{display:flex;align-items:flex-start;gap:.35rem;color:#991b1b;font-size:.75rem;font-weight:600;margin-top:.35rem;padding:.3rem .5rem;background:#fef2f2;border-left:3px solid #dc2626;border-radius:0 4px 4px 0;line-height:1.4}
+.field-error i{flex-shrink:0;margin-top:1px}
+.form-error-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:.5rem;color:#991b1b;font-size:.82rem;font-weight:600}
+.form-error-banner i{flex-shrink:0;font-size:1rem;margin-top:1px}
+.form-error-banner ul{margin:0;padding-left:1rem}
+.is-invalid-field{border-color:#dc2626!important;box-shadow:0 0 0 2px rgba(220,38,38,.15)!important}
+/* Horarios */
+.horario-row{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:.75rem;position:relative;transition:border-color .15s}
+.horario-row:hover{border-color:#94a3b8}
+.horario-row.to-delete{opacity:.35;pointer-events:none;background:#fef2f2;border-color:#fca5a5}
+.horario-row.has-error{border-color:#dc2626;background:#fff8f8}
+.horario-grid{display:grid;grid-template-columns:130px 80px 1.4fr 1fr 1fr 36px;gap:.75rem;align-items:start}
+.horario-grid>div>label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:block}
+.tipo-selector{display:flex;flex-direction:column;gap:4px}
+.tipo-btn{width:100%;padding:.32rem .2rem;border:1px solid var(--border);border-radius:6px;font-size:.72rem;font-weight:700;background:#f8fafc;color:var(--muted);cursor:pointer;text-align:center;transition:all .12s;line-height:1;position:relative}
+.tipo-btn:hover:not(.completed):not(.d-none){border-color:#3b82f6;color:#3b82f6;background:#eff6ff}
+.tipo-btn.active-T{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd}
+.tipo-btn.active-P{background:#dcfce7;color:#166534;border-color:#86efac}
+.tipo-btn.active-L{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.tipo-btn.completed{opacity:.4;cursor:not-allowed;pointer-events:none;background:#f1f5f9!important;border-color:#cbd5e1!important;color:#94a3b8!important}
+.tipo-btn.completed::after{content:'✓';position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.65rem;color:#22c55e}
+.tipo-btn.d-none{display:none!important}
+.hora-range-wrapper{display:flex;flex-direction:column;gap:6px}
+.hora-display{display:flex;gap:6px;align-items:flex-end}
+.hora-display>div{flex:1;min-width:0}
+.hora-display>span{color:var(--muted);font-size:.8rem;flex-shrink:0;padding-bottom:6px}
+.hora-display-label{font-size:.6rem;color:var(--muted);font-weight:700;margin-bottom:2px}
+.hora-display input[type="time"]{border:1px solid var(--border);border-radius:6px;padding:5px 6px;font-size:.85rem;font-weight:700;font-family:monospace;color:var(--text);background:#fff;width:100%;text-align:center;box-sizing:border-box}
+.hora-display input[type="time"]:focus{border-color:#3b82f6;outline:none;box-shadow:0 0 0 2px rgba(59,130,246,.2)}
+.hora-errors-box{margin-top:4px}
+.hora-inline-error{display:flex;align-items:center;gap:.25rem;color:#991b1b;font-size:.68rem;font-weight:700;padding:.2rem .4rem;background:#fef2f2;border-left:3px solid #dc2626;border-radius:0 4px 4px 0;line-height:1.3;animation:fadeErr .15s ease;margin-bottom:2px}
+.hora-inline-error.warn-type{color:#92400e;background:#fef3c7;border-left-color:#f59e0b}
+@keyframes fadeErr{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.hora-bar{display:flex;border-radius:7px;overflow:hidden;border:1px solid var(--border);background:#f8fafc;cursor:pointer;user-select:none;height:28px}
+.hora-slot{flex:1;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:700;font-family:monospace;color:#94a3b8;border-right:1px solid #e2e8f0;transition:background .08s}
+.hora-slot:last-child{border-right:none}
+.hora-slot:hover{background:#dbeafe;color:#1d4ed8}
+.hora-slot.sel-ini{background:#1d4ed8;color:#fff;border-radius:4px 0 0 4px}
+.hora-slot.sel-fin{background:#1d4ed8;color:#fff;border-radius:0 4px 4px 0}
+.hora-slot.sel-mid{background:#93c5fd;color:#1e3a5f}
+.hora-slot.sel-ini.sel-fin{border-radius:4px}
+.horario-notif{display:flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:700;padding:.3rem .6rem;margin-top:.4rem;border-radius:6px;animation:fadeErr .15s ease}
+.btn-del-horario{width:32px;height:32px;border:none;border-radius:6px;margin-top:22px;background:#fee2e2;color:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s;flex-shrink:0}
+.btn-del-horario:hover{background:#dc2626;color:#fff}
+.add-horario-btn{width:100%;border:2px dashed var(--border);background:transparent;color:var(--muted);padding:.65rem;border-radius:10px;font-weight:600;transition:all .2s;margin-top:.5rem}
+.add-horario-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-light)}
+.btn-copy-horario{font-size:.72rem;border:1px dashed var(--border);color:var(--muted);background:transparent;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.btn-copy-horario:hover{border-color:#3b82f6;color:#3b82f6;background:#eff6ff}
+/* Vacantes */
+.table-vacantes{width:100%;border-collapse:separate;border-spacing:0}
+.table-vacantes thead th{background:#f8f9fa;color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;padding:.65rem 1rem;border-bottom:2px solid var(--border)}
+.table-vacantes tbody td{padding:.65rem 1rem;vertical-align:middle;border-bottom:1px solid #f1f5f9}
+.course-code{font-weight:700;font-size:.85rem;font-family:monospace;background:#e0f2fe;color:#0369a1;padding:1px 5px;border-radius:3px}
+.course-name{color:var(--text);font-weight:600;margin-left:6px;font-size:.88rem}
+.plan-name{font-size:.72rem;color:var(--muted);margin-top:2px;display:block}
+.school-name{color:var(--muted);font-size:.85rem}
+.vacantes-input{width:72px;text-align:center;font-weight:700;font-size:1rem;border:1px solid var(--border);border-radius:6px;padding:.3rem .4rem}
+.vacantes-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);outline:none}
+.equivalencia-select-wrap{max-width:380px}
+.equivalencia-select-wrap .select2-container{width:100%!important}
+.edit-link{font-size:.7rem;color:#3b82f6;cursor:pointer;text-decoration:underline;margin-left:8px}
+.horas-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;background:#e0e7ff;color:#3730a3;border:1px solid #c7d2fe}
+.horas-badge.ok{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.horas-badge.warn{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.horas-badge.err{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.sticky-actions{position:sticky;bottom:0;z-index:100;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:.75rem 1.25rem;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -4px 16px rgba(0,0,0,.07);margin-top:1.5rem;border-radius:12px 12px 0 0}
+kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;padding:1px 6px;font-size:.68rem;font-family:monospace}
+.select2-container--bootstrap-5 .select2-selection{border-color:var(--border);border-radius:6px}
+.horario-errors{margin-top:.5rem;padding:.4rem .6rem;background:#fef2f2;border-radius:6px;border:1px solid #fecaca}
+.horario-errors .error-item{color:#991b1b;font-size:.73rem;font-weight:600;display:flex;align-items:flex-start;gap:.3rem;margin-bottom:.2rem}
+.horario-errors .error-item:last-child{margin-bottom:0}
+.vacante-row.is-base td:last-child{opacity:.3;pointer-events:none}
+.edit-info-banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:#1d4ed8;font-size:.82rem;font-weight:600}
+</style>
