@@ -1,109 +1,731 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Dashboard del Grupo {{ grupo.numero }}{% endblock %}
+{% block title %}Editar: {{ grupo }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"/>
+{% include 'grupos/partials/_grupo_styles.html' %}
 <style>
-:root{--red:#c1272d;--red-light:rgba(193,39,45,.08);--surface:#fff;--hover:#f8f9fa;--border:#e2e8f0;--text:#1e293b;--muted:#64748b}
-.section-header{background:var(--red-light);border-left:4px solid var(--red);padding:.7rem 1rem;border-radius:8px;margin-bottom:1.25rem;display:flex;align-items:center;gap:.6rem}
-.section-header h5{margin:0;font-family:'Sora',sans-serif;font-weight:700;color:var(--red);font-size:1rem}
-.filter-row{background:var(--hover);border:1px dashed #cbd5e1;border-radius:8px;padding:.85rem 1rem;margin-bottom:1.25rem}
-.filter-label{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem;text-transform:uppercase;letter-spacing:.5px}
-.field-error{display:flex;align-items:flex-start;gap:.35rem;color:#991b1b;font-size:.75rem;font-weight:600;margin-top:.35rem;padding:.3rem .5rem;background:#fef2f2;border-left:3px solid #dc2626;border-radius:0 4px 4px 0;line-height:1.4}
-.field-error i{flex-shrink:0;margin-top:1px}
-.form-error-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.65rem 1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:.5rem;color:#991b1b;font-size:.82rem;font-weight:600}
-.form-error-banner i{flex-shrink:0;font-size:1rem;margin-top:1px}
-.form-error-banner ul{margin:0;padding-left:1rem}
-.is-invalid-field{border-color:#dc2626!important;box-shadow:0 0 0 2px rgba(220,38,38,.15)!important}
-.edit-info-banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem;color:#1d4ed8;font-size:.82rem;font-weight:600}
-kbd{background:#334155;color:#f8fafc;border:1px solid #475569;border-radius:4px;padding:1px 6px;font-size:.68rem;font-family:monospace}
-.select2-container--bootstrap-5 .select2-selection{border-color:var(--border);border-radius:6px}
+.grupo-header-card{background:linear-gradient(135deg,var(--red-light) 0%,#fff 60%);border:1px solid #fecaca;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.25rem}
+.grupo-meta{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.75rem}
+.grupo-meta-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--border);color:var(--muted)}
+.section-card{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:1rem;overflow:hidden}
+.section-card-header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.25rem;border-bottom:1px solid var(--border);background:#fafafa;gap:1rem;flex-wrap:wrap}
+.section-card-body{padding:1.25rem}
+.section-card-body.p-0{padding:0}
+.htmx-indicator{display:none}
+.htmx-request .htmx-indicator,.htmx-request.htmx-indicator{display:inline-block}
+.numero-display{display:flex;align-items:center;gap:.5rem}
+.numero-edit-wrap{display:none;align-items:center;gap:.5rem;flex-wrap:wrap}
+.numero-edit-wrap.active{display:flex}
+.numero-display.hidden{display:none}
 </style>
 {% endblock %}
 
 {% block content %}
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
-<div class="mb-3 d-flex justify-content-between align-items-end">
+<div class="mb-3 d-flex justify-content-between align-items-end flex-wrap gap-2">
     <div>
         <nav aria-label="breadcrumb"><ol class="breadcrumb mb-1">
             <li class="breadcrumb-item"><a href="{% url 'grupos_list' %}" class="text-decoration-none text-muted">Grupos</a></li>
-            <li class="breadcrumb-item active fw-semibold">Edición de Grupo</li>
+            <li class="breadcrumb-item active fw-semibold">{{ grupo }}</li>
         </ol></nav>
         <h2 style="font-family:'Sora',sans-serif;font-weight:700;margin:0;">
-            <i class="bi bi-pencil-square text-danger me-2"></i>
-            Dashboard: Grupo {{ grupo.numero }}
+            <i class="bi bi-pencil-square text-danger me-2"></i>{{ grupo }}
         </h2>
-        <div class="text-muted small mt-1">
-            <strong>Asignatura:</strong> {{ grupo.asignatura_base.nombre }} | <strong>Periodo:</strong> {{ grupo.periodo }}
-        </div>
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);text-align:right;">
+        <kbd>Ctrl</kbd>+<kbd>H</kbd> Añadir horario
     </div>
 </div>
 
-<div class="card mb-4 border-0 shadow-sm">
-    <div class="card-body p-4">
-        <div class="section-header mb-3">
+{% if form.errors %}
+<div class="form-error-banner mb-3">
+    <i class="bi bi-exclamation-octagon-fill"></i>
+    <div>
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:.25rem;">Corrige los errores del grupo:</div>
+        <ul>
+            {% for field in form %}{% for e in field.errors %}<li><strong>{{ field.label }}:</strong> {{ e }}</li>{% endfor %}{% endfor %}
+            {% for e in form.non_field_errors %}<li>{{ e }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{# ── Cabecera del grupo ── #}
+<div class="grupo-header-card">
+    <form method="post" id="form-main" autocomplete="off">
+        {% csrf_token %}
+        {# Campos deshabilitados en edición — se incluyen ocultos para que el form sea válido #}
+        <div class="d-none">
+            {{ form.periodo_display }}
+            {{ form.asignatura_base }}
+            {{ form.escuela_filtro }}
+            {{ form.ciclo_filtro }}
+        </div>
+        <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+            <div>
+                <div class="grupo-meta">
+                    <span class="grupo-meta-badge"><i class="bi bi-calendar3"></i>{{ grupo.periodo }}</span>
+                    <span class="grupo-meta-badge"><i class="bi bi-book"></i>{{ grupo.asignatura_base.codigo }}</span>
+                    <span class="grupo-meta-badge"><i class="bi bi-diagram-3"></i>{{ grupo.asignatura_base.plan.escuela.nombre }}</span>
+                </div>
+                {# Número editable inline #}
+                <div class="numero-display" id="numero-display">
+                    <span style="font-family:'Sora',sans-serif;font-weight:700;font-size:1.5rem;color:var(--text);">
+                        Grupo {{ grupo.numero }}
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary border-0 py-0 px-2"
+                            id="btn-edit-numero" title="Editar número de grupo">
+                        <i class="bi bi-pencil" style="font-size:.75rem;"></i>
+                    </button>
+                </div>
+                <div class="numero-edit-wrap" id="numero-edit">
+                    <div>
+                        <label class="form-label small fw-bold text-muted mb-1">Número de grupo</label>
+                        {{ form.numero }}
+                        {% for e in form.numero.errors %}
+                            <div class="field-error"><i class="bi bi-exclamation-circle-fill"></i>{{ e }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-flex gap-2 align-self-end">
+                        <button type="submit" name="_save_main" value="1"
+                                class="btn btn-sm btn-primary fw-semibold px-3">
+                            <i class="bi bi-check2 me-1"></i>Guardar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border" id="btn-cancel-numero">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-shrink-0">
+                <a href="{% url 'grupos_list' %}" class="btn btn-light border fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+                <a href="{% url 'grupo_delete' grupo.pk %}"
+                   class="btn btn-outline-danger fw-semibold">
+                    <i class="bi bi-trash3 me-1"></i>Eliminar
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<div class="section-card">
+    <div class="section-card-header">
+        <div class="section-header mb-0" style="flex:1;min-width:200px;">
             <i class="bi bi-calendar-range-fill fs-5"></i><h5>Programación de Horarios</h5>
         </div>
-
-        <div id="contenedor-horarios">
+        <div class="bg-white border rounded-3 px-3 py-2 flex-shrink-0" style="font-size:.8rem;">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <span class="fw-bold text-muted" style="width:85px;flex-shrink:0;">REQUERIDO:</span>
+                <div id="horas-requerido"><span class="text-muted small fst-italic">—</span></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="fw-bold text-muted" style="width:85px;flex-shrink:0;">ASIGNADO:</span>
+                <div id="horas-summary"><span class="text-muted small fst-italic">—</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="section-card-body">
+        <div id="horarios-section">
             {% include 'grupos/partials/_horarios_formset.html' %}
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2">
+            <span class="text-muted" style="font-size:.75rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                Los cambios se validan contra la carga horaria de la asignatura.
+            </span>
+            <button type="button" class="btn btn-primary fw-semibold px-4" id="btn-save-horarios">
+                <span class="spinner-border spinner-border-sm me-1 d-none" id="horarios-spinner"></span>
+                <i class="bi bi-check2-circle me-1"></i>Guardar horarios
+            </button>
+        </div>
     </div>
 </div>
 
-<div class="card mb-0 border-0 shadow-sm">
-    <div class="card-body p-4">
-        <div class="section-header mb-3">
+<div class="section-card">
+    <div class="section-card-header">
+        <div class="section-header mb-0">
             <i class="bi bi-people-fill fs-5"></i><h5>Distribución de Vacantes</h5>
         </div>
-
-    <div id="contenedor-vacantes">
-        {% include 'grupos/partials/_vacantes_formset.html' %}
+        <span class="text-muted" style="font-size:.75rem;">
+            Total: <strong id="total-vacantes">{{ grupo.total_vacantes }}</strong> vacantes
+        </span>
     </div>
+    <div class="section-card-body p-0">
+        <div id="vacantes-section">
+            {% include 'grupos/partials/_vacantes_formset.html' %}
+        </div>
+        <div class="d-flex justify-content-end p-3 border-top">
+            <button type="button" class="btn btn-primary fw-semibold px-4" id="btn-save-vacantes">
+                <span class="spinner-border spinner-border-sm me-1 d-none" id="vacantes-spinner"></span>
+                <i class="bi bi-check2-circle me-1"></i>Guardar vacantes
+            </button>
+        </div>
     </div>
 </div>
 
-<div class="mt-4 d-flex justify-content-end">
-    <a href="{% url 'grupos_list' %}" class="btn btn-secondary px-4 fw-bold shadow-sm">
-        <i class="bi bi-arrow-left me-1"></i> Volver a la lista
-    </a>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
-    function inicializarSelectsYEstilos() {
-        // Horarios
-        $('#form-horarios-htmx .select2-docente').select2({theme:'bootstrap-5', width:'100%', placeholder:'Docente…', allowClear:true});
-        $('#form-horarios-htmx .select2-aula').select2({theme:'bootstrap-5', width:'100%', placeholder:'Aula…', allowClear:true});
+$(function(){
+    const URL_DETALLE = "{% url 'api_asignatura_equivalencias' %}";
+    const ASIG_ID_INI = "{{ grupo.asignatura_base_id }}";
+    const EDIT_URL    = "{% url 'grupo_edit' grupo.pk %}";
+    const CSRF        = "{{ csrf_token }}";
 
-        // Vacantes (Aplica Select2 a las asignaturas equivalentes)
-        $('#form-vacantes-htmx .vacante-asignatura').select2({
-            theme:'bootstrap-5',
-            width:'100%',
-            placeholder:'Buscar asignatura equivalente…',
-            allowClear:true
+    // ── Slots 08:00-22:00 cada 30 min ────────────────────────────
+    const SLOTS = [];
+    for(let h = 8; h <= 22; h++){
+        SLOTS.push(p(h)+':00');
+        if(h < 22) SLOTS.push(p(h)+':30');
+    }
+    function p(n){ return String(n).padStart(2,'0'); }
+
+    let horasReq = {T:0, P:0, L:0};
+    let eqData   = [];
+    const eqMap  = {};
+
+    // ── Tiempo ────────────────────────────────────────────────────
+    const toMin   = v => { if(!v) return -1; const [h,m]=v.split(':').map(Number); return h*60+m; };
+    const fromMin = t => `${p(Math.floor(t/60))}:${p(t%60)}`;
+    const snapSlot= m => fromMin(Math.min(Math.max(Math.round(m/30)*30,480),1320));
+    const normHora= v => {
+        if(!v) return '';
+        const [h,m]=v.split(':').map(Number);
+        if(h<8||h>22) return '';
+        return `${p(h)}:${p(m>=15&&m<45?30:0)}`;
+    };
+
+    // ── Cálculo de horas ──────────────────────────────────────────
+    function calcHoras(){
+        const a={T:0,P:0,L:0};
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            const t=$(this).find('select[name$="-tipo"]').val();
+            const i=$(this).find('input[name$="-hora_inicio"]').val();
+            const f=$(this).find('input[name$="-hora_fin"]').val();
+            if(t in a&&i&&f){const d=(toMin(f)-toMin(i))/60;if(d>0)a[t]+=d;}
         });
-
-        // Dar estilo a los inputs numéricos de vacantes
-        $('#form-vacantes-htmx input[type="number"]').addClass('form-control text-center fw-bold');
+        return a;
+    }
+    function horasRestantes(tipo,$exc){
+        const req=horasReq[tipo]||0; if(!req) return 0;
+        let ac=0;
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            if($exc&&$(this).is($exc)) return;
+            const t=$(this).find('select[name$="-tipo"]').val();
+            const i=$(this).find('input[name$="-hora_inicio"]').val();
+            const f=$(this).find('input[name$="-hora_fin"]').val();
+            if(t===tipo&&i&&f){const d=(toMin(f)-toMin(i))/60;if(d>0)ac+=d;}
+        });
+        return Math.max(0,req-ac);
     }
 
-    $(document).ready(function() {
-        inicializarSelectsYEstilos();
+    // ── Ajuste de rango ───────────────────────────────────────────
+    function ajustarRango($row,silencioso){
+        const tipo=$row.find('select[name$="-tipo"]').val(); if(!tipo) return;
+        const req=horasReq[tipo]||0; if(!req) return;
+        const $i=$row.find('input[name$="-hora_inicio"]');
+        const $f=$row.find('input[name$="-hora_fin"]');
+        const iv=$i.val(),fv=$f.val(); if(!iv||!fv) return;
+        const rest=horasRestantes(tipo,$row);
+        const diff=(toMin(fv)-toMin(iv))/60; if(diff<=0) return;
+        const lbl=tipo==='T'?'Teoría':tipo==='P'?'Práctica':'Lab';
+        if(rest<=0){
+            $i.val('');$f.val('');pintarBarra($row.find('.hora-bar'),'','');
+            if(!silencioso) errHora($i,`Las horas de ${lbl} ya están completas`,'warn');
+        } else if(diff>rest){
+            const fc=snapSlot(toMin(iv)+Math.round(rest*60));
+            $f.val(fc);pintarBarra($row.find('.hora-bar'),iv,fc);
+            if(!silencioso) errHora($f,`Ajustado a ${fc} — quedan ${rest}h de ${lbl}`,'warn');
+        }
+    }
+
+    // ── Errores de hora ───────────────────────────────────────────
+    function errHora($inp,msg,niv){
+        clearErrHora($inp);
+        const key=($inp.attr('name')||'').endsWith('-hora_inicio')?'ini':'fin';
+        const $wrap=$inp.closest('.hora-range-wrapper');
+        $inp.addClass('is-invalid-field');
+        let $box=$wrap.find('.hora-errors-box');
+        if(!$box.length) $box=$('<div class="hora-errors-box"></div>').appendTo($wrap);
+        const ico=niv==='warn'?'bi-exclamation-triangle-fill':'bi-exclamation-circle-fill';
+        const $t=$(`<div class="hora-inline-error hora-err-${key}${niv==='warn'?' warn-type':''}"><i class="bi ${ico}"></i>${msg}</div>`);
+        $box.append($t);
+        setTimeout(()=>$t.fadeOut(250,()=>{$t.remove();$inp.removeClass('is-invalid-field');if(!$box.children().length)$box.remove();}),4500);
+    }
+    function clearErrHora($inp){
+        $inp.removeClass('is-invalid-field');
+        const key=($inp.attr('name')||'').endsWith('-hora_inicio')?'ini':'fin';
+        const $wrap=$inp.closest('.hora-range-wrapper');
+        $wrap.find(`.hora-err-${key}:not(.server-error)`).remove();
+        if(!$wrap.find('.hora-errors-box').children().length)
+            $wrap.find('.hora-errors-box:not(:has(.server-error))').remove();
+    }
+    function validarHora($inp){
+        const v=$inp.val(); if(!v) return;
+        const m=toMin(v);
+        if(m<480){$inp.val('08:00');errHora($inp,'Mínimo 08:00','err');}
+        else if(m>1320){$inp.val('22:00');errHora($inp,'Máximo 22:00','err');}
+        else clearErrHora($inp);
+        const $row=$inp.closest('.horario-row');
+        const $i=$row.find('input[name$="-hora_inicio"]');
+        const $f=$row.find('input[name$="-hora_fin"]');
+        if($i.val()&&$f.val()&&toMin($f.val())<=toMin($i.val())){
+            $f.val('');pintarBarra($row.find('.hora-bar'),$i.val(),'');
+            errHora($f,'La hora fin debe ser posterior al inicio','err');
+        }
+    }
+    $(document).on('change','input[name$="-hora_inicio"],input[name$="-hora_fin"]',function(){
+        validarHora($(this));
+        const $row=$(this).closest('.horario-row');
+        if($row.length){ajustarRango($row,false);actualizarHoras();}
     });
 
-    document.body.addEventListener('htmx:afterSwap', function(evt) {
-        // Si HTMX actualiza los horarios o las vacantes, re-inicializamos los estilos
-        if (evt.detail.target.id === 'form-horarios-htmx' || evt.detail.target.id === 'form-vacantes-htmx') {
-            inicializarSelectsYEstilos();
+    // ── Resumen de horas ──────────────────────────────────────────
+    const TIPO_STYLE={
+        T:'background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;',
+        P:'background:#dcfce7;color:#166534;border-color:#86efac;',
+        L:'background:#fef3c7;color:#92400e;border-color:#fde68a;'
+    };
+    const TIPO_LABEL={T:'Teoría',P:'Práctica',L:'Lab'};
+
+    function actualizarHoras(){
+        const a=calcHoras();
+        const $sr=$('#horas-requerido').empty();
+        const $sa=$('#horas-summary').empty();
+        let hayReq=false,hayAsig=false;
+        ['T','P','L'].forEach(t=>{
+            const req=horasReq[t]||0;
+            const got=Math.round(a[t]*100)/100;
+            if(req>0){hayReq=true;$sr.append(`<span class="horas-badge" style="${TIPO_STYLE[t]}"><i class="bi bi-clock"></i>${TIPO_LABEL[t]}: ${req}h</span>`);}
+            if(!req&&!got) return;
+            hayAsig=true;
+            let cls='horas-badge';
+            if(req>0&&Math.abs(req-got)<.01) cls+=' ok';
+            else if(req>0&&got>0&&got<req)   cls+=' warn';
+            else if(req>0&&got>req)          cls+=' err';
+            $sa.append(`<span class="${cls}"><i class="bi bi-clock-fill"></i>${TIPO_LABEL[t]}: ${got}h</span>`);
+        });
+        if(!hayReq) $sr.html('<span class="text-muted small fst-italic">—</span>');
+        if(!hayAsig) $sa.html('<span class="text-muted small fst-italic">—</span>');
+        actualizarBotonesTipo();
+    }
+
+    // ── Botones Tipo ──────────────────────────────────────────────
+    function setVisibilidad($row){
+        $row.find('.tipo-btn').each(function(){
+            const t=$(this).data('tipo');
+            horasReq[t]>0?$(this).removeClass('d-none'):$(this).addClass('d-none');
+        });
+    }
+    function actualizarBotonesTipo(){
+        const a=calcHoras();
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            const $row=$(this);
+            const tipoAct=$row.find('select[name$="-tipo"]').val();
+            $row.find('.tipo-btn').each(function(){
+                const t=$(this).data('tipo');
+                const req=horasReq[t]||0;
+                if(!req){$(this).addClass('d-none');return;}
+                $(this).removeClass('d-none');
+                let otras=a[t];
+                if(t===tipoAct){
+                    const iv=$row.find('input[name$="-hora_inicio"]').val();
+                    const fv=$row.find('input[name$="-hora_fin"]').val();
+                    if(iv&&fv){const d=(toMin(fv)-toMin(iv))/60;if(d>0)otras-=d;}
+                }
+                const cubierto=Math.round(otras*100)/100>=req;
+                if(cubierto&&t!==tipoAct) $(this).addClass('completed').prop('disabled',true);
+                else                      $(this).removeClass('completed').prop('disabled',false);
+            });
+        });
+        $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+            const $row=$(this);
+            const $sel=$row.find('select[name$="-tipo"]');
+            const tipoAct=$sel.val(); if(!tipoAct) return;
+            const req=horasReq[tipoAct]||0; if(!req) return;
+            let otras=0;
+            $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+                if($(this).is($row)) return;
+                const t=$(this).find('select[name$="-tipo"]').val();
+                const iv=$(this).find('input[name$="-hora_inicio"]').val();
+                const fv=$(this).find('input[name$="-hora_fin"]').val();
+                if(t===tipoAct&&iv&&fv){const d=(toMin(fv)-toMin(iv))/60;if(d>0)otras+=d;}
+            });
+            if(Math.round(otras*100)/100<req) return;
+            const sig=proximoLibre($row);
+            if(sig){
+                $sel.val(sig);
+                $row.find('.tipo-btn').removeClass('active-T active-P active-L');
+                $row.find(`.tipo-btn[data-tipo="${sig}"]`).addClass(`active-${sig}`).removeClass('completed').prop('disabled',false);
+                ajustarRango($row,true);
+                notif($row,`Tipo cambiado a ${TIPO_LABEL[sig]}`,'info');
+            } else {
+                $row.find('input[name$="-hora_inicio"],input[name$="-hora_fin"]').val('');
+                pintarBarra($row.find('.hora-bar'),'','');
+                notif($row,'Todos los tipos ya están cubiertos','warn');
+            }
+        });
+    }
+    function proximoLibre($excRow){
+        for(const t of ['T','P','L']){
+            const req=horasReq[t]||0; if(!req) continue;
+            let ac=0;
+            $('#horarios-container .horario-row:not(.to-delete)').each(function(){
+                if($(this).is($excRow)) return;
+                const ti=$(this).find('select[name$="-tipo"]').val();
+                const iv=$(this).find('input[name$="-hora_inicio"]').val();
+                const fv=$(this).find('input[name$="-hora_fin"]').val();
+                if(ti===t&&iv&&fv){const d=(toMin(fv)-toMin(iv))/60;if(d>0)ac+=d;}
+            });
+            if(Math.round(ac*100)/100<req) return t;
         }
+        return null;
+    }
+    function proximoPendiente(){
+        const a=calcHoras();
+        for(const t of ['T','P','L']){
+            const req=horasReq[t]||0; if(!req) continue;
+            if(Math.round(a[t]*100)/100<req) return t;
+        }
+        return null;
+    }
+    function notif($row,msg,tipo){
+        const C={
+            info:{bg:'#eff6ff',bd:'#93c5fd',cl:'#1d4ed8',ic:'bi-info-circle-fill'},
+            warn:{bg:'#fef3c7',bd:'#fde68a',cl:'#92400e',ic:'bi-exclamation-triangle-fill'}
+        }[tipo]||{bg:'#eff6ff',bd:'#93c5fd',cl:'#1d4ed8',ic:'bi-info-circle-fill'};
+        $row.find('.horario-notif').remove();
+        const $n=$(`<div class="horario-notif" style="background:${C.bg};border:1px solid ${C.bd};color:${C.cl};"><i class="bi ${C.ic}" style="flex-shrink:0;"></i>${msg}</div>`);
+        $row.append($n);
+        setTimeout(()=>$n.fadeOut(300,()=>$n.remove()),4000);
+    }
+
+    // ── Barra de hora ─────────────────────────────────────────────
+    function pintarBarra($bar,ini,fin){
+        const iN=normHora(ini),fN=normHora(fin);
+        const iM=toMin(iN),fM=toMin(fN);
+        $bar.find('.hora-slot').each(function(){
+            const s=$(this).data('slot'),m=toMin(s);
+            $(this).removeClass('sel-ini sel-fin sel-mid');
+            if(!iN) return;
+            if(s===iN&&(!fN||s===fN)) $(this).addClass('sel-ini sel-fin');
+            else if(s===iN)           $(this).addClass('sel-ini');
+            else if(fN&&s===fN)       $(this).addClass('sel-fin');
+            else if(fN&&m>iM&&m<fM)   $(this).addClass('sel-mid');
+        });
+    }
+    function buildHoraBar($row){
+        const $bar=$row.find('.hora-bar').empty();
+        const $i=$row.find('input[name$="-hora_inicio"]');
+        const $f=$row.find('input[name$="-hora_fin"]');
+        $i.attr({min:'08:00',max:'22:00'});$f.attr({min:'08:00',max:'22:00'});
+        SLOTS.forEach(s=>{
+            const [h,m]=s.split(':').map(Number);
+            $bar.append(`<div class="hora-slot" data-slot="${s}">${m===0?s:''}</div>`);
+        });
+        pintarBarra($bar,$i.val(),$f.val());
+        let wait=false,tmp=null;
+        $bar.on('mouseenter','.hora-slot',function(){
+            if(!wait) return;
+            let [a,b]=[tmp,$(this).data('slot')];
+            if(toMin(b)<=toMin(a))[a,b]=[b,a];
+            pintarBarra($bar,a,b);$i.val(a);$f.val(b);
+        });
+        $bar.on('click','.hora-slot',function(){
+            const s=$(this).data('slot');
+            if(!wait){
+                tmp=s;wait=true;$bar.css('cursor','e-resize');
+                pintarBarra($bar,s,null);$i.val(s).trigger('change');$f.val('').trigger('change');
+            } else {
+                let [a,b]=[tmp,s];if(toMin(b)<=toMin(a))[a,b]=[b,a];
+                $i.val(a).trigger('change');$f.val(b).trigger('change');
+                pintarBarra($bar,a,b);wait=false;tmp=null;$bar.css('cursor','pointer');
+                ajustarRango($row,false);actualizarHoras();
+            }
+        });
+        $(document).on('keydown.hb',e=>{
+            if(e.key==='Escape'&&wait){wait=false;tmp=null;$bar.css('cursor','pointer');pintarBarra($bar,$i.val(),$f.val());}
+        });
+        $i.on('change',()=>{if(!wait){pintarBarra($bar,normHora($i.val()),normHora($f.val()));actualizarHoras();}});
+        $f.on('change input',()=>{if(!wait){pintarBarra($bar,normHora($i.val()),normHora($f.val()));actualizarHoras();}});
+    }
+
+    // ── Init fila horario ─────────────────────────────────────────
+    function initHorarioRow($row,autoTipo){
+        const $sel=$row.find('.tipo-hidden-select select');
+        const $btns=$row.find('.tipo-btn');
+        const ti=$sel.val()||autoTipo;
+        setVisibilidad($row);
+        if(ti){
+            $sel.val(ti);$btns.removeClass('active-T active-P active-L');
+            $btns.filter(`[data-tipo="${ti}"]`).addClass(`active-${ti}`);
+        }
+        $btns.on('click',function(){
+            if($(this).hasClass('completed')||$(this).prop('disabled')) return;
+            const t=$(this).data('tipo');
+            $sel.val(t);$btns.removeClass('active-T active-P active-L');$(this).addClass(`active-${t}`);
+            ajustarRango($row,true);
+            pintarBarra($row.find('.hora-bar'),
+                $row.find('input[name$="-hora_inicio"]').val(),
+                $row.find('input[name$="-hora_fin"]').val());
+            actualizarHoras();
+        });
+        buildHoraBar($row);
+        $row.find('.select2-docente').select2({theme:'bootstrap-5',width:'100%',placeholder:'Docente…',allowClear:true,dropdownParent:$row});
+        $row.find('.select2-aula').select2({theme:'bootstrap-5',width:'100%',placeholder:'Aula…',allowClear:true,dropdownParent:$row});
+    }
+    function initTodasLasFilas(){
+        $('#horarios-container .horario-row').each(function(){initHorarioRow($(this),null);});
+        actualizarHoras();
+    }
+
+    // ── Agregar / duplicar horario ────────────────────────────────
+    function agregarHorario(clonar){
+        const $total=$('#id_horarios-TOTAL_FORMS');
+        const idx=parseInt($total.val());
+        const $row=$($('#horarios-template').html().replace(/__prefix__/g,idx));
+        $('#horarios-container').append($row);
+        initHorarioRow($row,proximoPendiente());
+        $total.val(idx+1);
+        if(clonar){
+            const $p=$('#horarios-container .horario-row').eq(-2);
+            if($p.length){
+                $row.find('select[name$="-dia"]').val($p.find('select[name$="-dia"]').val());
+                const tf=proximoPendiente()||$p.find('.tipo-hidden-select select').val();
+                if(tf){
+                    $row.find('.tipo-hidden-select select').val(tf);
+                    $row.find('.tipo-btn').removeClass('active-T active-P active-L');
+                    $row.find(`.tipo-btn[data-tipo="${tf}"]`).addClass(`active-${tf}`);
+                }
+                const iv=normHora($p.find('input[name$="-hora_inicio"]').val());
+                const fv=normHora($p.find('input[name$="-hora_fin"]').val());
+                $row.find('input[name$="-hora_inicio"]').val(iv);
+                $row.find('input[name$="-hora_fin"]').val(fv);
+                pintarBarra($row.find('.hora-bar'),iv,fv);
+                ajustarRango($row,false);
+            }
+        }
+        $row[0].scrollIntoView({behavior:'smooth',block:'center'});
+        actualizarHoras();
+    }
+
+    // Delegación para elementos que se re-renderizan con HTMX
+    $(document).on('click','#add-horario',()=>agregarHorario(false));
+    $(document).on('click','#copy-last-horario',()=>agregarHorario(true));
+    $(document).on('click','.delete-horario',function(){
+        const $row=$(this).closest('.horario-row');
+        const $del=$row.find('input[name$="-DELETE"]');
+        if($del.length){$del.prop('checked',true);$row.addClass('to-delete');}
+        else{$row.remove();renum('horarios');}
+        actualizarHoras();
     });
+    $(document).on('change','#horarios-container select[name$="-tipo"]',actualizarHoras);
+
+    // ── Guardar horarios ($.post manual) ─────────────────────────
+    // No usamos hx-* para tener control total sobre Select2 y campos modificados por JS
+    $('#btn-save-horarios').on('click',function(){
+        const $btn=$(this);
+        const $spinner=$('#horarios-spinner');
+        $btn.prop('disabled',true);$spinner.removeClass('d-none');
+
+        const data=$('#horarios-section input, #horarios-section select, #horarios-section textarea').serialize();
+        $.post(EDIT_URL, data+'&_save_horarios=1&csrfmiddlewaretoken='+CSRF)
+            .done(html=>{
+                $('#horarios-section').html(html);
+                initTodasLasFilas();
+                reinitEqs();
+                marcaErroresServer();
+            })
+            .always(()=>{$btn.prop('disabled',false);$spinner.addClass('d-none');});
+    });
+
+    // ── Guardar vacantes ($.post manual) ─────────────────────────
+    $('#btn-save-vacantes').on('click',function(){
+        const $btn=$(this);
+        const $spinner=$('#vacantes-spinner');
+        $btn.prop('disabled',true);$spinner.removeClass('d-none');
+
+        const data=$('#vacantes-section input, #vacantes-section select, #vacantes-section textarea').serialize();
+        $.post(EDIT_URL, data+'&_save_vacantes=1&csrfmiddlewaretoken='+CSRF)
+            .done(html=>{
+                $('#vacantes-section').html(html);
+                reinitEqs();
+                $('.vacantes-input').addClass('form-control');
+                // Actualizar contador de vacantes en cabecera
+                let total=0;
+                $('#vacantes-container .vacante-row:not(.to-delete) .vacantes-input').each(function(){
+                    total+=parseInt($(this).val())||0;
+                });
+                $('#total-vacantes').text(total);
+            })
+            .always(()=>{$btn.prop('disabled',false);$spinner.addClass('d-none');});
+    });
+
+    // ── Equivalencias ─────────────────────────────────────────────
+    function initEq($sel){
+        if($sel.data('select2')) $sel.select2('destroy');
+        $sel.empty().append('<option value=""></option>');
+        eqData.forEach(eq=>$sel.append($('<option>').val(eq.id).text(`[${eq.escuela}] ${eq.codigo} — ${eq.nombre}`)));
+        const sin=!eqData.length;
+        $sel.prop('disabled',sin).select2({
+            theme:'bootstrap-5',width:'100%',
+            placeholder:{id:'',text:sin?'Sin equivalencias disponibles':'Buscar por escuela, código o nombre…'},
+            allowClear:!sin,
+            language:{noResults:()=>'Sin coincidencias',searching:()=>'Buscando…'}
+        });
+        $sel.off('select2:select.eq select2:clear.eq');
+        $sel.on('select2:select.eq',function(e){
+            const eq=eqMap[String(e.params.data.id)]; if(!eq) return;
+            const $row=$(this).closest('.vacante-row');
+            const $real=$row.find('select[name$="-asignatura"]');
+            if(!$real.find(`option[value="${eq.id}"]`).length)
+                $real.append(new Option(eq.nombre,eq.id,true,true));
+            $real.val(eq.id);renderCell($row,eq);
+        });
+        $sel.on('select2:clear.eq',function(){
+            const $row=$(this).closest('.vacante-row');
+            $row.find('select[name$="-asignatura"]').val('');
+            $row.find('.real-info').addClass('d-none');
+            $row.find('.school-name').text('-').addClass('text-muted');
+            $row.find('.equivalencia-select-wrap').removeClass('d-none');
+        });
+    }
+    function reinitEqs(){
+        Object.keys(eqMap).forEach(k=>delete eqMap[k]);
+        eqData.forEach(eq=>{eqMap[String(eq.id)]=eq;});
+        $('#vacantes-container .select2-equivalencia').each(function(){initEq($(this));});
+    }
+    function renderCell($row,d){
+        $row.find('.equivalencia-select-wrap').addClass('d-none');
+        const $ri=$row.find('.real-info').removeClass('d-none');
+        $ri.find('.course-code').text(d.codigo||'');
+        $ri.find('.course-name').text(' '+(d.nombre||''));
+        $ri.find('.plan-name').text(d.plan||'');
+        $row.find('.school-name').text(d.escuela||'-').removeClass('text-muted');
+    }
+    $(document).on('click','.cambiar-equivalencia',function(){
+        const $row=$(this).closest('.vacante-row');
+        $row.find('.real-info').addClass('d-none');
+        const $wrap=$row.find('.equivalencia-select-wrap');
+        $wrap.removeClass('d-none');
+        $row.find('.school-name').text('-').addClass('text-muted');
+        $row.find('select[name$="-asignatura"]').val('').trigger('change');
+        const $sel=$wrap.find('.select2-equivalencia');
+        if($sel.data('select2')) $sel.select2('destroy');
+        $sel.empty().append('<option value=""></option>');
+        initEq($sel);
+        setTimeout(()=>{try{$sel.select2('open');}catch(e){}},50);
+    });
+
+    // ── Cargar datos de la asignatura base ────────────────────────
+    function cargarAsignatura(id,cb){
+        $.get(URL_DETALLE,{id},r=>{
+            eqData=r.equivalencias||[];
+            Object.keys(eqMap).forEach(k=>delete eqMap[k]);
+            eqData.forEach(eq=>{eqMap[String(eq.id)]=eq;});
+            horasReq={
+                T:parseFloat(r.horas_teoria||0),
+                P:parseFloat(r.horas_practica||0),
+                L:parseFloat(r.horas_laboratorio||0)
+            };
+            if(cb) cb(r);
+        });
+    }
+
+    // ── Vacantes: agregar fila ────────────────────────────────────
+    $(document).on('click','#add-vacante',function(){
+        if(!eqData.length){
+            const $btn=$(this).prop('disabled',true).html('<span class="spinner-border spinner-border-sm me-1"></span>Cargando…');
+            cargarAsignatura(ASIG_ID_INI,()=>{
+                actualizarHoras();agregarVacante();
+                $btn.prop('disabled',false).html('<i class="bi bi-plus-lg me-1"></i>Agregar Equivalencia');
+            });
+            return;
+        }
+        agregarVacante();
+    });
+    function agregarVacante(){
+        const $total=$('#id_vacantes-TOTAL_FORMS');
+        const idx=parseInt($total.val());
+        const html=$('#vacantes-template').html().replace(/__prefix__/g,idx);
+        const $row=$(html);
+        $('#vacantes-container').append($row);
+        $total.val(idx+1);
+        $row.find('.vacantes-input').addClass('form-control');
+        const $sel=$row.find('.select2-equivalencia');
+        initEq($sel);
+        if(eqData.length) setTimeout(()=>{try{$sel.select2('open');}catch(e){}},50);
+    }
+    $(document).on('click','.delete-vacante',function(){
+        const $row=$(this).closest('.vacante-row');
+        if($row.data('es-base')==='true'||$row.data('es-base')===true) return;
+        const $del=$row.find('input[name$="-DELETE"]');
+        if($del.length){$del.prop('checked',true);$row.addClass('d-none to-delete');}
+        else{$row.remove();renum('vacantes');}
+    });
+
+    // ── Renumeración ──────────────────────────────────────────────
+    function renum(prefix){
+        const sel=prefix==='horarios'?'#horarios-container .horario-row':'#vacantes-container .vacante-row';
+        let n=0;
+        $(sel).each(function(){
+            $(this).find('input,select,textarea').each(function(){
+                ['name','id'].forEach(a=>{
+                    const v=$(this).attr(a);
+                    if(v) $(this).attr(a,v.replace(new RegExp(`(${prefix}-)(\\d+)(-)`),`$1${n}$3`));
+                });
+            });
+            n++;
+        });
+        $(`#id_${prefix}-TOTAL_FORMS`).val(n);
+    }
+
+    // ── Errores server-side ───────────────────────────────────────
+    function marcaErroresServer(){
+        $('.horario-row .server-error').each(function(){
+            $(this).closest('.horario-row')
+                .find('input[name$="-hora_inicio"],input[name$="-hora_fin"]')
+                .addClass('is-invalid-field');
+        });
+        $('.field-error').each(function(){
+            const $p=$(this).prev();
+            if($p.is('input,select,textarea')) $p.addClass('is-invalid-field');
+        });
+    }
+
+    // ── Edición inline del número ─────────────────────────────────
+    $('#btn-edit-numero').on('click',function(){
+        $('#numero-display').addClass('hidden');
+        $('#numero-edit').addClass('active');
+        $('#id_numero').focus().select();
+    });
+    $('#btn-cancel-numero').on('click',function(){
+        $('#numero-edit').removeClass('active');
+        $('#numero-display').removeClass('hidden');
+    });
+
+    // ── Atajo de teclado ──────────────────────────────────────────
+    $(document).on('keydown',function(e){
+        if(e.ctrlKey&&e.key==='h'){e.preventDefault();agregarHorario(false);}
+    });
+
+    // ── Carga inicial ─────────────────────────────────────────────
+    if(ASIG_ID_INI){
+        cargarAsignatura(ASIG_ID_INI,()=>{initTodasLasFilas();reinitEqs();});
+    } else {
+        initTodasLasFilas();
+    }
+    marcaErroresServer();
+    $('.vacantes-input').addClass('form-control');
+});
 </script>
 {% endblock %}

@@ -28,7 +28,10 @@ class BaseHorarioFormSet(forms.BaseInlineFormSet):
 
         for form in self.forms:
             # Ignorar formularios vacíos o marcados para eliminación
-            if not form.cleaned_data or (self.can_delete and self._should_delete_form(form)):
+            if not form.cleaned_data:
+                continue
+
+            if self.can_delete and form.cleaned_data.get('DELETE', False):
                 continue
 
             tipo = form.cleaned_data.get('tipo')

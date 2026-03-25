@@ -123,68 +123,113 @@ def grupo_edit(request, pk):
     grupo = get_object_or_404(Grupo.objects.para_usuario(user), pk=pk)
     periodo_activo = PeriodoAcademico.objects.get_activo()
 
-    # 1. Preparar los Formsets/Forms con los datos (POST o None)
-    # Esto evita repetir código en cada IF
-    if request.method == 'POST':
-        form = GrupoForm(request.POST, instance=grupo, user=user)
-        horario_formset = HorarioFormSet(request.POST, instance=grupo, prefix='horarios', form_kwargs={'user': user})
-        vacantes_formset = GrupoAsignaturaFormSet(request.POST, instance=grupo, prefix='vacantes', form_kwargs={'user': user})
-    else:
+    if request.method == 'GET':
         form = GrupoForm(instance=grupo, user=user)
-        horario_formset = HorarioFormSet(instance=grupo, prefix='horarios', form_kwargs={'user': user})
-        vacantes_formset = GrupoAsignaturaFormSet(instance=grupo, prefix='vacantes', form_kwargs={'user': user})
+        horario_formset = HorarioFormSet(
+            instance=grupo, prefix='horarios', form_kwargs={'user': user}
+        )
+        vacantes_formset = GrupoAsignaturaFormSet(
+            instance=grupo, prefix='vacantes', form_kwargs={'user': user}
+        )
+        return render(request, 'grupos/grupo_edit.html', {
+            'form': form,
+            'horario_formset': horario_formset,
+            'vacantes_formset': vacantes_formset,
+            'grupo': grupo,
+            'periodo': periodo_activo,
+        })
 
-    # 2. Manejar Interceptores HTMX (Acciones específicas)
-    if request.method == 'POST':
+    if 'add_horario' in request.POST:
+        post_data = request.POST.copy()
+        post_data['horarios-TOTAL_FORMS'] = int(post_data['horarios-TOTAL_FORMS']) + 1
+        fs = HorarioFormSet(
+            post_data, instance=grupo, prefix='horarios', form_kwargs={'user': user}
+        )
+        return render(request, 'grupos/partials/_horarios_formset.html', {
+            'horario_formset': fs, 'grupo': grupo
+        })
 
-        # ACCIÓN: Añadir fila de Horario
-        if 'add_horario' in request.POST:
-            post_data = request.POST.copy()
-            post_data['horarios-TOTAL_FORMS'] = int(post_data['horarios-TOTAL_FORMS']) + 1
-            # Re-instanciar con el contador nuevo
-            fs = HorarioFormSet(post_data, instance=grupo, prefix='horarios', form_kwargs={'user': user})
-            return render(request, 'grupos/partials/_horarios_formset.html', {'horario_formset': fs, 'grupo': grupo})
+    if 'add_vacante' in request.POST:
+        post_data = request.POST.copy()
+        post_data['vacantes-TOTAL_FORMS'] = int(post_data['vacantes-TOTAL_FORMS']) + 1
+        fs = GrupoAsignaturaFormSet(
+            post_data, instance=grupo, prefix='vacantes', form_kwargs={'user': user}
+        )
+        return render(request, 'grupos/partials/_vacantes_formset.html', {
+            'vacantes_formset': fs, 'grupo': grupo
+        })
 
-        # ACCIÓN: Guardar Horarios
-        if '_save_horarios' in request.POST:
-            if horario_formset.is_valid():
+    if '_save_horarios' in request.POST:
+        horario_formset = HorarioFormSet(
+            request.POST, instance=grupo, prefix='horarios', form_kwargs={'user': user}
+        )
+        if horario_formset.is_valid():
+            with transaction.atomic():
+                for f in horario_formset.deleted_forms:
+                    if f.instance.pk:
+                        f.instance.delete()
                 horario_formset.save()
-                # Recargar limpio para mostrar datos guardados
-                horario_formset = HorarioFormSet(instance=grupo, prefix='horarios', form_kwargs={'user': user})
-                return render(request, 'grupos/partials/_horarios_formset.html', {
-                    'horario_formset': horario_formset, 'grupo': grupo, 'exito': 'Horarios guardados.'
-                })
+            horario_formset = HorarioFormSet(
+                instance=grupo, prefix='horarios', form_kwargs={'user': user}
+            )
             return render(request, 'grupos/partials/_horarios_formset.html', {
-                'horario_formset': horario_formset, 'grupo': grupo, 'error': 'Error en horarios.'
+                'horario_formset': horario_formset,
+                'grupo': grupo,
+                'exito': 'Horarios guardados correctamente.',
             })
+        return render(request, 'grupos/partials/_horarios_formset.html', {
+            'horario_formset': horario_formset,
+            'grupo': grupo,
+            'error': 'Revisa los errores indicados.',
+        })
 
-        # ACCIÓN: Guardar Vacantes
-        if '_save_vacantes' in request.POST:
-            if vacantes_formset.is_valid():
+    if '_save_vacantes' in request.POST:
+        vacantes_formset = GrupoAsignaturaFormSet(
+            request.POST, instance=grupo, prefix='vacantes', form_kwargs={'user': user}
+        )
+        if vacantes_formset.is_valid():
+            with transaction.atomic():
+                for f in vacantes_formset.deleted_forms:
+                    if f.instance.pk:
+                        f.instance.delete()
                 vacantes_formset.save()
-                vacantes_formset = GrupoAsignaturaFormSet(instance=grupo, prefix='vacantes', form_kwargs={'user': user})
-                return render(request, 'grupos/partials/_vacantes_formset.html', {
-                    'vacantes_formset': vacantes_formset, 'grupo': grupo, 'exito': 'Vacantes guardadas.'
-                })
+            vacantes_formset = GrupoAsignaturaFormSet(
+                instance=grupo, prefix='vacantes', form_kwargs={'user': user}
+            )
             return render(request, 'grupos/partials/_vacantes_formset.html', {
-                'vacantes_formset': vacantes_formset, 'grupo': grupo, 'error': 'Error en vacantes.'
+                'vacantes_formset': vacantes_formset,
+                'grupo': grupo,
+                'exito': 'Vacantes actualizadas correctamente.',
             })
+        return render(request, 'grupos/partials/_vacantes_formset.html', {
+            'vacantes_formset': vacantes_formset,
+            'grupo': grupo,
+            'error': 'Revisa los errores indicados.',
+        })
 
-        # ACCIÓN: Guardar el formulario Principal (si existe un botón para ello)
-        if '_save_main' in request.POST or 'numero' in request.POST: # Ajusta según tus inputs
-             if form.is_valid():
-                 form.save()
-                 messages.success(request, "Datos del grupo actualizados.")
-                 return redirect('grupo_edit', pk=grupo.pk)
+    if '_save_main' in request.POST:
+        form = GrupoForm(request.POST, instance=grupo, user=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Datos del grupo actualizados.')
+            return redirect('grupo_edit', pk=grupo.pk)
+        # Si falla, recargar el dashboard completo con el form con errores
+        horario_formset = HorarioFormSet(
+            instance=grupo, prefix='horarios', form_kwargs={'user': user}
+        )
+        vacantes_formset = GrupoAsignaturaFormSet(
+            instance=grupo, prefix='vacantes', form_kwargs={'user': user}
+        )
+        return render(request, 'grupos/grupo_edit.html', {
+            'form': form,
+            'horario_formset': horario_formset,
+            'vacantes_formset': vacantes_formset,
+            'grupo': grupo,
+            'periodo': periodo_activo,
+        })
 
-    # 3. Respuesta por defecto (Carga inicial GET o POST fallido que no entró en HTMX)
-    return render(request, 'grupos/grupo_edit.html', {
-        'form': form,
-        'horario_formset': horario_formset,
-        'vacantes_formset': vacantes_formset,
-        'grupo': grupo,
-        'periodo': periodo_activo,
-    })
+    # POST no reconocido
+    return HttpResponse(status=400)
 
 @login_required
 def grupo_delete(request, pk):
