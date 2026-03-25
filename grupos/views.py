@@ -17,15 +17,6 @@ from .utils.importer import importar_programacion, ExcelImportError
 from .excel_forms import UploadExcelForm
 from django.db.models import OuterRef, Subquery
 
-def _get_periodo_activo_o_redirigir(request):
-    """Devuelve el periodo activo o None si no existe (ya emite el mensaje de error)."""
-    periodo = PeriodoAcademico.objects.get_activo()
-    if not periodo:
-        messages.error(
-            request,
-            'No existe un periodo académico activo. Contacte al administrador.'
-        )
-    return periodo
 
 @login_required
 def grupos_list(request):
@@ -89,8 +80,12 @@ def grupos_list(request):
 
 @login_required
 def grupo_create(request):
-    periodo_activo = _get_periodo_activo_o_redirigir(request)
+    periodo_activo = PeriodoAcademico.objects.get_activo()
     if not periodo_activo:
+        messages.error(
+            request,
+            'No existe un periodo académico activo. Contacte al administrador.'
+        )
         return redirect('grupos_list')
 
     if request.method == 'POST':
@@ -243,38 +238,6 @@ def grupo_delete(request, pk):
 
     return render(request, 'grupos/grupo_confirm_delete.html', {'grupo': grupo})
 
-@login_required
-@transaction.atomic
-def grupoasignatura_delete(request, pk):
-    """
-    Eliminar una asignatura cubierta por un grupo.
-    No se puede eliminar la asignatura base.
-    """
-    ga = get_object_or_404(
-        GrupoAsignatura.objects.select_related('grupo', 'asignatura', 'grupo__asignatura_base'),
-        pk=pk
-    )
-
-    # Verificar permisos sobre el grupo padre
-    grupo = get_object_or_404(
-        Grupo.objects.para_usuario(request.user),
-        pk=ga.grupo_id
-    )
-
-    if ga.es_base:
-        messages.error(request, "No se puede eliminar la asignatura base del grupo.")
-        return redirect('grupo_edit', pk=grupo.pk)
-
-    if request.method == 'POST':
-        nombre = str(ga)
-        ga.delete()
-        messages.success(request, f'Eliminada: {nombre}')
-        return redirect('grupo_edit', pk=grupo.pk)
-
-    return render(request, 'grupos/grupoasignatura_confirm_delete.html', {
-        'ga': ga,
-        'grupo': grupo,
-    })
 
 @login_required
 def grupo_detail(request, pk):
