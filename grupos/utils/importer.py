@@ -3,7 +3,7 @@ import unicodedata
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from docentes.models import Docente
-from grupos.models import Grupo, DistribucionVacantes
+from grupos.models import Grupo, GrupoAsignatura
 from horarios.models import Horario
 from asignaturas.models import Asignatura, Equivalencia
 from aulas.models import Aula
@@ -99,7 +99,7 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                     continue
 
                 grupo, _ = Grupo.objects.get_or_create(
-                    asignatura=asignatura,
+                    asignatura_base=asignatura,
                     numero=numero_grupo,
                     periodo=periodo,
                 )
@@ -113,9 +113,9 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                     if val_v and str(val_v).isdigit() and int(val_v) > 0:
                         asig_vacante = _resolver_asignatura_vacante(asignatura, sigla_escuela)
                         if asig_vacante:
-                            DistribucionVacantes.objects.update_or_create(
+                            GrupoAsignatura.objects.update_or_create(
                                 grupo=grupo, asignatura=asig_vacante,
-                                defaults={'cantidad': int(val_v)}
+                                defaults={'vacantes': int(val_v)}
                             )
 
                 # Docente

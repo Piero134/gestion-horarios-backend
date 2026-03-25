@@ -118,7 +118,7 @@ class Horario(models.Model):
                     'docente': f"El docente {self.docente} ya tiene clase en el Grupo {cruce_docente.grupo}."
                 })
 
-        asignatura = self.grupo.asignatura
+        asignatura = self.grupo.asignatura_base
 
         horas_requeridas = {
             'T': asignatura.horas_teoria,
