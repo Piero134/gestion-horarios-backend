@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from horarios.models import Horario
-from horarios.serializers import HorarioDetalleSerializer
+from horarios.serializers import HorarioSerializer
 from horarios.filters import HorarioFilter
 from escuelas.models import Escuela
 from periodos.models import PeriodoAcademico
@@ -12,53 +12,71 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
 class HorarioPorDiaListView(generics.ListAPIView):
-    queryset = Horario.objects.all()
-    serializer_class = HorarioDetalleSerializer
+    serializer_class = HorarioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = HorarioFilter
 
+    def get_escuela(self):
+        escuela_id = self.request.query_params.get('escuela')
+
+        if not escuela_id:
+            raise ValidationError({"error": "El parámetro 'escuela' es obligatorio."})
+
+        escuela = Escuela.objects.filter(id=escuela_id).first()
+        if not escuela:
+            raise ValidationError({"error": "Escuela no válida."})
+
+        return escuela
+
     def get_queryset(self):
-        qs = Horario.objects.para_usuario(self.request.user)
+        qs = Horario.objects.all()
+        escuela = self.get_escuela()
+
+        periodo_id = self.request.query_params.get('periodo')
+
+        qs = qs.filter(
+            grupo__asignaturas__plan__escuela=escuela
+        ).distinct()
+
+        if periodo_id:
+            qs = qs.filter(grupo__periodo_id=periodo_id)
+        else:
+            periodo_activo = PeriodoAcademico.objects.get_activo()
+            qs = qs.filter(grupo__periodo=periodo_activo) if periodo_activo else qs.none()
 
         return qs.select_related(
-            'grupo__asignatura', 'docente', 'aula'
+            'grupo__asignatura_base',
+            'docente',
+            'aula'
+        ).prefetch_related(
+            'grupo__asignaturas_cubiertas',
+            'grupo__asignaturas_cubiertas__asignatura',
+            'grupo__asignaturas_cubiertas__asignatura__plan'
         ).order_by('hora_inicio')
 
     def list(self, request, *args, **kwargs):
-        # Validacion de parametros obligatorios
-        ciclo_param = request.query_params.get('ciclo')
-        grupo_param = request.query_params.get('grupo')
-        escuela_param = request.query_params.get('escuela')
-        periodo_param = request.query_params.get('periodo')
+        ciclo = request.query_params.get('ciclo')
+        grupo = request.query_params.get('grupo')
 
-        if not ciclo_param or not grupo_param:
+        if not ciclo or not grupo:
             raise ValidationError({
-                "error": "Los parámetros 'ciclo' y 'grupo' son estrictamente obligatorios."
+                "error": "Los parámetros 'ciclo' y 'grupo' son obligatorios."
             })
 
-        # DRF filtra y serializa los datos automaticamente
-        qs = self.get_queryset()
+        escuela = self.get_escuela()
 
-        if not periodo_param:
-            periodo_activo = PeriodoAcademico.objects.get_activo()
-            if periodo_activo:
-                qs = qs.filter(grupo__periodo=periodo_activo)
-            else:
-                # Si no envían periodo y tampoco hay uno activo, devolvemos vacío
-                qs = qs.none()
+        queryset = self.filter_queryset(self.get_queryset())
 
-        if not escuela_param:
-            escuelas_permitidas = Escuela.objects.para_usuario(request.user)
+        queryset = [
+            h for h in queryset
+            if h.grupo.get_asignatura_para_escuela(escuela).ciclo == int(ciclo)
+        ]
 
-            if escuelas_permitidas.count() == 1:
-                qs = qs.filter(grupo__asignatura__plan__escuela=escuelas_permitidas.first())
-            else:
-                raise ValidationError({
-                    "error": "El parámetro 'escuela' es obligatorio para tu rol, por favor especifícalo."
-                })
-
-        queryset = self.filter_queryset(qs)
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(
+            queryset,
+            many=True,
+            context={'escuela': escuela}
+        )
 
         horario_semanal = {
             "Lunes": [], "Martes": [], "Miércoles": [],
@@ -66,23 +84,23 @@ class HorarioPorDiaListView(generics.ListAPIView):
         }
 
         for item in serializer.data:
-            # Extraemos el dia
             dia = item.pop('dia')
 
-            if dia in horario_semanal:
-                horario_semanal[dia].append(item)
-            else:
-                # En caso de que el día no esté en el diccionario (lo cual no debería pasar), lo agregamos
-                horario_semanal[dia] = [item]
+            if dia not in horario_semanal:
+                horario_semanal[dia] = []
 
-        # Limpiamos dias sin clases
-        horario_semanal = {dia: clases for dia, clases in horario_semanal.items() if clases}
+            horario_semanal[dia].append(item)
 
+        # limpiar vacíos
+        horario_semanal = {
+            dia: clases for dia, clases in horario_semanal.items() if clases
+        }
+
+        # ordenar
         for dia in horario_semanal:
             horario_semanal[dia].sort(key=lambda x: x['hora_inicio'])
 
         return Response(horario_semanal)
-
 
 @login_required
 def horario_asignaturas(request):
