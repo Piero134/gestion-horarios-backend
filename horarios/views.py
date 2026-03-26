@@ -10,8 +10,10 @@ from periodos.models import PeriodoAcademico
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import AllowAny
 
 class HorarioPorDiaListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
     serializer_class = HorarioSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = HorarioFilter
