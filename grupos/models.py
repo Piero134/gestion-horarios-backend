@@ -4,7 +4,7 @@ from asignaturas.models import Asignatura, Equivalencia
 from periodos.models import PeriodoAcademico
 from datetime import datetime
 from django.utils import timezone
-from django.db.models import Q, Subquery, OuterRef, Prefetch
+from django.db.models import Q, Prefetch
 from django.core.validators import MinValueValidator
 from escuelas.models import Escuela
 from django.db.models.signals import post_save
@@ -89,7 +89,6 @@ class GrupoQuerySet(models.QuerySet):
 
     def para_usuario(self, user):
         """Filtra grupos accesibles según el rol del usuario."""
-        from escuelas.models import Escuela
         escuelas = Escuela.objects.para_usuario(user)
         return self.filter(
             asignaturas__plan__escuela__in=escuelas
@@ -155,6 +154,19 @@ class Grupo(models.Model):
         return self.asignaturas_cubiertas.aggregate(
             total=models.Sum('vacantes')
         )['total'] or 0
+
+    def get_asignatura_para_escuela(self, escuela):
+        if hasattr(self, 'asignatura_en_escuela'):
+            return next(
+                (ga.asignatura for ga in self.asignatura_en_escuela),
+                self.asignatura_base
+            )
+
+        relacion = self.asignaturas_cubiertas.filter(
+            asignatura__plan__escuela=escuela
+        ).first()
+
+        return relacion.asignatura if relacion else self.asignatura_base
 
     def validar_horarios(self):
         asignatura = self.asignatura_base
