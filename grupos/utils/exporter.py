@@ -69,7 +69,7 @@ def _agregar_cabecera(ws, facultad_nombre, dependencia_nombre, nombre_periodo, a
 
 
 # Hoja 1: Lista de grupos con sus horarios y docentes
-def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo):
+def _generar_hoja_lista_cursos(wb, grupos, escuela, facultad_texto, dependencia_texto, nombre_periodo):
     ws = wb.active
     if ws is None:
         ws = wb.create_sheet("Profesores")
@@ -83,7 +83,8 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
 
     grupos_por_ciclo = defaultdict(list) # Diccionario ciclo -> lista de grupos
     for g in grupos:
-        grupos_por_ciclo[g.asignatura.ciclo].append(g)
+        asig = g.get_asignatura_para_escuela(escuela)
+        grupos_por_ciclo[asig.ciclo].append(g)
 
     for ciclo in sorted(grupos_por_ciclo.keys()):
         ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=ancho_tabla)
@@ -96,13 +97,16 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
 
         grupos_ciclo = grupos_por_ciclo[ciclo]
 
-        for codigo_asig, grupos_iter in groupby(grupos_ciclo, key=lambda x: x.asignatura.codigo):
+        key_func = lambda x: x.get_asignatura_para_escuela(escuela).codigo
+
+        grupos_ordenados = sorted(grupos_ciclo, key=key_func)
+
+        for codigo_asig, grupos_iter in groupby(grupos_ordenados, key=key_func):
             grupos_asignatura = list(grupos_iter)
-            grupo_base = grupos_asignatura[0]
-            asig = grupo_base.asignatura
+            asig_display = grupos_asignatura[0].get_asignatura_para_escuela(escuela)
 
             ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=ancho_tabla)
-            cell = ws.cell(row=current_row, column=1, value=f"({asig.codigo}) {asig.nombre}")
+            cell = ws.cell(row=current_row, column=1, value=f"({asig_display.codigo}) {asig_display.nombre}")
 
             # Estilos
             cell.font = ExcelEstilos.FONT_TITLE_SUB
@@ -214,7 +218,7 @@ def _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, no
 
 
 # Hoja 2: Horario gráfico
-def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo):
+def _generar_hojas_horario_grafico(wb, grupos, escuela, facultad_texto, dependencia_texto, nombre_periodo):
     ws = wb.create_sheet(title="Horarios")
 
     # Aquí el ancho es fijo (7 columnas: Hora + 6 días), así que centramos en 7
@@ -231,7 +235,8 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
 
     grupos_por_ciclo = defaultdict(list)
     for g in grupos:
-        grupos_por_ciclo[g.asignatura.ciclo].append(g)
+        asig = g.get_asignatura_para_escuela(escuela)
+        grupos_por_ciclo[asig.ciclo].append(g)
 
     fila_actual = 7
 
@@ -285,7 +290,10 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
 
             bloques_por_columna = defaultdict(list)
 
-            for grp in grupos_seccion:
+            for grp in secciones[numero_seccion]:
+                asig_display = grp.get_asignatura_para_escuela(escuela)
+                curso_nombre = asig_display.nombre
+
                 for hor in grp.horarios.all():
 
                     if hor.dia not in col_dias:
@@ -305,8 +313,6 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
 
                     row_start = fila_inicio_grid + offset
                     row_end = row_start + duracion - 1
-
-                    curso_nombre = grp.asignatura.nombre
 
                     if curso_nombre not in colores_por_curso:
                         colores_por_curso[curso_nombre] = PALETA_COLORES[indice_color % len(PALETA_COLORES)]
@@ -379,9 +385,8 @@ def _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto
     for c in range(2, 8):
         ws.column_dimensions[get_column_letter(c)].width = 25
 
-
 # Funcion principal para generar el reporte
-def generar_reporte_grupos(grupos_queryset, user):
+def generar_reporte_grupos(grupos_queryset, user, escuela):
     if not grupos_queryset.exists():
         return None
 
@@ -389,26 +394,22 @@ def generar_reporte_grupos(grupos_queryset, user):
     first_group = grupos_queryset.first()
     nombre_periodo_str = str(first_group.periodo)
 
-    facultad_texto = user.facultad.nombre.upper() if getattr(user, "facultad", None) else "FACULTAD"
-    rol_nombre = getattr(user.rol, "name", "")
-    dependencia_texto = ""
+    facultad_texto = escuela.facultad.nombre.upper()
+    dependencia_texto = f"ESCUELA PROFESIONAL DE {escuela.nombre.upper()}"
+    rol_nombre = getattr(user.rol, "name", "") if hasattr(user, "rol") else ""
 
     if rol_nombre == "Vicedecano Académico":
-        dependencia_texto = "VICEDECANATO ACADÉMICO"
-        escuela_nombre = first_group.asignatura.plan.escuela.nombre.upper()
-        dependencia_texto += f" - ESCUELA PROFESIONAL DE {escuela_nombre}"
+        dependencia_texto = "VICEDECANATO ACADÉMICO  - " + dependencia_texto
     elif rol_nombre in ["Coordinador de Estudios Generales", "Jefe de Estudios Generales"]:
         dependencia_texto = "COORDINACIÓN DE ESTUDIOS GENERALES"
-    elif getattr(user, "escuela", None):
-        dependencia_texto = f"ESCUELA PROFESIONAL DE {user.escuela.nombre.upper()}"
 
     grupos = list(grupos_queryset)
 
     wb = Workbook()
 
     # Pasamos los datos a tus funciones de pintado (sin cambios internos en ellas)
-    _generar_hoja_lista_cursos(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str)
-    _generar_hojas_horario_grafico(wb, grupos, facultad_texto, dependencia_texto, nombre_periodo_str)
+    _generar_hoja_lista_cursos(wb, grupos, escuela, facultad_texto, dependencia_texto, nombre_periodo_str)
+    _generar_hojas_horario_grafico(wb, grupos, escuela, facultad_texto, dependencia_texto, nombre_periodo_str)
 
     output = io.BytesIO()
     wb.save(output)
