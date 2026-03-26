@@ -10,6 +10,8 @@ from escuelas.models import Escuela
 from planes.models import PlanEstudios
 from asignaturas.models import Asignatura, Prerequisito
 
+from planes.utils.importer import normalizar_texto
+
 class Command(BaseCommand):
     help = 'Carga masiva de planes respetando validaciones de Prerrequisitos y Escuela'
 
@@ -75,18 +77,18 @@ class Command(BaseCommand):
             count_cursos = 0
 
             for row in reader:
-                codigo = row.get('Codigo')
+                codigo = (row.get('Codigo') or '').strip().upper()
                 if not codigo: continue
 
                 ciclo = self.safe_int(row.get('Ciclo'))
                 creditos = self.safe_int(row.get('Creditos'))
-                tipo_raw = row.get('Tipo', 'O').strip()
+                tipo_raw = (row.get('Tipo') or 'O').strip().upper()
 
                 Asignatura.objects.update_or_create(
                     codigo=codigo,
                     plan=plan_obj,
                     defaults={
-                        'nombre': row.get('Nombre', 'SIN NOMBRE'),
+                        'nombre': normalizar_texto(row.get('Nombre', 'SIN NOMBRE')),
                         'ciclo': ciclo,
                         'creditos': creditos,
                         'tipo': tipo_raw,
@@ -100,7 +102,7 @@ class Command(BaseCommand):
                 # Manejo de prerrequisitos
                 req_raw = row.get('Prerequisito')
                 if req_raw and req_raw.strip():
-                    req_code = req_raw.strip().split('-')[0].strip()
+                    req_code = normalizar_texto(req_raw).split('-')[0].strip()
                     lista_relaciones.append((codigo, req_code))
 
             self.stdout.write(f"    ✔ Asignaturas procesadas: {count_cursos}")
