@@ -3,6 +3,8 @@ from django.http import JsonResponse
 
 from asignaturas.models import Asignatura
 
+from django.db.models import Q
+
 @login_required
 def cargar_asignaturas_ajax(request):
     escuela_id = request.GET.get('escuela_id')
@@ -28,6 +30,34 @@ def cargar_asignaturas_ajax(request):
         })
 
     return JsonResponse(data, safe=False)
+
+@login_required
+def buscar_asignaturas_ajax(request):
+    q = request.GET.get('q', '').strip()
+    facultad = getattr(request.user, 'facultad', None)
+
+    queryset = Asignatura.objects.select_related('plan', 'plan__escuela')
+    if facultad:
+        queryset = queryset.filter(plan__escuela__facultad=facultad)
+
+    if q:
+        queryset = queryset.filter(Q(nombre__icontains=q) | Q(codigo__icontains=q))
+
+    asignaturas = queryset[:30] # Limitar a 30 para extrema velocidad
+
+    results = []
+    for asig in asignaturas:
+        results.append({
+            'id': asig.id,
+            'text': f"[{asig.codigo}] {asig.nombre}",
+            'nombre_limpio': asig.nombre,
+            'codigo': asig.codigo,
+            'ciclo': asig.ciclo,
+            'plan_anio': asig.plan.anio,
+            'escuela_nombre': asig.plan.escuela.nombre
+        })
+
+    return JsonResponse({'results': results})
 
 @login_required
 def obtener_equivalencias_asignatura(request):

@@ -133,6 +133,12 @@
                 <span>Planes de Estudio</span>
             </a>
 
+            {% if user.rol.name == 'Vicedecano Académico' or user.is_staff %}
+            <a href="{% url 'lista_equivalencias' %}" class="menu-item {% if 'equivalencias' in request.path %}active{% endif %}">
+                <i class="bi bi-arrow-left-right"></i>
+                <span>Equivalencias</span>
+            </a>
+            {% endif %}
         </div>
 
         <div class="menu-section">

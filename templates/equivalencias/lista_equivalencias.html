@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Equivalencias | SGH-FISI{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #2563eb;
+        --secondary-bg: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .eq-card {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .eq-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025) !important;
+    }
+
+    .course-badge-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .course-mini-item {
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 0.6rem 0.85rem;
+    }
+
+    .course-mini-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 0.2rem;
+    }
+
+    .course-mini-meta {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    /* Scroll interno para tarjetas con muchas equivalencias */
+    .scrollable-courses {
+        max-height: 220px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    /* Personalizar el scrollbar para que sea sutil */
+    .scrollable-courses::-webkit-scrollbar { width: 4px; }
+    .scrollable-courses::-webkit-scrollbar-track { background: transparent; }
+    .scrollable-courses::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="mb-1 fw-bold">Equivalencias Registradas</h2>
+        <p class="text-muted mb-0">Administre las agrupaciones de asignaturas equivalentes.</p>
+    </div>
+    <div class="action-toolbar">
+        <a href="{% url 'crear_equivalencia' %}" class="btn btn-primary shadow-sm fw-medium px-4 py-2">
+            <i class="bi bi-plus-lg me-2"></i> Nueva Equivalencia
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for eq in equivalencias %}
+    <div class="col-md-6 col-xl-4">
+        <div class="eq-card shadow-sm h-100 d-flex flex-column">
+            <div class="card-body p-4 flex-grow-1 d-flex flex-column">
+
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="fw-bold mb-0 text-dark pe-3">{{ eq.nombre }}</h5>
+
+<div class="dropdown">
+    <button class="btn btn-sm btn-light border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-three-dots-vertical text-muted"></i>
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-light-subtle">
+        <li>
+            <a class="dropdown-item small" href="{% url 'editar_equivalencia' eq.pk %}">
+                <i class="bi bi-pencil me-2 text-primary"></i>Editar
+            </a>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+            <form action="{% url 'eliminar_equivalencia' eq.pk %}" method="POST" class="d-inline" onsubmit="return confirm('¿Está seguro de eliminar esta equivalencia? Esta acción no se puede deshacer.');">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item small text-danger">
+                    <i class="bi bi-trash me-2"></i>Eliminar
+                </button>
+            </form>
+        </li>
+    </ul>
+</div>
+                </div>
+
+                <h6 class="text-muted small fw-semibold text-uppercase mb-3 mt-2">
+                    Asignaturas ({{ eq.asignaturas.count }})
+                </h6>
+
+                <div class="course-badge-container scrollable-courses flex-grow-1">
+                    {% for asig in eq.asignaturas.all %}
+                    <div class="course-mini-item">
+                        <div class="course-mini-title">[{{ asig.codigo }}] {{ asig.nombre }}</div>
+                        <div class="course-mini-meta">
+                            <span><i class="bi bi-building me-1"></i>{{ asig.plan.escuela.nombre|truncatechars:20 }}</span>
+                            <span>&bull;</span>
+                            <span>Plan {{ asig.plan.anio }}</span>
+                            <span>&bull;</span>
+                            <span>Ciclo {{ asig.ciclo }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3 text-muted small">
+                        No hay asignaturas vinculadas.
+                    </div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5 mt-4 bg-white rounded border border-light-subtle shadow-sm">
+            <div class="mb-3">
+                <i class="bi bi-inboxes display-3 text-light"></i>
+            </div>
+            <h4 class="text-muted fw-medium">No hay equivalencias</h4>
+            <p class="text-muted">Aún no se han registrado grupos de equivalencias en su facultad.</p>
+            <a href="{% url 'crear_equivalencia' %}" class="btn btn-outline-primary mt-2">
+                Crear mi primera equivalencia
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,467 @@
+{% extends 'base.html' %}
+{% load static %}
+
+<h2 class="mb-1 fw-bold">{% if equivalencia %}Editar{% else %}Registrar{% endif %} Equivalencia</h2>
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    :root {
+        --primary-color: #2563eb;
+        --secondary-bg: #f8fafc;
+        --border-color: #e2e8f0;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --danger-color: #ef4444;
+    }
+
+    /* Ajustes Select2 Generales */
+    .select2-container--default .select2-selection--single,
+    .select2-container--default .select2-selection--multiple {
+        background-color: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        min-height: 38px;
+    }
+    .select2-container--default .select2-selection--single {
+        display: flex;
+        align-items: center;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--text-main);
+        padding-left: 0.75rem;
+        font-size: 0.95rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px;
+        right: 8px;
+    }
+    .select2-container--default.select2-container--disabled .select2-selection--single {
+        background-color: var(--secondary-bg);
+        cursor: not-allowed;
+    }
+
+    .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+        background-color: #f1f5f9;
+        color: var(--text-main);
+    }
+    .select2-container--default .select2-results__option--highlighted .fw-bold {
+        color: var(--primary-color) !important;
+    }
+
+    /* Estilos para Resultados AJAX */
+    .select2-result-asig-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 2px;
+    }
+
+    /* Carrito */
+    .selected-courses-container {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        min-height: 150px;
+    }
+    .course-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--secondary-bg);
+        border: 1px solid var(--border-color);
+        padding: 0.85rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+    }
+    .course-item .course-info {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+    .course-item .course-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .btn-remove {
+        color: var(--danger-color);
+        background: none;
+        border: none;
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        transition: background 0.2s;
+    }
+    .btn-remove:hover {
+        background: #fee2e2;
+    }
+
+    /* Pestañas */
+    .nav-tabs .nav-link {
+        color: var(--text-muted);
+        font-weight: 500;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 0.75rem 1rem;
+    }
+    .nav-tabs .nav-link.active {
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+        background: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <div>
+        <h2 class="mb-1 fw-bold">Registrar Equivalencia</h2>
+        <p class="text-muted mb-0">Agrupe asignaturas equivalentes de forma rápida o explorando la malla.</p>
+    </div>
+</div>
+
+<form method="POST" action="">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-0 px-4">
+                    <ul class="nav nav-tabs" id="searchTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="rapida-tab" data-bs-toggle="tab" data-bs-target="#rapida-pane" type="button" role="tab">
+                                <i class="bi bi-lightning-charge me-1"></i> Búsqueda Rápida
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="malla-tab" data-bs-toggle="tab" data-bs-target="#malla-pane" type="button" role="tab">
+                                <i class="bi bi-diagram-3 me-1"></i> Por Malla
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-body p-4 pt-3">
+                    <div class="tab-content" id="searchTabsContent">
+
+                        <div class="tab-pane fade show active" id="rapida-pane" role="tabpanel" tabindex="0">
+                            <div class="mb-4">
+                                <label class="form-label text-muted fw-semibold small text-uppercase">Buscar Asignaturas</label>
+                                <select id="selectUniversal" class="form-select" multiple="multiple" data-placeholder="Escriba código o nombre..."></select>
+                                <div class="form-text mt-2 text-muted">
+                                    Puede buscar y seleccionar <strong>varios cursos a la vez</strong> sin que se cierre el menú.
+                                </div>
+                            </div>
+                            <button type="button" id="btnAgregarUniversal" class="btn btn-outline-primary w-100 fw-medium" disabled>
+                                <i class="bi bi-plus-circle me-2"></i>Añadir Seleccionados
+                            </button>
+                        </div>
+
+                        <div class="tab-pane fade" id="malla-pane" role="tabpanel" tabindex="0">
+                            <div class="mb-3">
+                                <label class="form-label text-muted fw-semibold small text-uppercase">Escuela</label>
+                                <select id="selectEscuela" class="form-select select2-init" data-placeholder="Seleccione Escuela">
+                                    <option></option>
+                                    {% for e in escuelas %}
+                                    <option value="{{ e.id }}">{{ e.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted fw-semibold small text-uppercase">Plan</label>
+                                <select id="selectPlan" class="form-select select2-init" data-placeholder="Seleccione Plan" disabled><option></option></select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted fw-semibold small text-uppercase">Ciclo</label>
+                                <select id="selectCiclo" class="form-select select2-init" data-placeholder="Todos los ciclos" disabled><option></option></select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label text-muted fw-semibold small text-uppercase">Asignatura</label>
+                                <select id="selectAsignatura" class="form-select select2-init" data-placeholder="Seleccione Asignatura" disabled><option></option></select>
+                            </div>
+                            <button type="button" id="btnAgregarMalla" class="btn btn-outline-primary w-100 fw-medium" disabled>
+                                <i class="bi bi-plus-circle me-2"></i>Añadir a Equivalencia
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">2. Detalle de la Equivalencia</h5>
+
+                    <div class="mb-4">
+                        <label for="nombreEquivalencia" class="form-label text-muted fw-semibold small text-uppercase">Nombre de la Equivalencia</label>
+                        <input type="text" class="form-control form-control-lg fs-6" id="nombreEquivalencia" name="nombre" required placeholder="Ej: Algorítmica I" value="{{ equivalencia.nombre|default:'' }}">
+                    </div>
+
+                    <label class="form-label text-muted fw-semibold small text-uppercase">Asignaturas Agrupadas</label>
+                    <div class="selected-courses-container mb-4" id="listaCursos">
+                        <div class="text-center py-4" id="emptyStateMsg">
+                            <i class="bi bi-collection display-6 text-light mb-2 d-block"></i>
+                            <p class="text-muted mb-0">Aún no hay cursos agregados.</p>
+                        </div>
+                    </div>
+
+                    <select name="asignaturas" id="hiddenAsignaturas" multiple hidden></select>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm" id="btnGuardar">
+                        <i class="bi bi-save me-2"></i>Guardar Equivalencia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Referencias Globales
+    const $hiddenAsignaturas = $('#hiddenAsignaturas');
+    const $listaCursos = $('#listaCursos');
+    const $emptyStateMsg = $('#emptyStateMsg');
+    const $nombreEquivalencia = $('#nombreEquivalencia');
+
+    // Función auxiliar para obtener los IDs que ya están en el carrito
+    function obtenerIdsSeleccionados() {
+        return Array.from($hiddenAsignaturas[0].options).map(opt => opt.value);
+    }
+
+    // ==========================================
+    // LÓGICA CENTRAL DEL CARRITO
+    // ==========================================
+    function agregarAlCarrito(idStr, textFull, nombreLimpio, escuelaNombre, planAnio, asigCiclo) {
+        if ($(`#hiddenAsignaturas option[value="${idStr}"]`).length > 0) return false;
+
+        if ($hiddenAsignaturas.find('option').length === 0 && !$nombreEquivalencia.val().trim()) {
+            $nombreEquivalencia.val(nombreLimpio);
+        }
+
+        $hiddenAsignaturas.append(new Option(textFull, idStr, true, true));
+        $emptyStateMsg.hide();
+
+        $listaCursos.append(`
+            <div class="course-item shadow-sm border-start border-primary border-4" id="item-asig-${idStr}">
+                <div class="d-flex flex-column">
+                    <span class="course-info">${textFull}</span>
+                    <div class="course-meta">
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle">
+                            <i class="bi bi-building me-1"></i>${escuelaNombre}
+                        </span>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">
+                            Plan ${planAnio}
+                        </span>
+                        <span class="text-muted small fw-medium">
+                            <i class="bi bi-arrow-return-right mx-1"></i> Ciclo ${asigCiclo}
+                        </span>
+                    </div>
+                </div>
+                <button type="button" class="btn-remove ms-3" onclick="removerCurso('${idStr}')" title="Eliminar">
+                    <i class="bi bi-trash3-fill fs-5"></i>
+                </button>
+            </div>
+        `);
+
+        refrescarDropdownMalla(); // Actualizar el otro buscador al agregar
+        return true;
+    }
+
+    window.removerCurso = function(idStr) {
+        $(`#item-asig-${idStr}`).remove();
+        $(`#hiddenAsignaturas option[value="${idStr}"]`).remove();
+        if ($('#hiddenAsignaturas option').length === 0) $emptyStateMsg.show();
+
+        refrescarDropdownMalla(); // Actualizar los buscadores al quitar
+    };
+
+    // ==========================================
+    // TAB 1: BUSCADOR UNIVERSAL (AJAX MÚLTIPLE)
+    // ==========================================
+    const $selectUniversal = $('#selectUniversal');
+    const $btnAgregarUniversal = $('#btnAgregarUniversal');
+
+    $selectUniversal.select2({
+        width: '100%',
+        multiple: true,
+        closeOnSelect: false,
+        placeholder: 'Escriba código o nombre...',
+        minimumInputLength: 2,
+        language: {
+            inputTooShort: function() { return "Ingrese al menos 2 caracteres..."; },
+            noResults: function() { return "No se encontraron resultados"; },
+            searching: function() { return "Buscando..."; }
+        },
+        ajax: {
+            url: '{% url "buscar_asignaturas_ajax" %}',
+            dataType: 'json',
+            delay: 300,
+            data: function (params) { return { q: params.term }; },
+            processResults: function (data) {
+                const seleccionados = obtenerIdsSeleccionados();
+                // Filtrar resultados AJAX descartando los que ya están en el carrito
+                const filtrados = data.results.filter(item => !seleccionados.includes(String(item.id)));
+                return { results: filtrados };
+            }
+        },
+        templateResult: function(asig) {
+            if (asig.loading) return asig.text;
+            return $(`
+                <div>
+                    <div class="fw-bold text-dark">${asig.text}</div>
+                    <div class="select2-result-asig-meta">
+                        <i class="bi bi-building me-1"></i>${asig.escuela_nombre} | Plan ${asig.plan_anio} | Ciclo ${asig.ciclo}
+                    </div>
+                </div>
+            `);
+        }
+    });
+
+    $selectUniversal.on('change', function() {
+        $btnAgregarUniversal.prop('disabled', $(this).val().length === 0);
+    });
+
+    $btnAgregarUniversal.click(function() {
+        const seleccionados = $selectUniversal.select2('data');
+        seleccionados.forEach(asigData => {
+            agregarAlCarrito(
+                String(asigData.id),
+                asigData.text,
+                asigData.nombre_limpio,
+                asigData.escuela_nombre,
+                asigData.plan_anio,
+                asigData.ciclo
+            );
+        });
+        $selectUniversal.val(null).trigger('change');
+    });
+
+    // ==========================================
+    // TAB 2: BÚSQUEDA POR MALLA (CASCADA)
+    // ==========================================
+    $('.select2-init').select2({ width: '100%', language: { noResults: () => "Sin resultados" } });
+
+    const $selectEscuela = $('#selectEscuela');
+    const $selectPlan = $('#selectPlan');
+    const $selectCiclo = $('#selectCiclo');
+    const $selectAsignatura = $('#selectAsignatura');
+    const $btnAgregarMalla = $('#btnAgregarMalla');
+    let asignaturasActuales = [];
+
+    async function cargarPlanes(escuId) {
+        $selectPlan.prop('disabled', true).html('<option></option>');
+        $selectCiclo.prop('disabled', true).html('<option></option>');
+        $selectAsignatura.prop('disabled', true).html('<option></option>');
+        try {
+            const response = await fetch(`/planes/api/planes/escuela/${escuId}/`);
+            const data = await response.json();
+            if (data.success) {
+                let options = '<option></option>';
+                data.planes.forEach(p => options += `<option value="${p.id}" data-anio="${p.anio}">Plan ${p.anio}</option>`);
+                $selectPlan.html(options).prop('disabled', false).trigger('change');
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function cargarAsignaturasY_Ciclos(planId) {
+        $selectCiclo.prop('disabled', true).html('<option></option>');
+        $selectAsignatura.prop('disabled', true).html('<option></option>');
+        try {
+            const response = await fetch(`/planes/api/plan/detalle/${planId}/`);
+            const data = await response.json();
+            if (data.asignaturas) {
+                asignaturasActuales = data.asignaturas;
+                const ciclos = [...new Set(asignaturasActuales.map(a => a.ciclo))].sort((a,b) => a-b);
+                let optCiclos = '<option></option><option value="TODOS">Todos</option>';
+                ciclos.forEach(c => optCiclos += `<option value="${c}">Ciclo ${c}</option>`);
+                $selectCiclo.html(optCiclos).prop('disabled', false).trigger('change');
+                renderizarAsignaturas(asignaturasActuales);
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    function renderizarAsignaturas(asignaturas) {
+        const seleccionados = obtenerIdsSeleccionados();
+        // Filtrar asignaturas cargadas en memoria descartando las ya seleccionadas
+        const filtradas = asignaturas.filter(a => !seleccionados.includes(String(a.id)));
+
+        let options = '<option></option>';
+        filtradas.forEach(a => options += `<option value="${a.id}" data-ciclo="${a.ciclo}">[${a.codigo}] ${a.nombre}</option>`);
+        $selectAsignatura.html(options).prop('disabled', false).trigger('change');
+    }
+
+    // Función para refrescar el select de Malla cuando se agregan/quitan cursos
+    function refrescarDropdownMalla() {
+        if (asignaturasActuales.length === 0) return;
+        const cicloVal = $selectCiclo.val();
+        let lista = asignaturasActuales;
+        if (cicloVal && cicloVal !== "TODOS") {
+            lista = lista.filter(a => String(a.ciclo) === String(cicloVal));
+        }
+        renderizarAsignaturas(lista);
+    }
+
+    $selectEscuela.on('select2:select', e => cargarPlanes(e.params.data.id));
+    $selectPlan.on('select2:select', e => cargarAsignaturasY_Ciclos(e.params.data.id));
+    $selectCiclo.on('select2:select', e => {
+        const val = e.params.data.id;
+        if(val) renderizarAsignaturas(val === "TODOS" ? asignaturasActuales : asignaturasActuales.filter(a => String(a.ciclo) === String(val)));
+    });
+    $selectAsignatura.on('change', function() { $btnAgregarMalla.prop('disabled', !$(this).val()); });
+
+    $btnAgregarMalla.click(function() {
+        const asigData = $selectAsignatura.select2('data')[0];
+        const planData = $selectPlan.select2('data')[0];
+        const escuelaData = $selectEscuela.select2('data')[0];
+
+        if (!asigData || !asigData.id) return;
+
+        const nombreLimpio = asigData.text.replace(/\[.*?\]\s*/, '');
+        agregarAlCarrito(
+            String(asigData.id),
+            asigData.text,
+            nombreLimpio,
+            escuelaData.text,
+            $(planData.element).data('anio'),
+            $(asigData.element).data('ciclo')
+        );
+
+        $selectAsignatura.val(null).trigger('change');
+    });
+
+    // ==========================================
+    // AUTOCARGA PARA MODO "EDITAR"
+    // ==========================================
+    const rawData = '{{ asignaturas_precargadas_json|escapejs|default:"[]" }}';
+
+    const asignaturasPrecargadas = JSON.parse(rawData);
+
+    if (asignaturasPrecargadas.length > 0) {
+        asignaturasPrecargadas.forEach(asig => {
+            agregarAlCarrito(
+                asig.id,
+                asig.text,
+                asig.nombre_limpio,
+                asig.escuela_nombre,
+                asig.plan_anio,
+                asig.ciclo
+            );
+        });
+
+        refrescarDropdownMalla();
+    }
+});
+</script>
+{% endblock %}
