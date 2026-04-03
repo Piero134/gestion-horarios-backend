@@ -142,7 +142,7 @@ $(function(){
     $('#id_escuela_filtro, #id_ciclo_filtro').on('change', function(){
         const esc = $('#id_escuela_filtro').val();
         const cic = $('#id_ciclo_filtro').val();
-        if(!esc && !cic) return;
+        if(!esc) return;
         const $s = $('#id_asignatura_base').empty().prop('disabled', true);
         $.get(URL_ASIG, {escuela_id: esc, ciclo: cic}, d => {
             $s.append(new Option('Seleccione…', '', true, true));
@@ -150,6 +150,8 @@ $(function(){
             $s.trigger('change').prop('disabled', false);
         });
     });
+
+    $('#id_escuela_filtro').trigger('change');
 
     // ── Validación número ─────────────────────────────────────────
     $('#id_numero').attr('min','1')

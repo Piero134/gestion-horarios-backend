@@ -3,20 +3,11 @@ from facultades.models import Facultad
 
 class EscuelaQuerySet(models.QuerySet):
     def para_usuario(self, user):
-        rol_name = getattr(user.rol, 'name', None) if hasattr(user, 'rol') and user.rol else None
-
-        if rol_name == 'Vicedecano Académico' and hasattr(user, 'facultad'):
-            return self.filter(facultad=user.facultad)
-
-        if rol_name in ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales'] and hasattr(user, 'facultad'):
-            # Lógica de escuela principal (ordenada por código)
-            escuela_principal = self.filter(facultad=user.facultad).order_by('codigo').first()
-            if escuela_principal:
-                return self.filter(pk=escuela_principal.pk)
-            return self.none()
-
         if hasattr(user, 'escuela') and user.escuela:
             return self.filter(id=user.escuela.id)
+
+        if hasattr(user, 'facultad') and user.facultad:
+            return self.filter(facultad=user.facultad)
 
         return self.none()
 

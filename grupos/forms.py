@@ -113,31 +113,17 @@ class GrupoForm(forms.ModelForm):
         # Escuelas según rol
         qs_escuelas = Escuela.objects.none()
         if self.user:
-            rol = getattr(self.user, 'rol', None)
-            facultad = getattr(self.user, 'facultad', None)
-            escuela_usuario = getattr(self.user, 'escuela', None)
+            if hasattr(self.user, 'rol') and self.user.rol:
+                roles_eg = ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']
+                if self.user.rol.name in roles_eg:
+                    self.fields['ciclo_filtro'].choices = [
+                        (1, 'Ciclo 1'),
+                        (2, 'Ciclo 2'),
+                    ]
+            qs_escuelas = Escuela.objects.para_usuario(self.user)
 
-            if rol and rol.name == 'Vicedecano Académico' and facultad:
-                qs_escuelas = Escuela.objects.filter(facultad=facultad).order_by('codigo')
-
-            elif rol and rol.name in [
-                'Coordinador de Estudios Generales',
-                'Jefe de Estudios Generales'
-            ] and facultad:
-                escuela_principal = (
-                    Escuela.objects
-                    .filter(facultad=facultad)
-                    .order_by('codigo')
-                    .first()
-                )
-                if escuela_principal:
-                    qs_escuelas = Escuela.objects.filter(pk=escuela_principal.pk)
-                    self.fields['escuela_filtro'].initial = escuela_principal
-                    self.fields['escuela_filtro'].disabled = True
-
-            elif escuela_usuario:
-                qs_escuelas = Escuela.objects.filter(pk=escuela_usuario.pk)
-                self.fields['escuela_filtro'].initial = escuela_usuario
+            if qs_escuelas.count() == 1:
+                self.fields['escuela_filtro'].initial = qs_escuelas.first()
                 self.fields['escuela_filtro'].disabled = True
 
         self.fields['escuela_filtro'].queryset = qs_escuelas
