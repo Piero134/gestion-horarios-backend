@@ -234,7 +234,7 @@ $(document).ready(function() {
     const $listaCursos = $('#listaCursos');
     const $emptyStateMsg = $('#emptyStateMsg');
     const $nombreEquivalencia = $('#nombreEquivalencia');
-    const SOLO_CICLOS_EG = {{ solo_ciclos_eg|yesno:"true,false" }};
+    const SOLO_CICLOS_EG = "{{ solo_ciclos_eg|yesno:'true,false' }}" === "true";
 
     // Función auxiliar para obtener los IDs que ya están en el carrito
     function obtenerIdsSeleccionados() {
