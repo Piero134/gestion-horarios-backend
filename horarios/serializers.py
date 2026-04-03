@@ -17,7 +17,7 @@ class HorarioSerializer(serializers.ModelSerializer):
         return str(obj.docente) if obj.docente else "SIN ASIGNAR"
 
     def get_aula(self, obj):
-        return f"{obj.aula.nombre} - {obj.aula.pabellon}" if obj.aula else "-"
+        return f"{obj.aula.nombre} - {obj.aula.pabellon}" if obj.aula else "SIN ASIGNAR"
 
     def get_asignatura(self, obj):
         escuela = self.context.get('escuela')

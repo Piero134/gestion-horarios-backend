@@ -16,7 +16,7 @@ MAPEO_SIGLAS_ESCUELA = {
     'EPSIS': 'Ingeniería de Sistemas',
     'EPISW': 'Ingeniería de Software',
     'EPCC': 'Ciencias de la Computación',
-    # 'IA': 'Inteligencia Artificial',
+    'EPIA': 'Inteligencia Artificial',
 }
 
 def importar_programacion(archivo_excel, user, periodo, escuela):
@@ -106,6 +106,7 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
 
                 if grupo.pk not in grupos_limpiados:
                     grupo.horarios.all().delete()
+                    GrupoAsignatura.objects.filter(grupo=grupo).delete()
                     grupos_limpiados.add(grupo.pk)
 
                 for col_idx, sigla_escuela in vacantes_cols.items():
@@ -117,6 +118,13 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                                 grupo=grupo, asignatura=asig_vacante,
                                 defaults={'vacantes': int(val_v)}
                             )
+
+                if not GrupoAsignatura.objects.filter(grupo=grupo).exists():
+                    GrupoAsignatura.objects.get_or_create(
+                        grupo=grupo,
+                        asignatura=grupo.asignatura_base,
+                        defaults={'vacantes': 0}
+                    )
 
                 # Docente
                 idx_docente = col_map['DOCENTE']
@@ -137,10 +145,10 @@ def importar_programacion(archivo_excel, user, periodo, escuela):
                     match_pabellon = re.search(r'(AP|NP)$', aula_raw)
                     if match_pabellon:
                         p_code = match_pabellon.group(0)
-                        a_nom_base = re.sub(r'[- ]?(AP|NP)$', '', aula_raw).strip()
+                        a_nom_base = re.sub(r'\s*[-–]?\s*(AP|NP)$', '', aula_raw).strip()
                     else:
                         a_nom_base = aula_raw
-                        p_code = 'NP'
+                        p_code = 'AP'
 
                     a_nom = re.sub(r'(LABORATORIO|LAB|AULA)', '', a_nom_base).strip()
 

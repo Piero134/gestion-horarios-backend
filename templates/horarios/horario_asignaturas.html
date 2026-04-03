@@ -549,8 +549,8 @@ document.addEventListener('DOMContentLoaded', function () {
                title="${escHtml(tooltip)}">
             <div class="cal-event-title">${escHtml(c.curso)}</div>
             ${heightPx > 30 ? `<div class="cal-event-sub">${escHtml(c.hora_inicio)}–${escHtml(c.hora_fin)}</div>` : ''}
-            ${heightPx > 50 ? `<div class="cal-event-sub"><i class="fas fa-door-open" style="font-size:.52rem;margin-right:2px;"></i>${escHtml(c.aula)}</div>` : ''}
-            ${heightPx > 74 ? `<div class="cal-event-sub"><i class="fas fa-user-tie" style="font-size:.52rem;margin-right:2px;opacity:.7"></i>${escHtml(c.docente)}</div>` : ''}
+            ${heightPx > 50 ? `<div class="cal-event-sub"><i class="fas fa-user-tie" style="font-size:.52rem;margin-right:2px;opacity:.7"></i>${escHtml(c.docente)}</div>` : ''}
+            ${heightPx > 74 ? `<div class="cal-event-sub"><i class="fas fa-door-open" style="font-size:.52rem;margin-right:2px;"></i>${escHtml(c.aula)}</div>` : ''}
             ${heightPx > 42 ? `<span class="ev-tipo-pill">${escHtml(c.tipo)}</span>` : ''}
           </div>`;
       }
