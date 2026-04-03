@@ -35,15 +35,20 @@ def cargar_asignaturas_ajax(request):
 def buscar_asignaturas_ajax(request):
     q = request.GET.get('q', '').strip()
     facultad = getattr(request.user, 'facultad', None)
+    rol_name = getattr(request.user.rol, 'name', None) if hasattr(request.user, 'rol') and request.user.rol else None
+    roles_eg = ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']
 
     queryset = Asignatura.objects.select_related('plan', 'plan__escuela')
     if facultad:
         queryset = queryset.filter(plan__escuela__facultad=facultad)
 
+    if rol_name in roles_eg:
+        queryset = queryset.filter(ciclo__in=[1, 2])
+
     if q:
         queryset = queryset.filter(Q(nombre__icontains=q) | Q(codigo__icontains=q))
 
-    asignaturas = queryset[:30] # Limitar a 30 para extrema velocidad
+    asignaturas = queryset[:30]
 
     results = []
     for asig in asignaturas:

@@ -234,6 +234,7 @@ $(document).ready(function() {
     const $listaCursos = $('#listaCursos');
     const $emptyStateMsg = $('#emptyStateMsg');
     const $nombreEquivalencia = $('#nombreEquivalencia');
+    const SOLO_CICLOS_EG = {{ solo_ciclos_eg|yesno:"true,false" }};
 
     // Función auxiliar para obtener los IDs que ya están en el carrito
     function obtenerIdsSeleccionados() {
@@ -383,6 +384,9 @@ $(document).ready(function() {
             const data = await response.json();
             if (data.asignaturas) {
                 asignaturasActuales = data.asignaturas;
+                if (SOLO_CICLOS_EG) {
+                    asignaturasActuales = asignaturasActuales.filter(a => a.ciclo <= 2);
+                }
                 const ciclos = [...new Set(asignaturasActuales.map(a => a.ciclo))].sort((a,b) => a-b);
                 let optCiclos = '<option></option><option value="TODOS">Todos</option>';
                 ciclos.forEach(c => optCiclos += `<option value="${c}">Ciclo ${c}</option>`);
@@ -391,6 +395,7 @@ $(document).ready(function() {
             }
         } catch (e) { console.error(e); }
     }
+
 
     function renderizarAsignaturas(asignaturas) {
         const seleccionados = obtenerIdsSeleccionados();

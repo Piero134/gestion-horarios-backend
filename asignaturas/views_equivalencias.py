@@ -11,6 +11,9 @@ import json
 @login_required
 def crear_equivalencia(request):
     facultad = getattr(request.user, 'facultad', None)
+    rol_name = getattr(request.user.rol, 'name', None) if hasattr(request.user, 'rol') and request.user.rol else None
+    roles_eg = ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']
+    solo_ciclos_eg = rol_name in roles_eg
 
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -29,12 +32,16 @@ def crear_equivalencia(request):
     return render(request, 'equivalencias/form_equivalencia.html', {
         'facultad': facultad,
         'escuelas': escuelas,
+        'solo_ciclos_eg': solo_ciclos_eg,
     })
 
 @login_required
 def editar_equivalencia(request, pk):
     equivalencia = get_object_or_404(Equivalencia, pk=pk)
     facultad = getattr(request.user, 'facultad', None)
+    rol_name = getattr(request.user.rol, 'name', None) if hasattr(request.user, 'rol') and request.user.rol else None
+    roles_eg = ['Coordinador de Estudios Generales', 'Jefe de Estudios Generales']
+    solo_ciclos_eg = rol_name in roles_eg
 
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
@@ -60,7 +67,8 @@ def editar_equivalencia(request, pk):
             'nombre_limpio': asig.nombre,
             'escuela_nombre': asig.plan.escuela.nombre,
             'plan_anio': asig.plan.anio,
-            'ciclo': asig.ciclo
+            'ciclo': asig.ciclo,
+            'solo_ciclos_eg': solo_ciclos_eg,
         })
 
     return render(request, 'equivalencias/form_equivalencia.html', {
